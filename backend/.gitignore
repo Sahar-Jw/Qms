@@ -1,0 +1,24 @@
+node_modules
+dist
+coverage
+.env*
+!.env.example
+uploads
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+
+# Local database files, dumps, and backups
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.bak
+*.backup
+*.sql
+*.sql.gz
+!src/database/migrations/**/*.sql
+
+# Local seed scripts and data
+src/database/seed*.ts
