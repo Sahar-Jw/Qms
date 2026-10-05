@@ -4,6 +4,7 @@ import { Pencil, Plus, Power, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/confirm';
 import { ActiveBadge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader, Pagination, Select, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/auth';
@@ -66,6 +67,7 @@ export default function MaterialsPage() {
   const { t, pick, has } = useI18n();
   const me = useMe().data!;
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'active' | 'inactive' | 'all'>('active');
   const [page, setPage] = useState(1);
@@ -78,6 +80,10 @@ export default function MaterialsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['materials'] }),
     onError: (e) => toastError(e, t, has),
   });
+  async function onToggle(m: Material) {
+    if (m.isActive && !(await confirm({ danger: true, title: t('common.deactivateTitle'), confirmText: t('common.deactivate'), message: t('common.deactivateMsg', { name: pick(m.nameAr, m.nameEn) }) }))) return;
+    toggle.mutate(m);
+  }
 
   return (
     <>
@@ -105,7 +111,7 @@ export default function MaterialsPage() {
                     <td className={td}><ActiveBadge active={m.isActive} /></td>
                     <td className={`${td} whitespace-nowrap text-end`}>
                       <Button size="sm" variant="ghost" onClick={() => setEdit(m)}><Pencil className="size-4" />{t('common.edit')}</Button>
-                      {hasRole(me.role, 'manager') && <Button size="sm" variant="ghost" onClick={() => toggle.mutate(m)}><Power className="size-4" />{m.isActive ? t('common.deactivate') : t('common.activate')}</Button>}
+                      {hasRole(me.role, 'manager') && <Button size="sm" variant="ghost" onClick={() => onToggle(m)}><Power className="size-4" />{m.isActive ? t('common.deactivate') : t('common.activate')}</Button>}
                     </td>
                   </tr>
                 ))}

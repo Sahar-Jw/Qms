@@ -187,7 +187,6 @@ export class QuotationsService {
   // ------------------------------------------------------------------ create / update
 
   async create(dto: CreateQuotationDto, user: AuthUser): Promise<QuotationView> {
-    this.assertPercent(dto.taxPercentage, 'taxPercentage');
     const id = await this.dataSource.transaction(async (m) => {
       const companyId = await this.resolveIssuingCompanyId(m, user.id);
       if (dto.companyId !== undefined && dto.companyId !== companyId) {
@@ -216,7 +215,6 @@ export class QuotationsService {
   }
 
   async update(id: number, dto: UpdateQuotationDto, user: AuthUser): Promise<QuotationView> {
-    this.assertPercent(dto.taxPercentage, 'taxPercentage');
     await this.dataSource.transaction(async (m) => {
       // Lock the row so two concurrent edits / status changes cannot interleave.
       const q = await m.findOne(Quotation, { where: { id }, lock: { mode: 'pessimistic_write' } });

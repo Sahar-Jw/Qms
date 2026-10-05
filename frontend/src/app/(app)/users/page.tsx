@@ -4,6 +4,7 @@ import { Check, Power, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/confirm';
 import { ActiveBadge, Button, Card, Empty, Input, Loading, PageHeader, Pagination, Select, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/auth';
@@ -20,6 +21,7 @@ export default function UsersPage() {
   const me = useMe().data!;
   const router = useRouter();
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const allowed = hasRole(me.role, 'general_manager');
   const [tab, setTab] = useState<Tab>('all');
   const [q, setQ] = useState('');
@@ -38,6 +40,9 @@ export default function UsersPage() {
     mutationFn: ({ u, roleCode }: { u: User; roleCode: RoleCode }) => api.patch(`/users/${u.id}`, { roleCode }),
     onSuccess: () => { refresh(); toast.success(t('common.updated')); }, onError: (e) => toastError(e, t, has),
   });
+  async function onDeactivate(u: User) {
+    if (await confirm({ danger: true, title: t('common.deactivateTitle'), confirmText: t('common.deactivate'), message: t('common.deactivateUserMsg', { name: u.fullName }) })) setActive.mutate({ u, active: false });
+  }
   if (!allowed) return null;
 
   const roles: RoleCode[] = ['technical_manager', 'general_manager', 'manager', 'employee'];
@@ -83,7 +88,7 @@ export default function UsersPage() {
                       <td className={td}><ActiveBadge active={u.isActive} /></td>
                       <td className={`${td} whitespace-nowrap text-end`}>
                         {u.isActive
-                          ? <Button size="sm" variant="ghost" disabled={locked} title={protectedRow && !self ? t('users.protected') : undefined} onClick={() => setActive.mutate({ u, active: false })}><Power className="size-4" />{t('common.deactivate')}</Button>
+                          ? <Button size="sm" variant="ghost" disabled={locked} title={protectedRow && !self ? t('users.protected') : undefined} onClick={() => onDeactivate(u)}><Power className="size-4" />{t('common.deactivate')}</Button>
                           : <Button size="sm" variant="primary" disabled={locked} onClick={() => setActive.mutate({ u, active: true })}><Check className="size-4" />{t('common.activate')}</Button>}
                       </td>
                     </tr>

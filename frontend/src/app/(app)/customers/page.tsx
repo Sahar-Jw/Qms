@@ -4,6 +4,7 @@ import { Pencil, Plus, Power, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/confirm';
 import { ActiveBadge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader, Pagination, Select, Textarea, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/auth';
@@ -53,6 +54,7 @@ export default function CustomersPage() {
   const { t, pick, has } = useI18n();
   const me = useMe().data!;
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'active' | 'inactive' | 'all'>('active');
   const [page, setPage] = useState(1);
@@ -65,6 +67,10 @@ export default function CustomersPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['customers'] }),
     onError: (e) => toastError(e, t, has),
   });
+  async function onToggle(c: Customer) {
+    if (c.isActive && !(await confirm({ danger: true, title: t('common.deactivateTitle'), confirmText: t('common.deactivate'), message: t('common.deactivateMsg', { name: pick(c.companyNameAr, c.companyNameEn) }) }))) return;
+    toggle.mutate(c);
+  }
 
   return (
     <>
@@ -91,7 +97,7 @@ export default function CustomersPage() {
                     <td className={td}><ActiveBadge active={c.isActive} /></td>
                     <td className={`${td} whitespace-nowrap text-end`}>
                       <Button size="sm" variant="ghost" onClick={() => setEdit(c)}><Pencil className="size-4" />{t('common.edit')}</Button>
-                      {hasRole(me.role, 'manager') && <Button size="sm" variant="ghost" onClick={() => toggle.mutate(c)}><Power className="size-4" />{c.isActive ? t('common.deactivate') : t('common.activate')}</Button>}
+                      {hasRole(me.role, 'manager') && <Button size="sm" variant="ghost" onClick={() => onToggle(c)}><Power className="size-4" />{c.isActive ? t('common.deactivate') : t('common.activate')}</Button>}
                     </td>
                   </tr>
                 ))}

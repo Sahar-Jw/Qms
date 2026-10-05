@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/confirm';
 import { ActiveBadge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/auth';
@@ -75,6 +76,7 @@ export default function CompaniesPage() {
   const me = useMe().data!;
   const router = useRouter();
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const allowed = hasRole(me.role, 'general_manager');
   const [edit, setEdit] = useState<Company | 'new' | null>(null);
   useEffect(() => { if (!allowed) router.replace('/dashboard'); }, [allowed, router]);
@@ -84,6 +86,10 @@ export default function CompaniesPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['companies'] }); qc.invalidateQueries({ queryKey: ['settings'] }); },
     onError: (e) => toastError(e, t, has),
   });
+  async function onToggle(c: Company) {
+    if (c.isActive && !(await confirm({ danger: true, title: t('common.deactivateTitle'), confirmText: t('common.deactivate'), message: t('common.deactivateMsg', { name: pick(c.nameAr, c.nameEn) }) }))) return;
+    toggle.mutate(c);
+  }
   if (!allowed) return null;
 
   return (
@@ -108,7 +114,7 @@ export default function CompaniesPage() {
               </div>
               <div className="mt-auto flex gap-2">
                 <Button size="sm" variant="soft" onClick={() => setEdit(c)}><Pencil className="size-4" />{t('common.edit')}</Button>
-                <Button size="sm" variant="ghost" onClick={() => toggle.mutate(c)}><Power className="size-4" />{c.isActive ? t('common.deactivate') : t('common.activate')}</Button>
+                <Button size="sm" variant="ghost" onClick={() => onToggle(c)}><Power className="size-4" />{c.isActive ? t('common.deactivate') : t('common.activate')}</Button>
               </div>
             </Card>
           ))}

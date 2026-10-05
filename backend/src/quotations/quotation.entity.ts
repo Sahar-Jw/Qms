@@ -47,11 +47,12 @@ export class Quotation extends AuditBase {
   @Column({ type: 'varchar', length: 150, nullable: true })
   bankName: string | null;
 
-  /** Free text (a date or a number of days) - the SRS leaves the format open. */
-  @Column({ type: 'varchar', length: 100, nullable: true })
+  /** Offer validity, YYYY-MM-DD. */
+  @Column({ type: 'date', nullable: true })
   validity: string | null;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
+  /** Delivery date, YYYY-MM-DD. */
+  @Column({ type: 'date', nullable: true })
   deliveryTime: string | null;
 
   @Column({ type: 'varchar', length: 150, nullable: true })

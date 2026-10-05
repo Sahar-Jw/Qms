@@ -68,10 +68,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   );
 });
 
-export function Field({ label, error, hint, children, className }: { label?: ReactNode; error?: string; hint?: string; children: ReactNode; className?: string }) {
+export function Field({ label, error, hint, children, className, required }: { label?: ReactNode; error?: string; hint?: string; children: ReactNode; className?: string; required?: boolean }) {
   return (
     <label className={cn('block min-w-0', className)}>
-      {label && <span className="mb-1 block text-xs font-semibold text-cocoa">{label}</span>}
+      {label && <span className="mb-1 block text-xs font-semibold text-cocoa">{label}{required && <span className="ms-0.5 text-red-600" aria-hidden>*</span>}</span>}
       {children}
       {error ? <span className="mt-1 block text-xs font-medium text-red-700">{error}</span> : hint ? <span className="mt-1 block text-xs text-clay">{hint}</span> : null}
     </label>

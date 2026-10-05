@@ -7,7 +7,7 @@ const ar: Shape<typeof en> = {
   nav: { dashboard: 'لوحة التحكم', quotations: 'عروض الأسعار', customers: 'العملاء', materials: 'المواد', companies: 'الشركات', users: 'المستخدمون', settings: 'الإعدادات', search: 'ابحث في العروض والعملاء والمواد' },
   common: {
     save: 'حفظ', cancel: 'إلغاء', edit: 'تعديل', add: 'إضافة', new: 'جديد', search: 'بحث', all: 'الكل', status: 'الحالة', actions: 'إجراءات',
-    loading: 'جارٍ التحميل…', confirm: 'تأكيد', confirmTitle: 'تأكيد الإجراء', working: 'جارٍ التنفيذ…', noData: 'لا يوجد شيء هنا بعد', back: 'رجوع', close: 'إغلاق', next: 'التالي', prev: 'السابق', page: 'صفحة', of: 'من', total: 'الإجمالي',
+    loading: 'جارٍ التحميل…', confirm: 'تأكيد', deactivateTitle: 'تعطيل', deactivateMsg: 'هل تريد تعطيل «{name}»؟ لن يظهر عند إنشاء عروض أسعار جديدة.', deactivateUserMsg: 'هل تريد تعطيل «{name}»؟ لن يتمكن هذا المستخدم من تسجيل الدخول.', confirmTitle: 'تأكيد الإجراء', working: 'جارٍ التنفيذ…', noData: 'لا يوجد شيء هنا بعد', back: 'رجوع', close: 'إغلاق', next: 'التالي', prev: 'السابق', page: 'صفحة', of: 'من', total: 'الإجمالي',
     active: 'فعّال', inactive: 'غير فعّال', name: 'الاسم', phone: 'الهاتف', email: 'البريد الإلكتروني', notes: 'ملاحظات', date: 'التاريخ', from: 'من', to: 'إلى',
     logout: 'تسجيل الخروج', language: 'اللغة', clear: 'مسح التصفية', saved: 'تم الحفظ', created: 'تم الإنشاء', updated: 'تم التحديث', view: 'عرض', print: 'طباعة',
     duplicate: 'نسخ', activate: 'تفعيل', deactivate: 'إيقاف', country: 'البلد', website: 'الموقع الإلكتروني', address: 'العنوان', code: 'الرمز',

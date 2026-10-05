@@ -87,7 +87,7 @@ export class CreateQuotationDto {
   @IsNotEmpty() @DateOnly() @TrimOptional()
   validity: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(100)
+  @IsNotEmpty() @DateOnly() @TrimOptional()
   deliveryTime: string;
 
   @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(150)
