@@ -24,7 +24,10 @@ function List() {
   const seesLocked = canSeeLocked(me.role);
   const sp = useSearchParams();
   const [q, setQ] = useState('');
-  const [status, setStatus] = useState<QStatus | ''>('');
+  const [status, setStatus] = useState<QStatus | ''>(() => {
+    const v = sp.get('status') as QStatus | null;
+    return v && STATUSES.includes(v) && (v !== 'locked' || seesLocked) ? v : '';
+  });
   const [archived, setArchived] = useState<'' | 'true' | 'false'>(sp.get('archived') === 'true' && seesLocked ? 'true' : '');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');

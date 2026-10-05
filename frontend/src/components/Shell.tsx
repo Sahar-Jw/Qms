@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Building2, FileText, LayoutDashboard, LogOut, Menu, Package, Receipt, Search, Settings as SettingsIcon, UserCog, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { api } from '@/lib/api';
 import { useSettings } from '@/lib/auth';
 import { cn } from '@/lib/cn';
@@ -31,6 +31,10 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const pathRef = useRef(pathname);
+  pathRef.current = pathname;
   const settings = useSettings();
   const company = settings.data?.issuingCompany;
 
@@ -44,6 +48,38 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
       : []),
     { href: '/settings', icon: SettingsIcon, label: t('nav.settings') },
   ];
+
+  // keep the box in sync with the page: restore text on /search reload, empty it when leaving search
+  useEffect(() => {
+    if (pathname.startsWith('/search')) {
+      const v = new URLSearchParams(window.location.search).get('q') ?? '';
+      setQ((cur) => cur || v);
+    } else setQ('');
+  }, [pathname]);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  function runSearch(v: string) {
+    const s = v.trim();
+    const onSearch = pathRef.current.startsWith('/search');
+    if (s) {
+      const url = `/search?q=${encodeURIComponent(s)}`;
+      if (onSearch) router.replace(url); else router.push(url);
+    } else if (onSearch) router.replace('/dashboard');
+  }
+
+  function onSearchChange(v: string) {
+    setQ(v);
+    if (timer.current) clearTimeout(timer.current);
+    if (!v.trim()) runSearch(v);
+    else timer.current = setTimeout(() => runSearch(v), 300);
+  }
+
+  function clearSearch() {
+    if (timer.current) clearTimeout(timer.current);
+    setQ('');
+    runSearch('');
+    inputRef.current?.focus();
+  }
 
   async function logout() {
     try { await api.post('/auth/logout'); } finally {
@@ -94,10 +130,16 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
       <div className="lg:ms-64">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 bg-sand/75 px-4 backdrop-blur-md lg:px-6">
           <button className="grid size-10 place-items-center rounded-full bg-white/80 ring-1 ring-stone/60 lg:hidden" onClick={() => setOpen(true)} aria-label="menu"><Menu className="size-5" /></button>
-          <form className="relative max-w-xl flex-1" onSubmit={(e) => { e.preventDefault(); if (q.trim()) router.push(`/search?q=${encodeURIComponent(q.trim())}`); }}>
+          <form className="relative max-w-xl flex-1" onSubmit={(e) => { e.preventDefault(); if (timer.current) clearTimeout(timer.current); runSearch(q); }}>
             <Search className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-clay" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('nav.search')}
-              className="h-11 w-full rounded-full border border-stone/70 bg-white/85 ps-11 pe-4 text-sm placeholder:text-clay focus:border-cocoa focus:outline-none focus:ring-4 focus:ring-clay/30" />
+            <input ref={inputRef} value={q} onChange={(e) => onSearchChange(e.target.value)} placeholder={t('nav.search')}
+              className="h-11 w-full rounded-full border border-stone/70 bg-white/85 ps-11 pe-10 text-sm placeholder:text-clay focus:border-cocoa focus:outline-none focus:ring-4 focus:ring-clay/30" />
+            {q && (
+              <button type="button" onClick={clearSearch} aria-label={t('common.clear')} title={t('common.clear')}
+                className="absolute end-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-cocoa hover:bg-sand">
+                <X className="size-4" />
+              </button>
+            )}
           </form>
           <div className="ms-auto flex items-center gap-2">
             {company && (

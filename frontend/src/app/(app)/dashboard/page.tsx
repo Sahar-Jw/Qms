@@ -2,6 +2,7 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, Building2, FilePlus2, Lock, Package, Users } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { QuotationTable } from '@/components/QuotationTable';
 import { Button, Card, CardHeader, Loading, PILL_ORDER, PillStack } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -11,6 +12,7 @@ import { STATUSES, canSeeLocked, type Paginated, type QStatus, type QuotationLis
 
 export default function Dashboard() {
   const { t, pick, dir } = useI18n();
+  const router = useRouter();
   const me = useMe().data!;
   const settings = useSettings().data;
   const company = settings?.issuingCompany;
@@ -59,7 +61,7 @@ export default function Dashboard() {
       {/* palette pills = statuses */}
       <Card className="p-5 lg:col-span-4 lg:row-span-2">
         <h2 className="mb-4 text-base font-bold">{t('dashboard.byStatus')}</h2>
-        <PillStack items={PILL_ORDER.filter((s) => visible.includes(s)).map((s) => ({ key: s, label: t(`status.${s}`), value: countOf(s), onClick: undefined }))} />
+        <PillStack items={PILL_ORDER.filter((s) => visible.includes(s)).map((s) => ({ key: s, label: t(`status.${s}`), value: countOf(s), onClick: () => router.push(`/quotations?status=${s}`) }))} />
         <div className="mt-6 space-y-2">
           <h3 className="text-sm font-bold">{t('dashboard.quick')}</h3>
           {quick.map((q) => (
