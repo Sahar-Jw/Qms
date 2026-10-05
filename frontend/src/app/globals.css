@@ -25,6 +25,7 @@
     background-attachment: fixed;
   }
   input, select, textarea, button { font-family: inherit; }
+  button:not(:disabled), [role='button']:not([aria-disabled='true']), summary { cursor: pointer; }
   :focus-visible { outline: 2px solid var(--color-cocoa); outline-offset: 2px; }
   ::selection { background: var(--color-clay); color: #fff; }
   * { scrollbar-width: thin; scrollbar-color: var(--color-clay) transparent; }
@@ -32,4 +33,15 @@
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+.loader-bar { animation: loader-slide 1.1s ease-in-out infinite; }
+@keyframes loader-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+[dir='rtl'] .loader-bar { animation-name: loader-slide-rtl; }
+@keyframes loader-slide-rtl {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-400%); }
 }

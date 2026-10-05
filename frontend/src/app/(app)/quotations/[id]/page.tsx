@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/confirm';
 import { Ledger } from '@/components/Totals';
 import { Button, Card, CardHeader, Empty, Loading, StatusBadge, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -36,6 +37,7 @@ export default function QuotationDetail() {
   const me = useMe().data!;
   const qc = useQueryClient();
   const router = useRouter();
+  const confirm = useConfirm();
   const [cost, setCost] = useState(false);
   const canCost = hasRole(me.role, 'manager');
 
@@ -109,14 +111,14 @@ export default function QuotationDetail() {
               <span className="inline-flex items-center gap-1.5 rounded-full bg-ink/40 px-3.5 py-2 text-xs font-semibold" title={t('quotations.notOwner')}><Eye className="size-4" />{t('quotations.mineOnly')}</span>
             )}
             {q.editable && <Link href={`/quotations/${q.id}/edit`}><Button variant="soft"><Pencil className="size-4" />{t('common.edit')}</Button></Link>}
-            <Button variant="dark" loading={duplicate.isPending} onClick={() => confirm(t('quotations.duplicateConfirm')) && duplicate.mutate()}><Copy className="size-4" />{t('common.duplicate')}</Button>
+            <Button variant="dark" loading={duplicate.isPending} onClick={async () => { if (await confirm({ message: t('quotations.duplicateConfirm') })) duplicate.mutate(); }}><Copy className="size-4" />{t('common.duplicate')}</Button>
           </div>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-sand/20 pt-4">
           {q.allowedStatuses.map((to) => (
             <Button key={to} size="sm" variant="soft" loading={changeStatus.isPending && changeStatus.variables === to}
-              onClick={() => confirm(t('statusAction.confirm', { status: t(`status.${to}`) })) && changeStatus.mutate(to)}>
+              onClick={async () => { if (await confirm({ message: t('statusAction.confirm', { status: t(`status.${to}`) }) })) changeStatus.mutate(to); }}>
               {statusIcon(to)}{statusLabel(to)}
             </Button>
           ))}

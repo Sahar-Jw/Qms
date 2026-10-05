@@ -69,7 +69,7 @@ function List() {
       </Card>
 
       <Card>
-        {list.isLoading ? <Loading /> : <QuotationTable rows={list.data?.data ?? []} />}
+        {list.isLoading ? <Loading /> : <div className={cn('transition-opacity', list.isFetching && 'opacity-50')}><QuotationTable rows={list.data?.data ?? []} /></div>}
         {list.data && <Pagination page={list.data.page} limit={list.data.limit} total={list.data.total} onPage={setPage} />}
       </Card>
     </>

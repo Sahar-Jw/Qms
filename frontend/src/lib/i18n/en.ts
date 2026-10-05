@@ -3,7 +3,7 @@ const en = {
   nav: { dashboard: 'Dashboard', quotations: 'Quotations', customers: 'Customers', materials: 'Materials', companies: 'Companies', users: 'Users', settings: 'Settings', search: 'Search quotations, customers, materials' },
   common: {
     save: 'Save', cancel: 'Cancel', edit: 'Edit', add: 'Add', new: 'New', search: 'Search', all: 'All', status: 'Status', actions: 'Actions',
-    loading: 'Loading…', noData: 'Nothing here yet', back: 'Back', close: 'Close', next: 'Next', prev: 'Previous', page: 'Page', of: 'of', total: 'Total',
+    loading: 'Loading…', confirm: 'Confirm', confirmTitle: 'Please confirm', working: 'Working…', noData: 'Nothing here yet', back: 'Back', close: 'Close', next: 'Next', prev: 'Previous', page: 'Page', of: 'of', total: 'Total',
     active: 'Active', inactive: 'Inactive', name: 'Name', phone: 'Phone', email: 'Email', notes: 'Notes', date: 'Date', from: 'From', to: 'To',
     logout: 'Sign out', language: 'Language', clear: 'Clear filters', saved: 'Saved', created: 'Created', updated: 'Updated', view: 'View', print: 'Print',
     duplicate: 'Duplicate', activate: 'Activate', deactivate: 'Deactivate', country: 'Country', website: 'Website', address: 'Address', code: 'Code',

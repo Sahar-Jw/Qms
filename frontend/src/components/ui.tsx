@@ -1,10 +1,11 @@
 'use client';
 import { ChevronDown, ChevronLeft, ChevronRight, Inbox, Loader2, X } from 'lucide-react';
 import {
-  forwardRef, useEffect, useId,
+  forwardRef, useEffect, useId, useState,
   type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes,
 } from 'react';
 import { cn } from '@/lib/cn';
+import { useActivity } from '@/lib/activity';
 import { useI18n } from '@/lib/i18n';
 import type { QStatus } from '@/lib/types';
 
@@ -140,6 +141,46 @@ export function Loading() {
   );
 }
 
+function useDelayed(on: boolean, ms: number) {
+  const [v, setV] = useState(false);
+  useEffect(() => {
+    if (!on) { setV(false); return; }
+    const h = setTimeout(() => setV(true), ms);
+    return () => clearTimeout(h);
+  }, [on, ms]);
+  return v;
+}
+
+/** Top progress bar for any API call + a "working" pill for saves/changes that take a moment. */
+export function GlobalLoader() {
+  const { t } = useI18n();
+  const { all, writes } = useActivity();
+  const bar = useDelayed(all > 0, 120);
+  const pill = useDelayed(writes > 0, 400);
+  return (
+    <>
+      <div aria-hidden className={cn('pointer-events-none fixed inset-x-0 top-0 z-[60] h-1 overflow-hidden transition-opacity duration-200', bar ? 'opacity-100' : 'opacity-0')}>
+        <div className="loader-bar h-full w-1/3 rounded-full bg-cocoa" />
+      </div>
+      {pill && (
+        <div role="status" aria-live="polite" className="fixed inset-x-0 bottom-6 z-[60] flex justify-center">
+          <div className="flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-sand shadow-lift">
+            <Loader2 className="size-4 animate-spin" />{t('common.working')}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+export function PageLoading() {
+  return (
+    <div className="grid min-h-[50vh] place-items-center" role="status">
+      <Spinner className="size-9" />
+    </div>
+  );
+}
+
 export function Empty({ text, action }: { text?: string; action?: ReactNode }) {
   const { t } = useI18n();
   return (
@@ -207,7 +248,7 @@ export function PillStack({ items }: { items: { key: QStatus; label: string; val
         return (
           <Tag
             key={it.key} onClick={it.onClick} style={{ zIndex: i + 1 }}
-            className={cn('relative flex h-[4.25rem] items-center justify-between rounded-full px-7 text-start shadow-pill', i > 0 && '-mt-5', STATUS_STYLE[it.key].pill, it.onClick && 'transition-transform hover:-translate-y-0.5')}
+            className={cn('relative flex h-[4.25rem] items-center justify-between rounded-full px-7 text-start shadow-pill', i > 0 && '-mt-5', STATUS_STYLE[it.key].pill, it.onClick && 'cursor-pointer transition-transform hover:-translate-y-0.5')}
           >
             <span className="text-sm font-semibold">{it.label}</span>
             {it.value !== undefined && <span className="text-2xl font-bold tabular-nums">{it.value}</span>}
