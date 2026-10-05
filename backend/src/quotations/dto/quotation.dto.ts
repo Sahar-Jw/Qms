@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
-  ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsIn, IsInt, IsOptional, IsString, MaxLength, Min, ValidateIf, ValidateNested,
+  ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min, ValidateIf, ValidateNested,
 } from 'class-validator';
 import { CurrencyCode, DateOnly, DecimalString, TrimOptional } from '../../common/decorators/validators';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -24,14 +24,14 @@ export class QuotationItemDto {
   quantity: string;
 
   /** Defaults to the material's price / currency when omitted on a new line. */
-  @IsOptional() @DecimalString()
-  unitPrice?: string;
+  @IsNotEmpty() @DecimalString()
+  unitPrice: string;
 
-  @IsOptional() @CurrencyCode()
-  priceCurrency?: string;
+  @IsNotEmpty() @CurrencyCode()
+  priceCurrency: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(30)
-  unit?: string;
+  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(30)
+  unit: string;
 
   /** Manager / Admin only (ignored for Employees). */
   @IsOptional() @DecimalString()
@@ -40,21 +40,21 @@ export class QuotationItemDto {
   @ValidateIf((o) => o.unitCost !== undefined && o.unitCost !== null) @CurrencyCode()
   costCurrency?: string;
 
-  @IsOptional() @DecimalString()
-  shippingCost?: string;
+  @IsNotEmpty() @DecimalString()
+  shippingCost: string;
 
-  @ValidateIf((o) => o.shippingCost !== undefined && o.shippingCost !== null) @CurrencyCode()
-  shippingCurrency?: string;
+  @IsNotEmpty() @ValidateIf((o) => o.shippingCost !== undefined && o.shippingCost !== null) @CurrencyCode()
+  shippingCurrency: string;
 
-  @IsOptional() @DecimalString()
-  customsCost?: string;
+  @IsNotEmpty() @DecimalString()
+  customsCost: string;
 
-  @ValidateIf((o) => o.customsCost !== undefined && o.customsCost !== null) @CurrencyCode()
-  customsCurrency?: string;
+  @IsNotEmpty() @ValidateIf((o) => o.customsCost !== undefined && o.customsCost !== null) @CurrencyCode()
+  customsCurrency: string;
 
   /** Stored only (0-100). */
-  @IsOptional() @DecimalString()
-  commissionPercentage?: string;
+  @IsNotEmpty() @DecimalString()
+  commissionPercentage: string;
 
   /** Internal note, never printed. */
   @IsOptional() @TrimOptional() @IsString()
@@ -63,45 +63,41 @@ export class QuotationItemDto {
 
 export class CreateQuotationDto {
   /** Optional: if sent it must be the company chosen in the user's settings (the server uses the settings anyway). */
-  @IsOptional() @IsInt()
-  companyId?: number;
+ @IsNotEmpty() @IsInt()
+  companyId: number;
 
   @IsInt()
   customerId: number;
 
   /** Defaults to the creator. */
-  @IsOptional() @IsInt()
-  responsibleUserId?: number;
+  @IsNotEmpty() @IsInt()
+  responsibleUserId: number;
 
   /** Free text: how the customer will pay (any language). Send "" or null to clear. */
-  @IsOptional() @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value)) @IsString() @MaxLength(100)
-  customerPaymentMethod?: string | null;
+  @IsNotEmpty() @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value)) @IsString() @MaxLength(100)
+  customerPaymentMethod: string | null;
 
   /** YYYY-MM-DD, defaults to today. */
-  @IsOptional() @DateOnly()
-  quotationDate?: string;
+  @IsNotEmpty() @DateOnly()
+  quotationDate: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(150)
-  bankName?: string;
+  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(150)
+  bankName: string;
+
+  @IsNotEmpty() @DateOnly() @TrimOptional()
+  validity: string;
 
   @IsOptional() @TrimOptional() @IsString() @MaxLength(100)
-  validity?: string;
+  deliveryTime: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(100)
-  deliveryTime?: string;
+  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(150)
+  paymentMethod: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(150)
-  paymentMethod?: string;
+  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(150)
+  paymentLocation: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(150)
-  paymentLocation?: string;
-
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(150)
-  deliveryMethod?: string;
-
-  /** Quotation-level tax % (0-100). Stored only. */
-  @IsOptional() @DecimalString()
-  taxPercentage?: string;
+  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(150)
+  deliveryMethod: string;
 
   /** Internal note, never printed. */
   @IsOptional() @TrimOptional() @IsString()

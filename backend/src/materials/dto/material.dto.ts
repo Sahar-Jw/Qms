@@ -6,38 +6,35 @@ export class CreateMaterialDto {
   @TrimOptional() @IsString() @IsNotEmpty() @MaxLength(60)
   materialCode: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(255)
-  nameAr?: string;
+  @TrimOptional() @IsString() @IsNotEmpty() @MaxLength(255)
+  name: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(255)
-  nameEn?: string;
+  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(150)
+  source: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(150)
-  source?: string;
+  @IsNotEmpty() @DecimalString()
+  stockQuantity: string;
 
-  @IsOptional() @DecimalString()
-  stockQuantity?: string;
+  @IsNotEmpty() @DecimalString()
+  unitPrice: string;
 
-  @IsOptional() @DecimalString()
-  unitPrice?: string;
+  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(30)
+  unit: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(30)
-  unit?: string;
+  @IsNotEmpty() @CurrencyCode()
+  currency: string;
 
-  @IsOptional() @CurrencyCode()
-  currency?: string;
+  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(100)
+  countryOfOrigin: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(100)
-  countryOfOrigin?: string;
+  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(150)
+  catalogue: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(150)
-  catalogue?: string;
+  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(100)
+  modelNumber: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(100)
-  modelNumber?: string;
-
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(100)
-  catalogueNumber?: string;
+  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(100)
+  catalogueNumber: string;
 }
 
 export class UpdateMaterialDto extends PartialType(CreateMaterialDto) {}

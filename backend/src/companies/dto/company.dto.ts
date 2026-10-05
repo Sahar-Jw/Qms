@@ -4,22 +4,16 @@ import { TrimOptional } from '../../common/decorators/validators';
 
 export class CreateCompanyDto {
   @TrimOptional() @IsString() @IsNotEmpty() @MaxLength(190)
-  nameAr: string;
+  name: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(190)
-  nameEn?: string;
+  @TrimOptional() @IsString() @IsNotEmpty() @MaxLength(255)
+  address: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(255)
-  addressAr?: string;
+  @TrimOptional() @IsString() @IsNotEmpty() @MaxLength(60)
+  phone: string;
 
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(255)
-  addressEn?: string;
-
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(60)
-  phone?: string;
-
-  @IsOptional() @TrimOptional() @IsEmail() @MaxLength(150)
-  email?: string;
+  @TrimOptional() @IsEmail() @IsNotEmpty() @MaxLength(150)
+  email: string;
 
   @IsOptional() @TrimOptional() @IsString() @MaxLength(150)
   website?: string;

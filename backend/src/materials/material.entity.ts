@@ -11,11 +11,7 @@ export class Material extends AuditBase {
 
   @Index()
   @Column({ type: 'varchar', length: 255, nullable: true })
-  nameAr: string | null;
-
-  @Index()
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  nameEn: string | null;
+  name: string | null;
 
   @Column({ type: 'varchar', length: 150, nullable: true })
   source: string | null;

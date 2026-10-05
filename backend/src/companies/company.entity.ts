@@ -8,20 +8,14 @@ export class Company extends AuditBase {
   id: number;
 
   @Column({ type: 'varchar', length: 190 })
-  nameAr: string;
-
-  @Column({ type: 'varchar', length: 190, nullable: true })
-  nameEn: string | null;
+  name: string;
 
   /** Relative path under UPLOADS_DIR, e.g. logos/abc123.png */
   @Column({ type: 'varchar', length: 255, nullable: true })
   logo: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  addressAr: string | null;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  addressEn: string | null;
+  address: string | null;
 
   @Column({ type: 'varchar', length: 60, nullable: true })
   phone: string | null;
