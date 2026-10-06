@@ -72,6 +72,12 @@ export default function QuotationDetail() {
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (e) {
       const code = (e as { code?: string }).code;
+      if (code === 'PDF_ENGINE_UNAVAILABLE') {
+        // No Chrome on the server: open the print page instead, and "Save as PDF" in the print dialog.
+        window.open(printUrl(lang), '_blank');
+        toast.info(t('quotations.pdfFallback'));
+        return;
+      }
       toast.error(code && has(`err.${code}`) ? t(`err.${code}`) : (e as Error).message);
     }
   }

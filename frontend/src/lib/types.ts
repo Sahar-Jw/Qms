@@ -12,7 +12,7 @@ export const STATUSES: QStatus[] = ['draft', 'issued', 'expired', 'locked', 'inv
 export interface Paginated<T> { data: T[]; total: number; page: number; limit: number }
 
 export interface User {
-  id: number; fullName: string; email: string; phone: string | null; role: RoleCode;
+  id: number; fullName: string; email: string; phone: string | null; avatar: string | null; role: RoleCode;
   isActive: boolean; lastLoginAt: string | null; createdAt: string;
 }
 

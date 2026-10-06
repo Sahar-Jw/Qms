@@ -1,5 +1,5 @@
 'use client';
-import { ChevronDown, ChevronLeft, ChevronRight, Inbox, Loader2, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Eye, EyeOff, Inbox, Loader2, X } from 'lucide-react';
 import {
   forwardRef, useEffect, useId, useState,
   type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes,
@@ -47,6 +47,31 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
   { className, invalid, ...rest }, ref,
 ) {
   return <input ref={ref} className={cn(inputBase, 'h-10', invalid ? 'border-red-700' : 'border-stone', className)} {...rest} />;
+});
+
+/** Profile picture, or the first letter of the name when there is none. */
+export function Avatar({ name, src, className }: { name: string; src?: string | null; className?: string }) {
+  return src
+    // eslint-disable-next-line @next/next/no-img-element
+    ? <img src={`/uploads/${src}`} alt="" className={cn('shrink-0 rounded-full bg-white object-cover', className)} />
+    : <span className={cn('grid shrink-0 place-items-center rounded-full bg-clay font-bold text-ink', className)}>{name.trim().charAt(0).toUpperCase()}</span>;
+}
+
+/** Password field with a show / hide toggle. Same props as Input. */
+export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & { invalid?: boolean }>(function PasswordInput(
+  { className, ...rest }, ref,
+) {
+  const { t } = useI18n();
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative" dir="ltr">
+      <Input ref={ref} type={show ? 'text' : 'password'} className={cn('pr-11', className)} {...rest} />
+      <button type="button" tabIndex={-1} onClick={() => setShow((v) => !v)} aria-pressed={show} aria-label={show ? t('common.hidePassword') : t('common.showPassword')} title={show ? t('common.hidePassword') : t('common.showPassword')}
+        className="absolute right-1.5 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-cocoa transition-colors hover:bg-sand">
+        {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+      </button>
+    </div>
+  );
 });
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }>(function Textarea(

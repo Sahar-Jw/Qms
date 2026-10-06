@@ -1,8 +1,9 @@
 const en = {
   app: { name: 'Quotations', tagline: 'Prices, customers and materials in one place' },
-  nav: { dashboard: 'Dashboard', quotations: 'Quotations', customers: 'Customers', materials: 'Materials', companies: 'Companies', users: 'Users', settings: 'Settings', search: 'Search quotations, customers, materials' },
+  nav: { profile: 'My profile', dashboard: 'Dashboard', quotations: 'Quotations', customers: 'Customers', materials: 'Materials', companies: 'Companies', users: 'Users', settings: 'Settings', search: 'Search quotations, customers, materials' },
   common: {
     save: 'Save', cancel: 'Cancel', edit: 'Edit', add: 'Add', new: 'New', search: 'Search', all: 'All', status: 'Status', actions: 'Actions',
+    showPassword: 'Show password', hidePassword: 'Hide password',
     loading: 'Loading…', confirm: 'Confirm', deactivateTitle: 'Deactivate', deactivateMsg: 'Deactivate "{name}"? It will no longer be available when creating new quotations.', deactivateUserMsg: 'Deactivate "{name}"? This user will no longer be able to sign in.', confirmTitle: 'Please confirm', working: 'Working…', noData: 'Nothing here yet', back: 'Back', close: 'Close', next: 'Next', prev: 'Previous', page: 'Page', of: 'of', total: 'Total',
     active: 'Active', inactive: 'Inactive', name: 'Name', phone: 'Phone', email: 'Email', notes: 'Notes', date: 'Date', from: 'From', to: 'To',
     logout: 'Sign out', language: 'Language', clear: 'Clear filters', saved: 'Saved', created: 'Created', updated: 'Updated', view: 'View', print: 'Print',
@@ -11,10 +12,30 @@ const en = {
     lastLogin: 'Last sign-in', never: 'never', role: 'Role', rows: 'rows',
   },
   auth: {
+    forgot: 'Forgot password?', forgotTitle: 'Reset your password', forgotSub: 'Enter your email and we will send you a link to choose a new password.', sendLink: 'Send reset link',
+    forgotSent: 'If this email belongs to an active account, a reset link is on its way. Check your inbox (and spam).', backToLogin: 'Back to sign in',
+    resetTitle: 'Choose a new password', resetSub: 'Enter the new password for your account.', resetBtn: 'Save password', resetDone: 'Password changed. You can sign in now.', newPassword: 'New password',
     loginTitle: 'Welcome back', loginSub: 'Sign in to manage your quotations', registerTitle: 'Create your account', registerSub: 'A manager activates it before you can sign in',
     email: 'Email', password: 'Password', fullName: 'Full name', phone: 'Phone', login: 'Sign in', register: 'Create account',
     noAccount: 'No account yet?', haveAccount: 'Already registered?', pendingTitle: 'Account created', pendingBody: 'A general manager has to activate your account. You can sign in once it is active.',
     passwordHint: '8+ characters with letters and digits', heroTitle: 'Every quotation, priced right', feat1: 'Arabic and English', feat2: 'Totals per currency', feat3: 'Print and PDF', heroSub: 'Build offers in Arabic or English, keep every currency separate, print in one click.',
+  },
+  landing: {
+    f1Title: 'Arabic & English', f1Body: 'Write every quotation in Arabic or English and print both versions.',
+    f2Title: 'Totals per currency', f2Body: 'Each currency stays separate, with shipping, customs and tax handled for you.',
+    f3Title: 'Print and PDF', f3Body: 'Issue, lock and convert quotations to invoices in a few clicks.',
+    eyebrow: 'Quotation management', start: 'Get started', p1: 'Arabic & English', p2: 'Print & PDF', p3: 'Per-currency totals',
+    featuresTitle: 'Everything a quotation needs', featuresSub: 'From the first draft to the final invoice, in one place.',
+    f4Title: 'Clear status workflow', f4Body: 'Draft, issue, lock and convert to an invoice, with full control over who can edit.',
+    f5Title: 'Roles and permissions', f5Body: 'Technical manager, general manager, manager and employee, each with the right access.',
+    f6Title: 'Instant search', f6Body: 'Find any quotation, customer or material in seconds.',
+    stepsTitle: 'How it works', s1Title: 'Create an account', s1Body: 'Register, and a manager activates it.', s2Title: 'Build the quotation', s2Body: 'Pick the customer and materials, and totals are calculated per currency.', s3Title: 'Issue and print', s3Body: 'Issue it, print or export a PDF in Arabic or English.',
+    ctaTitle: 'Ready to issue your next quotation?', ctaSub: 'Sign in to your account or create a new one in less than a minute.',
+  },
+  profile: {
+    title: 'My profile', accountData: 'Account data', edit: 'Edit my details', role: 'Role', lastLogin: 'Last sign-in', memberSince: 'Member since',
+    changePhoto: 'Change photo', removePhoto: 'Remove photo', photoHint: 'PNG, JPG or WEBP, up to 2 MB', photoSaved: 'Profile photo updated', photoRemoved: 'Profile photo removed',
+    tooBig: 'The image is larger than 2 MB', emailLocked: 'The email cannot be changed here',
   },
   status: { draft: 'Draft', issued: 'Issued', expired: 'Expired', locked: 'Locked', invoiced: 'Invoiced' },
   statusAction: {
@@ -38,13 +59,13 @@ const en = {
     currency: 'Currency', shipping: 'Shipping', customs: 'Customs', cost: 'Unit cost', totalCost: 'Cost', summary: 'Summary', itemsCount: 'Items', currenciesCount: 'Currencies', commission: 'Commission %', value: 'Value', required: 'Required',
     perCurrency: 'Totals by currency', noItems: 'Add at least one item', issuingCompany: 'Issued from', changeInSettings: 'Change in settings',
     companyMissing: 'Choose the issuing company in settings before creating quotations.', printAr: 'Print Arabic', printEn: 'Print English',
-    pdfAr: 'PDF Arabic', pdfEn: 'PDF English', includeCost: 'Include cost', readOnly: 'This quotation is read-only.', notOwner: 'You can only edit the quotations you created.', mineOnly: 'View only', duplicated: 'Copy created: {number}',
+    pdfFallback: 'PDF engine is not installed on the server. The print page opened: choose "Save as PDF" as the printer.', pdfAr: 'PDF Arabic', pdfEn: 'PDF English', includeCost: 'Include cost', readOnly: 'This quotation is read-only.', notOwner: 'You can only edit the quotations you created.', mineOnly: 'View only', duplicated: 'Copy created: {number}',
     duplicateConfirm: 'Create a full copy of this quotation as a new draft?', info: 'Information', contact: 'Contact', createdBy: 'Responsible',
     saveCreate: 'Create quotation', saveEdit: 'Save changes', pickCustomer: 'Choose a customer', pickMaterial: 'Choose a material',
     totalQty: 'items', noResults: 'No matching results', createdOk: 'Quotation {number} created', savedOk: 'Quotation saved',
   },
   customers: {
-    title: 'Customers', new: 'New customer', edit: 'Edit customer', nameAr: 'Name (Arabic)', nameEn: 'Name (foreign language)', searchPh: 'Name, country, phone, contact…',
+    companyName: 'Company name', title: 'Customers', new: 'New customer', edit: 'Edit customer', nameAr: 'Name (Arabic)', nameEn: 'Name (foreign language)', searchPh: 'Name, country, phone, contact…',
     manager: 'Manager', addPhone: 'Add phone', contactPerson: 'Contact person', contactPhone: 'Contact phone', nature: 'Business nature', nameHint: 'Fill at least one of the two names',
   },
   materials: {
@@ -68,6 +89,7 @@ const en = {
   search: { title: 'Search results for "{q}"', empty: 'Type something in the search box above', quotations: 'Quotations', customers: 'Customers', materials: 'Materials', nothing: 'No matches' },
   err: {
     INVALID_CREDENTIALS: 'Wrong email or password', ACCOUNT_LOCKED: 'Too many failed attempts. Try again in 15 minutes.', ACCOUNT_NOT_ACTIVATED: 'Your account has not been activated yet',
+    INVALID_RESET_TOKEN: 'This reset link is invalid or has expired. Request a new one.',
     EMAIL_TAKEN: 'This email is already registered', VALIDATION_FAILED: 'Please check the highlighted fields', FORBIDDEN: 'You do not have permission to do this',
     UNAUTHORIZED: 'Please sign in again', QUOTATION_READ_ONLY: 'This quotation can no longer be edited', NOT_OWNER: 'You can only edit the quotations you created', PROTECTED_ACCOUNT: 'Technical and general manager accounts cannot be changed by each other', INVALID_STATUS_TRANSITION: 'This status change is not allowed',
     ISSUING_COMPANY_NOT_SET: 'Choose the issuing company in settings first', ISSUING_COMPANY_INACTIVE: 'The chosen issuing company is inactive. Choose another one in settings.',

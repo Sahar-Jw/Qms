@@ -43,7 +43,7 @@ function CustomerModal({ customer, onClose }: { customer: Customer | 'new'; onCl
     <Modal open wide title={editing ? t('customers.edit') : t('customers.new')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button loading={save.isPending} onClick={handleSubmit(submit)}>{t('common.save')}</Button></>}>
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit(submit)}>
-        <Field label={t('common.name')} required error={errors.companyName?.message}><Input maxLength={190} {...register('companyName', req)} /></Field>
+        <Field label={t('customers.companyName')} required error={errors.companyName?.message}><Input maxLength={190} {...register('companyName', req)} /></Field>
         <Field label={t('common.email')} required error={errors.email?.message}><Input type="email" dir="ltr" maxLength={150} {...register('email', req)} /></Field>
         <Field label={t('common.country')} required error={errors.country?.message}><Input maxLength={100} {...register('country', req)} /></Field>
         <Field label={t('common.website')}><Input dir="ltr" maxLength={150} {...register('website')} /></Field>
@@ -105,7 +105,7 @@ export default function CustomersPage() {
         {list.isLoading ? <Loading /> : !list.data?.data.length ? <Empty /> : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px]">
-              <thead><tr><th className={th}>{t('common.name')}</th><th className={th}>{t('common.country')}</th><th className={th}>{t('common.phone')}</th><th className={th}>{t('customers.manager')}</th><th className={th}>{t('common.status')}</th><th className={th} /></tr></thead>
+              <thead><tr><th className={th}>{t('customers.companyName')}</th><th className={th}>{t('common.country')}</th><th className={th}>{t('common.phone')}</th><th className={th}>{t('customers.manager')}</th><th className={th}>{t('common.status')}</th><th className={th} /></tr></thead>
               <tbody>
                 {list.data.data.map((c) => (
                   <tr key={c.id} className={tr}>

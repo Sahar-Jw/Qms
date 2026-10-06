@@ -43,5 +43,6 @@ export const api = {
   get: <T>(url: string, params?: Params) => request<T>('GET', url + qs(params)),
   post: <T>(url: string, body?: unknown) => request<T>('POST', url, body ?? {}),
   patch: <T>(url: string, body?: unknown) => request<T>('PATCH', url, body ?? {}),
+  delete: <T>(url: string) => request<T>('DELETE', url),
   upload: <T>(url: string, form: FormData) => request<T>('POST', url, form),
 };

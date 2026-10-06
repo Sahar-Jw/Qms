@@ -4,9 +4,10 @@ type Shape<T> = { [K in keyof T]: T[K] extends string ? string : Shape<T[K]> };
 
 const ar: Shape<typeof en> = {
   app: { name: 'عروض الأسعار', tagline: 'الأسعار والعملاء والمواد في مكان واحد' },
-  nav: { dashboard: 'لوحة التحكم', quotations: 'عروض الأسعار', customers: 'العملاء', materials: 'المواد', companies: 'الشركات', users: 'المستخدمون', settings: 'الإعدادات', search: 'ابحث في العروض والعملاء والمواد' },
+  nav: { profile: 'ملفي الشخصي', dashboard: 'لوحة التحكم', quotations: 'عروض الأسعار', customers: 'العملاء', materials: 'المواد', companies: 'الشركات', users: 'المستخدمون', settings: 'الإعدادات', search: 'ابحث في العروض والعملاء والمواد' },
   common: {
     save: 'حفظ', cancel: 'إلغاء', edit: 'تعديل', add: 'إضافة', new: 'جديد', search: 'بحث', all: 'الكل', status: 'الحالة', actions: 'إجراءات',
+    showPassword: 'إظهار كلمة المرور', hidePassword: 'إخفاء كلمة المرور',
     loading: 'جارٍ التحميل…', confirm: 'تأكيد', deactivateTitle: 'تعطيل', deactivateMsg: 'هل تريد تعطيل «{name}»؟ لن يظهر عند إنشاء عروض أسعار جديدة.', deactivateUserMsg: 'هل تريد تعطيل «{name}»؟ لن يتمكن هذا المستخدم من تسجيل الدخول.', confirmTitle: 'تأكيد الإجراء', working: 'جارٍ التنفيذ…', noData: 'لا يوجد شيء هنا بعد', back: 'رجوع', close: 'إغلاق', next: 'التالي', prev: 'السابق', page: 'صفحة', of: 'من', total: 'الإجمالي',
     active: 'فعّال', inactive: 'غير فعّال', name: 'الاسم', phone: 'الهاتف', email: 'البريد الإلكتروني', notes: 'ملاحظات', date: 'التاريخ', from: 'من', to: 'إلى',
     logout: 'تسجيل الخروج', language: 'اللغة', clear: 'مسح التصفية', saved: 'تم الحفظ', created: 'تم الإنشاء', updated: 'تم التحديث', view: 'عرض', print: 'طباعة',
@@ -15,11 +16,31 @@ const ar: Shape<typeof en> = {
     lastLogin: 'آخر دخول', never: 'لم يدخل بعد', role: 'الدور', rows: 'سجل',
   },
   auth: {
+    forgot: 'نسيت كلمة المرور؟', forgotTitle: 'إعادة تعيين كلمة المرور', forgotSub: 'أدخل بريدك الإلكتروني وسنرسل لك رابطاً لاختيار كلمة مرور جديدة.', sendLink: 'إرسال رابط إعادة التعيين',
+    forgotSent: 'إذا كان هذا البريد يخص حساباً فعّالاً فقد أُرسل إليه رابط إعادة التعيين. تحقق من الوارد (والبريد المزعج).', backToLogin: 'العودة إلى تسجيل الدخول',
+    resetTitle: 'اختر كلمة مرور جديدة', resetSub: 'أدخل كلمة المرور الجديدة لحسابك.', resetBtn: 'حفظ كلمة المرور', resetDone: 'تم تغيير كلمة المرور. يمكنك الدخول الآن.', newPassword: 'كلمة المرور الجديدة',
     loginTitle: 'أهلاً بعودتك', loginSub: 'سجّل الدخول لإدارة عروض الأسعار', registerTitle: 'أنشئ حسابك', registerSub: 'يجب أن يفعّل المدير حسابك قبل أن تتمكن من الدخول',
     email: 'البريد الإلكتروني', password: 'كلمة المرور', fullName: 'الاسم الكامل', phone: 'الهاتف', login: 'تسجيل الدخول', register: 'إنشاء حساب',
     noAccount: 'ليس لديك حساب؟', haveAccount: 'لديك حساب؟', pendingTitle: 'تم إنشاء الحساب', pendingBody: 'يجب أن يفعّل المدير العام حسابك. يمكنك الدخول بعد التفعيل.',
     passwordHint: '8 أحرف على الأقل بين حروف وأرقام', heroTitle: 'كل عرض سعر، بسعره الصحيح',
     feat1: 'عربي وإنجليزي', feat2: 'إجماليات لكل عملة', feat3: 'طباعة وPDF', heroSub: 'أنشئ العروض بالعربية أو الإنجليزية، وأبقِ كل عملة منفصلة، واطبع بضغطة واحدة.',
+  },
+  landing: {
+    f1Title: 'عربي وإنجليزي', f1Body: 'اكتب كل عرض سعر بالعربية أو الإنجليزية واطبع النسختين.',
+    f2Title: 'إجماليات لكل عملة', f2Body: 'تبقى كل عملة منفصلة، مع احتساب الشحن والتخليص الجمركي والضريبة.',
+    f3Title: 'طباعة وPDF', f3Body: 'أصدر العروض وأقفلها وحوّلها إلى فواتير ببضع نقرات.',
+    eyebrow: 'إدارة عروض الأسعار', start: 'ابدأ الآن', p1: 'عربي وإنجليزي', p2: 'طباعة وPDF', p3: 'إجماليات لكل عملة',
+    featuresTitle: 'كل ما يحتاجه عرض السعر', featuresSub: 'من المسودة الأولى حتى الفاتورة النهائية، في مكان واحد.',
+    f4Title: 'دورة حالات واضحة', f4Body: 'مسودة، إصدار، قفل ثم تحويل إلى فاتورة، مع تحكم كامل بمن يستطيع التعديل.',
+    f5Title: 'أدوار وصلاحيات', f5Body: 'مدير تقني ومدير عام ومدير وموظف، لكلٍّ صلاحياته المناسبة.',
+    f6Title: 'بحث فوري', f6Body: 'اعثر على أي عرض أو عميل أو مادة خلال ثوانٍ.',
+    stepsTitle: 'كيف يعمل', s1Title: 'أنشئ حساباً', s1Body: 'سجّل وسيفعّله المدير.', s2Title: 'ابنِ عرض السعر', s2Body: 'اختر العميل والمواد وتُحسب الإجماليات لكل عملة.', s3Title: 'أصدر واطبع', s3Body: 'أصدر العرض واطبعه أو صدّره PDF بالعربية أو الإنجليزية.',
+    ctaTitle: 'جاهز لإصدار عرض السعر التالي؟', ctaSub: 'سجّل الدخول إلى حسابك أو أنشئ حساباً جديداً في أقل من دقيقة.',
+  },
+  profile: {
+    title: 'ملفي الشخصي', accountData: 'بيانات الحساب', edit: 'تعديل بياناتي', role: 'الدور', lastLogin: 'آخر دخول', memberSince: 'عضو منذ',
+    changePhoto: 'تغيير الصورة', removePhoto: 'حذف الصورة', photoHint: 'PNG أو JPG أو WEBP حتى 2 ميغابايت', photoSaved: 'تم تحديث الصورة الشخصية', photoRemoved: 'تم حذف الصورة الشخصية',
+    tooBig: 'حجم الصورة أكبر من 2 ميغابايت', emailLocked: 'لا يمكن تغيير البريد الإلكتروني من هنا',
   },
   status: { draft: 'مسودة', issued: 'صادر', expired: 'منتهي', locked: 'مقفل', invoiced: 'محوّل إلى فاتورة' },
   statusAction: {
@@ -43,13 +64,13 @@ const ar: Shape<typeof en> = {
     currency: 'العملة', shipping: 'الشحن', customs: 'التخليص الجمركي', cost: 'تكلفة الوحدة', totalCost: 'التكلفة', summary: 'الملخص', itemsCount: 'البنود', currenciesCount: 'العملات', commission: 'العمولة %', value: 'القيمة', required: 'المطلوب',
     perCurrency: 'الإجماليات حسب العملة', noItems: 'أضف بنداً واحداً على الأقل', issuingCompany: 'تصدر باسم', changeInSettings: 'تغيير من الإعدادات',
     companyMissing: 'اختر الشركة المُصدِرة من الإعدادات قبل إنشاء العروض.', printAr: 'طباعة عربي', printEn: 'طباعة إنجليزي',
-    pdfAr: 'PDF عربي', pdfEn: 'PDF إنجليزي', includeCost: 'مع التكلفة', readOnly: 'هذا العرض للقراءة فقط.', notOwner: 'يمكنك تعديل العروض التي أنشأتها فقط.', mineOnly: 'للعرض فقط', duplicated: 'تم إنشاء النسخة: {number}',
+    pdfFallback: 'محرك PDF غير مثبّت على الخادم. فُتحت صفحة الطباعة: اختر "حفظ كـ PDF" كطابعة.', pdfAr: 'PDF عربي', pdfEn: 'PDF إنجليزي', includeCost: 'مع التكلفة', readOnly: 'هذا العرض للقراءة فقط.', notOwner: 'يمكنك تعديل العروض التي أنشأتها فقط.', mineOnly: 'للعرض فقط', duplicated: 'تم إنشاء النسخة: {number}',
     duplicateConfirm: 'إنشاء نسخة كاملة من هذا العرض كمسودة جديدة؟', info: 'المعلومات', contact: 'جهة الاتصال', createdBy: 'المسؤول',
     saveCreate: 'إنشاء العرض', saveEdit: 'حفظ التعديلات', pickCustomer: 'اختر عميلاً', pickMaterial: 'اختر مادة',
     totalQty: 'بنود', noResults: 'لا توجد نتائج مطابقة', createdOk: 'تم إنشاء العرض {number}', savedOk: 'تم حفظ العرض',
   },
   customers: {
-    title: 'العملاء', new: 'عميل جديد', edit: 'تعديل العميل', nameAr: 'الاسم بالعربية', nameEn: 'الاسم بلغة أجنبية', searchPh: 'الاسم، البلد، الهاتف، جهة الاتصال…',
+    companyName: 'اسم الشركة', title: 'العملاء', new: 'عميل جديد', edit: 'تعديل العميل', nameAr: 'الاسم بالعربية', nameEn: 'الاسم بلغة أجنبية', searchPh: 'الاسم، البلد، الهاتف، جهة الاتصال…',
     manager: 'المدير', addPhone: 'إضافة رقم هاتف', contactPerson: 'الشخص المسؤول', contactPhone: 'هاتف الشخص المسؤول', nature: 'طبيعة العمل', nameHint: 'املأ أحد الاسمين على الأقل',
   },
   materials: {
@@ -70,6 +91,7 @@ const ar: Shape<typeof en> = {
   search: { title: 'نتائج البحث عن "{q}"', empty: 'اكتب شيئاً في خانة البحث بالأعلى', quotations: 'عروض الأسعار', customers: 'العملاء', materials: 'المواد', nothing: 'لا توجد نتائج' },
   err: {
     INVALID_CREDENTIALS: 'البريد الإلكتروني أو كلمة المرور غير صحيحة', ACCOUNT_LOCKED: 'محاولات فاشلة كثيرة. أعد المحاولة بعد 15 دقيقة.', ACCOUNT_NOT_ACTIVATED: 'لم يتم تفعيل حسابك بعد',
+    INVALID_RESET_TOKEN: 'رابط إعادة التعيين غير صالح أو منتهي. اطلب رابطاً جديداً.',
     EMAIL_TAKEN: 'هذا البريد الإلكتروني مسجّل مسبقاً', VALIDATION_FAILED: 'يرجى مراجعة الحقول المحددة', FORBIDDEN: 'ليست لديك صلاحية لتنفيذ هذا الإجراء',
     UNAUTHORIZED: 'يرجى تسجيل الدخول من جديد', QUOTATION_READ_ONLY: 'لم يعد بالإمكان تعديل هذا العرض', NOT_OWNER: 'يمكنك تعديل العروض التي أنشأتها فقط', PROTECTED_ACCOUNT: 'لا يستطيع المدير التقني والمدير العام تعديل حساب بعضهما', INVALID_STATUS_TRANSITION: 'تغيير الحالة هذا غير مسموح',
     ISSUING_COMPANY_NOT_SET: 'اختر الشركة المُصدِرة من الإعدادات أولاً', ISSUING_COMPANY_INACTIVE: 'الشركة المُصدِرة المختارة غير فعّالة. اختر شركة أخرى من الإعدادات.',

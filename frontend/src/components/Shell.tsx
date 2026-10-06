@@ -1,9 +1,10 @@
 'use client';
 import { useQueryClient } from '@tanstack/react-query';
-import { Building2, FileText, LayoutDashboard, LogOut, Menu, Package, Receipt, Search, Settings as SettingsIcon, UserCog, Users, X } from 'lucide-react';
+import { Building2, FileText, LayoutDashboard, LogOut, Menu, Package, Receipt, Search, Settings as SettingsIcon, UserCircle, UserCog, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Avatar } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useSettings } from '@/lib/auth';
 import { cn } from '@/lib/cn';
@@ -46,6 +47,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
     ...(hasRole(user.role, 'general_manager')
       ? [{ href: '/companies', icon: Building2, label: t('nav.companies') }, { href: '/users', icon: UserCog, label: t('nav.users') }]
       : []),
+    { href: '/profile', icon: UserCircle, label: t('nav.profile') },
     { href: '/settings', icon: SettingsIcon, label: t('nav.settings') },
   ];
 
@@ -118,11 +120,13 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
         </nav>
 
         <div className="m-3 flex items-center gap-3 rounded-2xl bg-cocoa/45 p-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-clay text-base font-bold text-ink">{user.fullName.trim().charAt(0).toUpperCase()}</span>
-          <div className="min-w-0 flex-1 leading-tight">
-            <div dir="auto" className="truncate text-start text-sm font-bold">{user.fullName}</div>
-            <div className="truncate text-xs text-stone">{t(`roles.${user.role}`)}</div>
-          </div>
+          <Link href="/profile" onClick={() => setOpen(false)} title={t('nav.profile')} className="flex min-w-0 flex-1 items-center gap-3 rounded-xl hover:opacity-90">
+            <Avatar name={user.fullName} src={user.avatar} className="size-10 text-base" />
+            <div className="min-w-0 flex-1 leading-tight">
+              <div dir="auto" className="truncate text-start text-sm font-bold">{user.fullName}</div>
+              <div className="truncate text-xs text-stone">{t(`roles.${user.role}`)}</div>
+            </div>
+          </Link>
           <button onClick={logout} title={t('common.logout')} aria-label={t('common.logout')} className="grid size-9 place-items-center rounded-full hover:bg-ink"><LogOut className="size-4 rtl:rotate-180" /></button>
         </div>
       </aside>
