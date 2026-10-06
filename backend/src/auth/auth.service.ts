@@ -1,10 +1,15 @@
+import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
-import { HttpException, Injectable, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { IsNull, MoreThan, Repository } from 'typeorm';
+import { HttpException, Injectable, Logger, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { RoleCode } from '../common/enums';
 import { UsersService } from '../users/users.service';
-import { ChangePasswordDto, LoginDto, RegisterDto } from './dto/auth.dto';
+import { MailService } from '../mail/mail.service';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
+import { PasswordReset } from './password-reset.entity';
 
 // Used to keep response time similar when the e-mail does not exist.
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', 12);
@@ -15,7 +20,15 @@ export class AuthService {
     private readonly users: UsersService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly mail: MailService,
+    @InjectRepository(PasswordReset) private readonly resets: Repository<PasswordReset>,
   ) {}
+
+  private readonly log = new Logger(AuthService.name);
+
+  signToken(userId: number, role: string) {
+    return this.jwt.signAsync({ sub: userId, role });
+  }
 
   /** Self sign-up: always an inactive Employee until an admin activates the account. */
   async register(dto: RegisterDto) {
@@ -70,7 +83,7 @@ export class AuthService {
     user.lastLoginAt = now;
     await this.users.save(user);
 
-    const token = await this.jwt.signAsync({ sub: user.id, role: user.role.code });
+    const token = await this.signToken(user.id, user.role.code);
     return { token, user: this.users.toView(user) };
   }
 
@@ -82,5 +95,44 @@ export class AuthService {
     user.passwordHash = await bcrypt.hash(dto.newPassword, 12);
     await this.users.save(user);
     return { ok: true };
+  }
+
+  /** Always answers the same way, so it cannot be used to find out which e-mails are registered. */
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const ok = { ok: true };
+    const user = await this.users.findByEmail(dto.email);
+    if (!user || !user.isActive) return ok;
+
+    const minutes = Number(this.config.get('RESET_TOKEN_MINUTES')) || 60;
+    const token = crypto.randomBytes(32).toString('hex');
+    await this.resets.delete({ userId: user.id, usedAt: IsNull() });
+    await this.resets.save(
+      this.resets.create({ userId: user.id, tokenHash: this.hash(token), expiresAt: new Date(Date.now() + minutes * 60_000), usedAt: null }),
+    );
+
+    const base = (this.config.get<string>('APP_URL') || (this.config.get<string>('FRONTEND_URLS') || 'http://localhost:3000').split(',')[0]).trim().replace(/\/+$/, '');
+    const link = `${base}/reset-password?token=${token}`;
+    // Not awaited: response time must not reveal whether the account exists.
+    this.mail.sendPasswordReset(user.email, user.fullName, link, minutes).catch((e) => this.log.error(`Reset e-mail to ${user.email} failed: ${e?.message ?? e}`));
+    return ok;
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const row = await this.resets.findOne({ where: { tokenHash: this.hash(dto.token), usedAt: IsNull(), expiresAt: MoreThan(new Date()) } });
+    if (!row) throw new BadRequestException({ code: 'INVALID_RESET_TOKEN', message: 'This reset link is invalid or has expired' });
+    const user = await this.users.findByIdWithPassword(row.userId);
+    if (!user) throw new BadRequestException({ code: 'INVALID_RESET_TOKEN', message: 'This reset link is invalid or has expired' });
+
+    user.passwordHash = await bcrypt.hash(dto.newPassword, 12);
+    user.failedAttempts = 0;
+    user.lockedUntil = null;
+    await this.users.save(user);
+    await this.resets.update({ id: row.id }, { usedAt: new Date() });
+    await this.resets.delete({ userId: user.id, usedAt: IsNull() }); // any other pending links
+    return { ok: true };
+  }
+
+  private hash(token: string) {
+    return crypto.createHash('sha256').update(token).digest('hex');
   }
 }

@@ -34,3 +34,16 @@ export class ChangePasswordDto {
   @Matches(PASSWORD_RE, { message: PASSWORD_MSG })
   newPassword: string;
 }
+
+export class ForgotPasswordDto {
+  @lower() @IsEmail() @MaxLength(190)
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @IsString() @IsNotEmpty() @MaxLength(128)
+  token: string;
+
+  @Matches(PASSWORD_RE, { message: PASSWORD_MSG })
+  newPassword: string;
+}

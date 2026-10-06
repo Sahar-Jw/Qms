@@ -8,7 +8,8 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
-import { ChangePasswordDto, LoginDto, RegisterDto } from './dto/auth.dto';
+import { sessionHours } from '../config/session';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -24,7 +25,7 @@ export class AuthController {
   }
 
   private cookieOptions(): CookieOptions {
-    const hours = Number(this.config.get('JWT_EXPIRES_HOURS') ?? 8);
+    const hours = sessionHours(this.config);
     const domain = this.config.get<string>('COOKIE_DOMAIN');
     return {
       httpOnly: true,
@@ -61,9 +62,27 @@ export class AuthController {
     return { ok: true };
   }
 
+  /** Also renews the session cookie, so you stay signed in as long as you open the site within the session window. */
   @Get('me')
-  async me(@CurrentUser() me: AuthUser) {
+  async me(@CurrentUser() me: AuthUser, @Res({ passthrough: true }) res: Response) {
+    res.cookie(this.cookieName, await this.auth.signToken(me.id, me.role), this.cookieOptions());
     return this.users.get(me.id);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('forgot-password')
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('reset-password')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto);
   }
 
   @HttpCode(200)
