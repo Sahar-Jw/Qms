@@ -13,7 +13,8 @@ export class Customer extends AuditBase {
   @Column({ type: 'varchar', length: 150, nullable: true })
   email: string | null;
 
-  @Column({ type: 'varchar', length: 60, nullable: true })
+  /** One or more phone numbers (stored as a JSON array). */
+  @Column({ type: 'simple-json', nullable: true })
   phone: string[] | null;
 
   @Column({ type: 'varchar', length: 100, nullable: true })

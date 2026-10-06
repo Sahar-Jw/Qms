@@ -14,8 +14,8 @@ import { useI18n } from '@/lib/i18n';
 import { fmt, trimDec } from '@/lib/money';
 import { hasRole, type Material, type Paginated } from '@/lib/types';
 
-type Form = { materialCode: string; nameAr: string; nameEn: string; source: string; stockQuantity: string; unitPrice: string; unit: string; currency: string; countryOfOrigin: string; catalogue: string; modelNumber: string; catalogueNumber: string };
-const blank: Form = { materialCode: '', nameAr: '', nameEn: '', source: '', stockQuantity: '', unitPrice: '', unit: '', currency: '', countryOfOrigin: '', catalogue: '', modelNumber: '', catalogueNumber: '' };
+type Form = { materialCode: string; name: string; source: string; stockQuantity: string; unitPrice: string; unit: string; currency: string; countryOfOrigin: string; catalogue: string; modelNumber: string; catalogueNumber: string };
+const blank: Form = { materialCode: '', name: '', source: '', stockQuantity: '', unitPrice: '', unit: '', currency: '', countryOfOrigin: '', catalogue: '', modelNumber: '', catalogueNumber: '' };
 const toForm = (m: Material): Form => {
   const f = Object.fromEntries(Object.keys(blank).map((k) => [k, (m as unknown as Record<string, string | null>)[k] ?? ''])) as Form;
   return { ...f, stockQuantity: trimDec(m.stockQuantity), unitPrice: trimDec(m.unitPrice) };
@@ -26,8 +26,7 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
   const { t, has } = useI18n();
   const qc = useQueryClient();
   const editing = material !== 'new';
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<Form>({ defaultValues: editing ? toForm(material) : blank });
-  const [ar, en] = watch(['nameAr', 'nameEn']);
+  const { register, handleSubmit, formState: { errors } } = useForm<Form>({ defaultValues: editing ? toForm(material) : blank });
   const save = useMutation({
     mutationFn: (v: Form) => {
       const body = cleanBody(v, editing);
@@ -39,24 +38,23 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['materials'] }); qc.invalidateQueries({ queryKey: ['pick'] }); toast.success(t('common.saved')); onClose(); },
     onError: (e) => toastError(e, t, has),
   });
-  const noName = !ar.trim() && !en.trim();
-  const dec = { validate: (v: string) => !v || DEC.test(v.trim()) || t('common.invalid') };
+  const req = { required: t('common.required'), validate: (v: string) => v.trim() !== '' || t('common.required') };
+  const dec = { required: t('common.required'), validate: (v: string) => DEC.test(v.trim()) || t('common.invalid') };
   return (
     <Modal open wide title={editing ? t('materials.edit') : t('materials.new')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button loading={save.isPending} onClick={handleSubmit((v) => save.mutate(v))}>{t('common.save')}</Button></>}>
       <form className="grid gap-4 sm:grid-cols-2 md:grid-cols-3" onSubmit={handleSubmit((v) => save.mutate(v))}>
-        <Field label={t('materials.code')} error={errors.materialCode?.message}><Input dir="ltr" maxLength={60} {...register('materialCode', { required: t('common.required') })} /></Field>
-        <Field label={t('materials.nameAr')} error={noName ? t('customers.nameHint') : undefined} className="md:col-span-1"><Input maxLength={255} {...register('nameAr')} /></Field>
-        <Field label={t('materials.nameEn')}><Input dir="ltr" maxLength={255} {...register('nameEn')} /></Field>
-        <Field label={t('materials.unitPrice')} error={errors.unitPrice?.message}><Input inputMode="decimal" dir="ltr" {...register('unitPrice', dec)} /></Field>
-        <Field label={t('materials.currency')} error={errors.currency?.message}><Input dir="ltr" maxLength={3} className="uppercase" {...register('currency', { pattern: { value: /^[A-Za-z]{3}$/, message: t('common.invalid') } })} /></Field>
-        <Field label={t('materials.unit')}><Input maxLength={30} {...register('unit')} /></Field>
-        <Field label={t('materials.stock')} error={errors.stockQuantity?.message}><Input inputMode="decimal" dir="ltr" {...register('stockQuantity', dec)} /></Field>
-        <Field label={t('materials.source')}><Input {...register('source')} /></Field>
-        <Field label={t('materials.origin')}><Input {...register('countryOfOrigin')} /></Field>
-        <Field label={t('materials.catalogue')}><Input {...register('catalogue')} /></Field>
-        <Field label={t('materials.model')}><Input dir="ltr" {...register('modelNumber')} /></Field>
-        <Field label={t('materials.catalogueNo')}><Input dir="ltr" {...register('catalogueNumber')} /></Field>
+        <Field label={t('materials.code')} required error={errors.materialCode?.message}><Input dir="ltr" maxLength={60} {...register('materialCode', req)} /></Field>
+        <Field label={t('common.name')} required error={errors.name?.message} className="sm:col-span-2 md:col-span-2"><Input maxLength={255} {...register('name', req)} /></Field>
+        <Field label={t('materials.unitPrice')} required error={errors.unitPrice?.message}><Input inputMode="decimal" dir="ltr" {...register('unitPrice', dec)} /></Field>
+        <Field label={t('materials.currency')} required error={errors.currency?.message}><Input dir="ltr" maxLength={3} className="uppercase" {...register('currency', { required: t('common.required'), pattern: { value: /^[A-Za-z]{3}$/, message: t('common.invalid') } })} /></Field>
+        <Field label={t('materials.unit')} required error={errors.unit?.message}><Input maxLength={30} {...register('unit', req)} /></Field>
+        <Field label={t('materials.stock')} required error={errors.stockQuantity?.message}><Input inputMode="decimal" dir="ltr" {...register('stockQuantity', dec)} /></Field>
+        <Field label={t('materials.source')} required error={errors.source?.message}><Input maxLength={150} {...register('source', req)} /></Field>
+        <Field label={t('materials.origin')} required error={errors.countryOfOrigin?.message}><Input maxLength={100} {...register('countryOfOrigin', req)} /></Field>
+        <Field label={t('materials.catalogue')} required error={errors.catalogue?.message}><Input maxLength={150} {...register('catalogue', req)} /></Field>
+        <Field label={t('materials.model')} required error={errors.modelNumber?.message}><Input dir="ltr" maxLength={100} {...register('modelNumber', req)} /></Field>
+        <Field label={t('materials.catalogueNo')} required error={errors.catalogueNumber?.message}><Input dir="ltr" maxLength={100} {...register('catalogueNumber', req)} /></Field>
         <button type="submit" hidden />
       </form>
     </Modal>
@@ -81,7 +79,7 @@ export default function MaterialsPage() {
     onError: (e) => toastError(e, t, has),
   });
   async function onToggle(m: Material) {
-    if (m.isActive && !(await confirm({ danger: true, title: t('common.deactivateTitle'), confirmText: t('common.deactivate'), message: t('common.deactivateMsg', { name: pick(m.nameAr, m.nameEn) }) }))) return;
+    if (m.isActive && !(await confirm({ danger: true, title: t('common.deactivateTitle'), confirmText: t('common.deactivate'), message: t('common.deactivateMsg', { name: m.name ?? '' }) }))) return;
     toggle.mutate(m);
   }
 
@@ -104,7 +102,7 @@ export default function MaterialsPage() {
                 {list.data.data.map((m) => (
                   <tr key={m.id} className={tr}>
                     <td className={`${td} font-bold`} dir="ltr">{m.materialCode}</td>
-                    <td className={td}>{pick(m.nameAr, m.nameEn)}</td>
+                    <td className={td}>{m.name ?? ''}</td>
                     <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(m.unitPrice)} <span className="text-xs text-cocoa">{m.currency}</span></td>
                     <td className={`${td} tabular-nums`} dir="ltr">{fmt(m.stockQuantity, 3)} <span className="text-xs text-cocoa">{m.unit}</span></td>
                     <td className={td}>{m.source ?? '—'}</td>

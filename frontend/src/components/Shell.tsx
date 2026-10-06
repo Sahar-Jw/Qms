@@ -147,8 +147,8 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
                 {company.logo
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={`/uploads/${company.logo}`} alt="" className="size-8 rounded-full bg-white object-contain" />
-                  : <span className="grid size-8 place-items-center rounded-full bg-cocoa text-xs font-bold text-white">{pick(company.nameAr, company.nameEn).charAt(0)}</span>}
-                <span className="max-w-40 truncate">{pick(company.nameAr, company.nameEn)}</span>
+                  : <span className="grid size-8 place-items-center rounded-full bg-cocoa text-xs font-bold text-white">{company.name.charAt(0)}</span>}
+                <span className="max-w-40 truncate">{company.name}</span>
               </Link>
             )}
             <LangToggle />

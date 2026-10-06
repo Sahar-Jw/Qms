@@ -24,9 +24,7 @@ export class QuotationItem {
   @Column({ type: 'varchar', length: 60 })
   materialCode: string;
   @Column({ type: 'varchar', length: 255, nullable: true })
-  materialNameAr: string | null;
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  materialNameEn: string | null;
+  materialName: string | null;
   @Column({ type: 'varchar', length: 30, nullable: true })
   unit: string | null;
 

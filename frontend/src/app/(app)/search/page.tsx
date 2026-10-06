@@ -34,7 +34,7 @@ function Results() {
           <ul className="divide-y divide-stone/40">
             {customers.data.map((c) => (
               <li key={c.id}><Link href="/customers" className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-sand/60">
-                <span className="min-w-0"><span className="block truncate font-bold">{pick(c.companyNameAr, c.companyNameEn)}</span><span className="block truncate text-xs text-cocoa">{[c.country, c.contactPersonName, c.phone].filter(Boolean).join(' / ')}</span></span>
+                <span className="min-w-0"><span className="block truncate font-bold">{c.companyName ?? ''}</span><span className="block truncate text-xs text-cocoa">{[c.country, c.managerName, c.phone?.[0]].filter(Boolean).join(' / ')}</span></span>
                 <ActiveBadge active={c.isActive} />
               </Link></li>
             ))}
@@ -47,7 +47,7 @@ function Results() {
           <ul className="divide-y divide-stone/40">
             {materials.data.map((m) => (
               <li key={m.id}><Link href="/materials" className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-sand/60">
-                <span className="min-w-0"><span className="block truncate font-bold"><span dir="ltr">{m.materialCode}</span> - {pick(m.nameAr, m.nameEn)}</span><span className="block text-xs text-cocoa" dir="ltr">{fmt(m.unitPrice)} {m.currency}</span></span>
+                <span className="min-w-0"><span className="block truncate font-bold"><span dir="ltr">{m.materialCode}</span> - {m.name ?? ''}</span><span className="block text-xs text-cocoa" dir="ltr">{fmt(m.unitPrice)} {m.currency}</span></span>
                 <ActiveBadge active={m.isActive} />
               </Link></li>
             ))}

@@ -44,7 +44,7 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold leading-tight text-white">{t('dashboard.hello', { name: me.fullName.split(' ')[0] })}</h1>
           <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-sand/90">
             <Building2 className="size-4" />
-            {company ? <>{t('dashboard.issuingFrom')} <b className="text-white">{pick(company.nameAr, company.nameEn)}</b></> : <>{t('dashboard.noCompany')}</>}
+            {company ? <>{t('dashboard.issuingFrom')} <b className="text-white">{company.name}</b></> : <>{t('dashboard.noCompany')}</>}
             <Link href="/settings" className="underline decoration-sand/50 underline-offset-4 hover:text-white">{company ? t('quotations.changeInSettings') : t('dashboard.chooseCompany')}</Link>
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">

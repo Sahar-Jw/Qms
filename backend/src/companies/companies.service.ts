@@ -14,10 +14,10 @@ export class CompaniesService {
 
   async list(q: StatusSearchPaginationDto) {
     const qb = this.repo.createQueryBuilder('c');
-    if (q.q) qb.andWhere('(c.nameAr LIKE :s OR c.nameEn LIKE :s)', { s: `%${q.q}%` });
+    if (q.q) qb.andWhere('(c.name LIKE :s OR c.address LIKE :s)', { s: `%${q.q}%` });
     const status = q.status ?? 'active';
     if (status !== 'all') qb.andWhere('c.isActive = :a', { a: status === 'active' });
-    const [rows, total] = await qb.orderBy('c.nameAr', 'ASC').skip((q.page - 1) * q.limit).take(q.limit).getManyAndCount();
+    const [rows, total] = await qb.orderBy('c.name', 'ASC').skip((q.page - 1) * q.limit).take(q.limit).getManyAndCount();
     return paginated(rows, total, q.page, q.limit);
   }
 

@@ -144,8 +144,7 @@ export class QuotationsService {
       const item = prev ?? m.create(QuotationItem, { quotationId });
       if (materialChanged) {
         item.materialCode = mat.materialCode;
-        item.materialNameAr = mat.nameAr;
-        item.materialNameEn = mat.nameEn;
+        item.materialName = mat.name;
       }
       item.materialId = mat.id;
       item.sortOrder = idx;
@@ -342,8 +341,7 @@ export class QuotationsService {
         id: i.id,
         materialId: i.materialId,
         materialCode: i.materialCode,
-        materialNameAr: i.materialNameAr,
-        materialNameEn: i.materialNameEn,
+        materialName: i.materialName,
         unit: i.unit,
         sortOrder: i.sortOrder,
         quantity: i.quantity,
@@ -370,12 +368,12 @@ export class QuotationsService {
       quotationDate: q.quotationDate,
       status: q.status,
       company: {
-        id: co.id, nameAr: co.nameAr, nameEn: co.nameEn, logo: co.logo,
-        addressAr: co.addressAr, addressEn: co.addressEn, phone: co.phone, email: co.email, website: co.website,
+        id: co.id, name: co.name, logo: co.logo,
+        address: co.address, phone: co.phone, email: co.email, website: co.website,
       },
       customer: {
-        id: cu.id, companyNameAr: cu.companyNameAr, companyNameEn: cu.companyNameEn,
-        contactPersonName: cu.contactPersonName, contactPersonPhone: cu.contactPersonPhone, phone: cu.phone, email: cu.email, country: cu.country,
+        id: cu.id, companyName: cu.companyName,
+        managerName: cu.managerName, phone: cu.phone ?? [], email: cu.email, country: cu.country,
       },
       responsibleUser: q.responsibleUser ? { id: q.responsibleUser.id, fullName: q.responsibleUser.fullName } : null,
       customerPaymentMethod: q.customerPaymentMethod,
@@ -414,11 +412,11 @@ export class QuotationsService {
       qb.andWhere(
         `(q.quotationNumber LIKE :s OR q.quotationDate LIKE :s OR q.bankName LIKE :s OR q.validity LIKE :s OR q.deliveryTime LIKE :s
           OR q.paymentMethod LIKE :s OR q.customerPaymentMethod LIKE :s OR q.paymentLocation LIKE :s OR q.deliveryMethod LIKE :s OR q.notes LIKE :s
-          OR co.nameAr LIKE :s OR co.nameEn LIKE :s
-          OR cu.companyNameAr LIKE :s OR cu.companyNameEn LIKE :s OR cu.contactPersonName LIKE :s OR cu.phone LIKE :s OR cu.country LIKE :s
+          OR co.name LIKE :s
+          OR cu.companyName LIKE :s OR cu.managerName LIKE :s OR cu.phone LIKE :s OR cu.country LIKE :s
           OR ru.fullName LIKE :s
           OR EXISTS (SELECT 1 FROM quotation_items qi WHERE qi.quotation_id = q.id
-               AND (qi.material_code LIKE :s OR qi.material_name_ar LIKE :s OR qi.material_name_en LIKE :s OR qi.notes LIKE :s)))`,
+               AND (qi.material_code LIKE :s OR qi.material_name LIKE :s OR qi.notes LIKE :s)))`,
         { s: `%${q.q}%` },
       );
     }
@@ -461,8 +459,8 @@ export class QuotationsService {
       quotationNumber: r.quotationNumber,
       quotationDate: r.quotationDate,
       status: r.status,
-      company: { id: r.company.id, nameAr: r.company.nameAr, nameEn: r.company.nameEn },
-      customer: { id: r.customer.id, companyNameAr: r.customer.companyNameAr, companyNameEn: r.customer.companyNameEn },
+      company: { id: r.company.id, name: r.company.name },
+      customer: { id: r.customer.id, companyName: r.customer.companyName },
       responsibleUser: r.responsibleUser ? { id: r.responsibleUser.id, fullName: r.responsibleUser.fullName } : null,
       totals: totalsByQ.get(r.id) ?? [],
     }));

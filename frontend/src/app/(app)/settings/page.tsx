@@ -50,9 +50,9 @@ export default function SettingsPage() {
                       {c.logo
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img src={`/uploads/${c.logo}`} alt="" className="size-14 shrink-0 rounded-xl bg-white object-contain p-1" />
-                        : <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-ink text-xl font-bold text-sand">{pick(c.nameAr, c.nameEn).charAt(0)}</span>}
+                        : <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-ink text-xl font-bold text-sand">{c.name.charAt(0)}</span>}
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-bold">{pick(c.nameAr, c.nameEn)}</span>
+                        <span className="block truncate font-bold">{c.name}</span>
                         <span className="block text-xs text-cocoa">{on ? (settings.data?.issuingCompanyIsAutomatic ? t('settings.automatic') : t('settings.current')) : t('settings.pick')}</span>
                       </span>
                       {on && <span className="grid size-8 place-items-center rounded-full bg-cocoa text-white"><Check className="size-4" /></span>}

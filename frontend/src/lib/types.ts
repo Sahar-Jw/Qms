@@ -17,21 +17,20 @@ export interface User {
 }
 
 export interface Company {
-  id: number; nameAr: string; nameEn: string | null; logo: string | null;
-  addressAr: string | null; addressEn: string | null; phone: string | null; email: string | null; website: string | null;
+  id: number; name: string; logo: string | null;
+  address: string | null; phone: string | null; email: string | null; website: string | null;
   isActive: boolean;
 }
-export interface PickCompany { id: number; nameAr: string; nameEn: string | null; logo: string | null }
+export interface PickCompany { id: number; name: string; logo: string | null }
 export interface Settings { issuingCompany: (PickCompany & { isActive: boolean }) | null; issuingCompanyIsAutomatic: boolean }
 
 export interface Customer {
-  id: number; companyNameAr: string | null; companyNameEn: string | null; email: string | null; phone: string | null;
-  country: string | null; website: string | null; managerName: string | null; contactPersonName: string | null;
-  contactPersonPhone: string | null; businessNature: string | null; notes: string | null; isActive: boolean;
+  id: number; companyName: string | null; email: string | null; phone: string[] | null;
+  country: string | null; website: string | null; managerName: string | null; businessNature: string | null; notes: string | null; isActive: boolean;
 }
 
 export interface Material {
-  id: number; materialCode: string; nameAr: string | null; nameEn: string | null; source: string | null;
+  id: number; materialCode: string; name: string | null; source: string | null;
   stockQuantity: string; unitPrice: string; unit: string | null; currency: string | null; countryOfOrigin: string | null;
   catalogue: string | null; modelNumber: string | null; catalogueNumber: string | null; isActive: boolean;
 }
@@ -39,7 +38,7 @@ export interface Material {
 export interface Amounts { currency: string; value: string; cost: string; shipping: string; customs: string; required: string }
 
 export interface ItemView {
-  id: number; materialId: number | null; materialCode: string; materialNameAr: string | null; materialNameEn: string | null;
+  id: number; materialId: number | null; materialCode: string; materialName: string | null;
   unit: string | null; sortOrder: number; quantity: string; unitPrice: string; priceCurrency: string;
   unitCost: string | null; costCurrency: string | null; shippingCost: string | null; shippingCurrency: string | null;
   customsCost: string | null; customsCurrency: string | null; commissionPercentage: string | null; notes: string | null;
@@ -48,8 +47,8 @@ export interface ItemView {
 
 export interface QuotationListItem {
   id: number; quotationNumber: string; quotationDate: string; status: QStatus;
-  company: { id: number; nameAr: string; nameEn: string | null };
-  customer: { id: number; companyNameAr: string | null; companyNameEn: string | null };
+  company: { id: number; name: string };
+  customer: { id: number; companyName: string | null };
   responsibleUser: { id: number; fullName: string } | null;
   totals: { currency: string; value: string; required: string }[];
 }
@@ -57,7 +56,7 @@ export interface QuotationListItem {
 export interface QuotationView {
   id: number; quotationNumber: string; quotationDate: string; status: QStatus;
   company: Company;
-  customer: { id: number; companyNameAr: string | null; companyNameEn: string | null; contactPersonName: string | null; contactPersonPhone: string | null; phone: string | null; email: string | null; country: string | null };
+  customer: { id: number; companyName: string | null; managerName: string | null; phone: string[]; email: string | null; country: string | null };
   responsibleUser: { id: number; fullName: string } | null;
   customerPaymentMethod: string | null;
   bankName: string | null; validity: string | null; deliveryTime: string | null; paymentMethod: string | null;

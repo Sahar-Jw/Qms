@@ -16,8 +16,8 @@ import { useI18n } from '@/lib/i18n';
 import { aggregate, calcItem, fmt, trimDec } from '@/lib/money';
 import { hasRole, type Customer, type Material, type Paginated, type QuotationView } from '@/lib/types';
 
-type PickCustomer = Pick<Customer, 'id' | 'companyNameAr' | 'companyNameEn'> & Partial<Customer>;
-type PickMaterial = Pick<Material, 'id' | 'materialCode' | 'nameAr' | 'nameEn'> & Partial<Material>;
+type PickCustomer = Pick<Customer, 'id' | 'companyName'> & Partial<Customer>;
+type PickMaterial = Pick<Material, 'id' | 'materialCode' | 'name'> & Partial<Material>;
 
 interface ItemForm {
   id?: number; material: PickMaterial | null; quantity: string; unit: string; unitPrice: string; priceCurrency: string;
@@ -38,13 +38,13 @@ const isoDate = (v?: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v :
 
 function fromView(q: QuotationView): FormValues {
   return {
-    customer: { id: q.customer.id, companyNameAr: q.customer.companyNameAr, companyNameEn: q.customer.companyNameEn },
+    customer: { id: q.customer.id, companyName: q.customer.companyName },
     responsibleUserId: q.responsibleUser ? String(q.responsibleUser.id) : '', quotationDate: q.quotationDate,
     bankName: q.bankName ?? '', validity: isoDate(q.validity), deliveryTime: isoDate(q.deliveryTime), paymentMethod: q.paymentMethod ?? '',
     paymentLocation: q.paymentLocation ?? '', deliveryMethod: q.deliveryMethod ?? '', customerPaymentMethod: q.customerPaymentMethod ?? '',
     notes: q.notes ?? '',
     items: q.items.map((i) => ({
-      id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, nameAr: i.materialNameAr, nameEn: i.materialNameEn } : null,
+      id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, name: i.materialName } : null,
       quantity: trimDec(i.quantity), unit: i.unit ?? '', unitPrice: trimDec(i.unitPrice), priceCurrency: i.priceCurrency,
       shippingCost: trimDec(i.shippingCost), shippingCurrency: i.priceCurrency, customsCost: trimDec(i.customsCost), customsCurrency: i.priceCurrency,
       unitCost: trimDec(i.unitCost), costCurrency: i.priceCurrency, commissionPercentage: trimDec(i.commissionPercentage), notes: i.notes ?? '',
@@ -53,7 +53,7 @@ function fromView(q: QuotationView): FormValues {
 }
 
 export function QuotationForm({ initial }: { initial?: QuotationView }) {
-  const { t, has, pick } = useI18n();
+  const { t, has } = useI18n();
   const router = useRouter();
   const qc = useQueryClient();
   const me = useMe().data!;
@@ -151,7 +151,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                 <Controller control={control} name="customer" rules={{ required: t('quotations.pickCustomer') }}
                   render={({ field }) => (
                     <AsyncPick<PickCustomer> value={field.value} onChange={field.onChange} cacheKey="customers" invalid={!!errors.customer}
-                      placeholder={t('quotations.customerPh')} label={(c) => pick(c.companyNameAr, c.companyNameEn)} sub={(c) => [c.country, c.contactPersonName].filter(Boolean).join(' / ')}
+                      placeholder={t('quotations.customerPh')} label={(c) => c.companyName ?? ''} sub={(c) => [c.country, c.managerName].filter(Boolean).join(' / ')}
                       fetcher={(q) => api.get<Paginated<Customer>>('/customers', { q, limit: 20 }).then((r) => r.data)} />
                   )} />
               </Field>
@@ -185,7 +185,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                         <Controller control={control} name={`items.${i}.material`} rules={{ required: t('quotations.pickMaterial') }}
                           render={({ field }) => (
                             <AsyncPick<PickMaterial> value={field.value} onChange={(m) => onMaterial(i, m as Material | null)} cacheKey="materials" invalid={!!e?.material}
-                              placeholder={t('quotations.materialPh')} label={(m) => `${m.materialCode} - ${pick(m.nameAr, m.nameEn)}`}
+                              placeholder={t('quotations.materialPh')} label={(m) => `${m.materialCode} - ${m.name ?? ''}`}
                               sub={(m) => [m.unitPrice && `${fmt(m.unitPrice)} ${m.currency ?? ''}`, m.source].filter(Boolean).join(' / ')}
                               fetcher={(q) => api.get<Paginated<Material>>('/materials', { q, limit: 20 }).then((r) => r.data)} />
                           )} />
@@ -248,7 +248,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                   : <span className="grid size-11 place-items-center rounded-full bg-sand text-ink"><Building2 className="size-5" /></span>}
                 <div className="min-w-0 leading-tight">
                   <div className="text-xs text-stone">{t('quotations.issuingCompany')}</div>
-                  <div className="truncate text-base font-bold text-white">{company ? pick(company.nameAr, company.nameEn) : '—'}</div>
+                  <div className="truncate text-base font-bold text-white">{company ? company.name : '—'}</div>
                   {!editing && <Link href="/settings" className="text-xs underline decoration-clay underline-offset-4">{t('quotations.changeInSettings')}</Link>}
                 </div>
               </div>
@@ -261,7 +261,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
             <Card className="p-5">
               <h3 className="mb-3 text-sm font-bold">{t('quotations.summary')}</h3>
               <dl className="space-y-2 text-sm">
-                <div className="flex items-center justify-between gap-3"><dt className="text-cocoa">{t('quotations.customer')}</dt><dd dir="auto" className="min-w-0 truncate font-semibold">{customer ? pick(customer.companyNameAr, customer.companyNameEn) : '—'}</dd></div>
+                <div className="flex items-center justify-between gap-3"><dt className="text-cocoa">{t('quotations.customer')}</dt><dd dir="auto" className="min-w-0 truncate font-semibold">{customer ? (customer.companyName ?? '—') : '—'}</dd></div>
                 <div className="flex items-center justify-between gap-3"><dt className="text-cocoa">{t('quotations.itemsCount')}</dt><dd className="font-semibold tabular-nums">{items?.filter((x) => x.material).length ?? 0}</dd></div>
                 <div className="flex items-center justify-between gap-3"><dt className="text-cocoa">{t('quotations.currenciesCount')}</dt><dd className="font-semibold tabular-nums" dir="ltr">{totals.map((x) => x.currency).join(' ') || '—'}</dd></div>
               </dl>

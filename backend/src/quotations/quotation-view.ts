@@ -5,8 +5,7 @@ export interface ItemView {
   id: number;
   materialId: number | null;
   materialCode: string;
-  materialNameAr: string | null;
-  materialNameEn: string | null;
+  materialName: string | null;
   unit: string | null;
   sortOrder: number;
   quantity: string;
@@ -29,12 +28,12 @@ export interface QuotationView {
   quotationDate: string;
   status: QuotationStatus;
   company: {
-    id: number; nameAr: string; nameEn: string | null; logo: string | null;
-    addressAr: string | null; addressEn: string | null; phone: string | null; email: string | null; website: string | null;
+    id: number; name: string; logo: string | null;
+    address: string | null; phone: string | null; email: string | null; website: string | null;
   };
   customer: {
-    id: number; companyNameAr: string | null; companyNameEn: string | null;
-    contactPersonName: string | null; contactPersonPhone: string | null; phone: string | null; email: string | null; country: string | null;
+    id: number; companyName: string | null;
+    managerName: string | null; phone: string[]; email: string | null; country: string | null;
   };
   responsibleUser: { id: number; fullName: string } | null;
   customerPaymentMethod: string | null;

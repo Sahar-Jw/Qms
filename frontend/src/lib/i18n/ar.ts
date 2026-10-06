@@ -50,7 +50,7 @@ const ar: Shape<typeof en> = {
   },
   customers: {
     title: 'العملاء', new: 'عميل جديد', edit: 'تعديل العميل', nameAr: 'الاسم بالعربية', nameEn: 'الاسم بلغة أجنبية', searchPh: 'الاسم، البلد، الهاتف، جهة الاتصال…',
-    manager: 'المدير', contactPerson: 'الشخص المسؤول', contactPhone: 'هاتف الشخص المسؤول', nature: 'طبيعة العمل', nameHint: 'املأ أحد الاسمين على الأقل',
+    manager: 'المدير', addPhone: 'إضافة رقم هاتف', contactPerson: 'الشخص المسؤول', contactPhone: 'هاتف الشخص المسؤول', nature: 'طبيعة العمل', nameHint: 'املأ أحد الاسمين على الأقل',
   },
   materials: {
     title: 'المواد', new: 'مادة جديدة', edit: 'تعديل المادة', code: 'الرمز', nameAr: 'الاسم بالعربية', nameEn: 'الاسم بلغة أجنبية', source: 'المصدر',

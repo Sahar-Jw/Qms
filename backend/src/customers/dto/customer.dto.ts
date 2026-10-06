@@ -1,8 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { TrimOptional } from '../../common/decorators/validators';
-
-export type CustomerPhoneNumbers = string[];
 
 export class CreateCustomerDto {
   @TrimOptional() @IsNotEmpty() @IsString() @MaxLength(190)
@@ -11,8 +10,10 @@ export class CreateCustomerDto {
   @TrimOptional() @IsNotEmpty() @IsEmail() @MaxLength(150)
   email: string;
 
-  @TrimOptional() @IsNotEmpty() @IsString() @MaxLength(60)
-  phone: CustomerPhoneNumbers;
+  /** One or more phone numbers. */
+  @Transform(({ value }) => (Array.isArray(value) ? value.map((v) => (typeof v === 'string' ? v.trim() : v)).filter((v) => v !== '') : value))
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(10) @IsString({ each: true }) @MaxLength(60, { each: true })
+  phone: string[];
 
   @TrimOptional() @IsNotEmpty() @IsString() @MaxLength(100)
   country: string;

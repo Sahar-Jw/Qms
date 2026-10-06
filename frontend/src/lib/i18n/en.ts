@@ -45,7 +45,7 @@ const en = {
   },
   customers: {
     title: 'Customers', new: 'New customer', edit: 'Edit customer', nameAr: 'Name (Arabic)', nameEn: 'Name (foreign language)', searchPh: 'Name, country, phone, contact…',
-    manager: 'Manager', contactPerson: 'Contact person', contactPhone: 'Contact phone', nature: 'Business nature', nameHint: 'Fill at least one of the two names',
+    manager: 'Manager', addPhone: 'Add phone', contactPerson: 'Contact person', contactPhone: 'Contact phone', nature: 'Business nature', nameHint: 'Fill at least one of the two names',
   },
   materials: {
     title: 'Materials', new: 'New material', edit: 'Edit material', code: 'Code', nameAr: 'Name (Arabic)', nameEn: 'Name (foreign language)', source: 'Source',

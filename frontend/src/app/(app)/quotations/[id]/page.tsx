@@ -96,14 +96,14 @@ export default function QuotationDetail() {
             {co.logo
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={`/uploads/${co.logo}`} alt="" className="size-16 rounded-2xl bg-white object-contain p-1" />
-              : <span className="grid size-16 place-items-center rounded-2xl bg-sand text-2xl font-bold text-ink">{pick(co.nameAr, co.nameEn).charAt(0)}</span>}
+              : <span className="grid size-16 place-items-center rounded-2xl bg-sand text-2xl font-bold text-ink">{co.name.charAt(0)}</span>}
             <div>
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-3xl font-bold text-white" dir="ltr">{q.quotationNumber}</h1>
                 <StatusBadge status={q.status} />
               </div>
-              <p className="mt-1 text-sm text-sand/90">{pick(co.nameAr, co.nameEn)} · <span dir="ltr" className="tabular-nums">{q.quotationDate}</span></p>
-              <p className="text-base font-bold text-white">{pick(q.customer.companyNameAr, q.customer.companyNameEn)}</p>
+              <p className="mt-1 text-sm text-sand/90">{co.name} · <span dir="ltr" className="tabular-nums">{q.quotationDate}</span></p>
+              <p className="text-base font-bold text-white">{q.customer.companyName ?? ''}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -151,7 +151,7 @@ export default function QuotationDetail() {
                     <tr key={i.id} className={tr}>
                       <td className={td}>{n + 1}</td>
                       <td className={`${td} font-semibold`} dir="ltr">{i.materialCode}</td>
-                      <td className={td}>{pick(i.materialNameAr, i.materialNameEn)}{i.notes && <div className="text-xs text-clay">{i.notes}</div>}</td>
+                      <td className={td}>{i.materialName ?? ''}{i.notes && <div className="text-xs text-clay">{i.notes}</div>}</td>
                       <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.quantity)} <span className="text-xs text-cocoa">{i.unit}</span></td>
                       <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.unitPrice)} <span className="text-xs text-cocoa">{i.priceCurrency}</span></td>
                       <td className={td}><Money amounts={i.amounts} field="value" /></td>
@@ -171,9 +171,9 @@ export default function QuotationDetail() {
           <Card className="p-5">
             <h2 className="mb-3 text-base font-bold">{t('quotations.info')}</h2>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3">
-              <Info label={t('quotations.contact')} value={q.customer.contactPersonName || q.customer.contactPersonPhone ? <>{q.customer.contactPersonName && <bdi>{q.customer.contactPersonName}</bdi>}{q.customer.contactPersonName && q.customer.contactPersonPhone && ' - '}{q.customer.contactPersonPhone && <bdi dir="ltr">{q.customer.contactPersonPhone}</bdi>}</> : null} />
+              <Info label={t('quotations.contact')} value={q.customer.managerName ? <bdi>{q.customer.managerName}</bdi> : null} />
               <Info label={t('common.country')} value={q.customer.country} />
-              <Info label={t('common.phone')} value={q.customer.phone ? <bdi dir="ltr">{q.customer.phone}</bdi> : null} />
+              <Info label={t('common.phone')} value={q.customer.phone?.length ? <bdi dir="ltr">{q.customer.phone.join(' - ')}</bdi> : null} />
               <Info label={t('common.email')} value={q.customer.email ? <bdi dir="ltr">{q.customer.email}</bdi> : null} />
               <Info label={t('quotations.responsible')} value={q.responsibleUser?.fullName} />
               <Info label={t('quotations.bank')} value={q.bankName} />

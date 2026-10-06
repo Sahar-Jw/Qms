@@ -13,7 +13,7 @@ export class MaterialsService {
     const qb = this.repo.createQueryBuilder('m');
     if (q.q) {
       qb.andWhere(
-        '(m.materialCode LIKE :s OR m.nameAr LIKE :s OR m.nameEn LIKE :s OR m.source LIKE :s OR m.catalogue LIKE :s OR m.modelNumber LIKE :s OR m.catalogueNumber LIKE :s OR m.countryOfOrigin LIKE :s OR m.unit LIKE :s)',
+        '(m.materialCode LIKE :s OR m.name LIKE :s OR m.source LIKE :s OR m.catalogue LIKE :s OR m.modelNumber LIKE :s OR m.catalogueNumber LIKE :s OR m.countryOfOrigin LIKE :s OR m.unit LIKE :s)',
         { s: `%${q.q}%` },
       );
     }
@@ -29,21 +29,13 @@ export class MaterialsService {
     return m;
   }
 
-  private assertHasName(m: { nameAr?: string | null; nameEn?: string | null }) {
-    if (!m.nameAr && !m.nameEn) {
-      throw new BadRequestException({ code: 'MATERIAL_NAME_REQUIRED', message: 'Provide the material name in Arabic or in the foreign language' });
-    }
-  }
-
   create(dto: CreateMaterialDto, userId: number) {
-    this.assertHasName(dto);
     return this.repo.save(this.repo.create({ ...dto, createdById: userId, updatedById: userId })); // duplicate code -> 409 via exception filter
   }
 
   async update(id: number, dto: UpdateMaterialDto, userId: number) {
     const m = await this.get(id);
     Object.assign(m, dto, { updatedById: userId });
-    this.assertHasName(m);
     return this.repo.save(m);
   }
 

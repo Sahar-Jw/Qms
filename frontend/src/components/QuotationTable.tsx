@@ -31,8 +31,8 @@ export function QuotationTable({ rows, compact }: { rows: QuotationListItem[]; c
               onClick={(e) => { if (!(e.target as HTMLElement).closest('a,button')) router.push(`/quotations/${q.id}`); }}
               onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) router.push(`/quotations/${q.id}`); }}>
               <td className={td}><Link href={`/quotations/${q.id}`} className="font-bold text-cocoa underline decoration-clay/60 underline-offset-4 hover:text-ink" dir="ltr">{q.quotationNumber}</Link></td>
-              <td className={`${td} max-w-56 truncate`}>{pick(q.customer.companyNameAr, q.customer.companyNameEn)}</td>
-              {!compact && <td className={`${td} max-w-44 truncate`}>{pick(q.company.nameAr, q.company.nameEn)}</td>}
+              <td className={`${td} max-w-56 truncate`}>{q.customer.companyName ?? ''}</td>
+              {!compact && <td className={`${td} max-w-44 truncate`}>{q.company.name}</td>}
               {!compact && <td className={td}>{q.responsibleUser?.fullName ?? '—'}</td>}
               <td className={`${td} tabular-nums`} dir="ltr">{q.quotationDate}</td>
               <td className={`${td} tabular-nums`} dir="ltr">

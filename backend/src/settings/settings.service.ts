@@ -13,8 +13,8 @@ export class SettingsService {
 
   /** Active companies a user can pick in the settings (name + logo only). */
   async pickList() {
-    const rows = await this.companies.find({ where: { isActive: true }, order: { nameAr: 'ASC' } });
-    return rows.map((c) => ({ id: c.id, nameAr: c.nameAr, nameEn: c.nameEn, logo: c.logo }));
+    const rows = await this.companies.find({ where: { isActive: true }, order: { name: 'ASC' } });
+    return rows.map((c) => ({ id: c.id, name: c.name, logo: c.logo }));
   }
 
   async get(userId: number) {
@@ -30,7 +30,7 @@ export class SettingsService {
     }
     return {
       issuingCompany: company
-        ? { id: company.id, nameAr: company.nameAr, nameEn: company.nameEn, logo: company.logo, isActive: company.isActive }
+        ? { id: company.id, name: company.name, logo: company.logo, isActive: company.isActive }
         : null,
       issuingCompanyIsAutomatic: auto,
     };

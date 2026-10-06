@@ -64,8 +64,8 @@ export class PdfService implements OnModuleDestroy {
     const co = q.company;
     const cu = q.customer;
     const logo = this.logoDataUri(co.logo);
-    const coName = name(co.nameAr, co.nameEn);
-    const coAddr = name(co.addressAr, co.addressEn);
+    const coName = co.name ?? '';
+    const coAddr = co.address ?? '';
 
     const terms: [string, string | null | undefined][] = [
       [t.validity, q.validity],
@@ -84,7 +84,7 @@ export class PdfService implements OnModuleDestroy {
 
     const rows = q.items
       .map((i: ItemView, idx: number) => {
-        const itemName = name(i.materialNameAr, i.materialNameEn);
+        const itemName = i.materialName ?? '';
         return `<tr>
           <td class="c">${nf(String(idx + 1), 0)}</td>
           <td dir="ltr" style="white-space:nowrap">${this.esc(i.materialCode)}</td>
@@ -115,7 +115,7 @@ export class PdfService implements OnModuleDestroy {
       .join('');
 
     const contact = [co.phone && `${t.phone}: ${co.phone}`, co.email, co.website].filter(Boolean).map((x) => `<bdi dir="ltr">${this.esc(String(x))}</bdi>`).join(' &nbsp;|&nbsp; ');
-    const custName = name(cu.companyNameAr, cu.companyNameEn);
+    const custName = cu.companyName ?? '';
 
     // NOTE: internal notes (quotation.notes / item.notes) are intentionally never rendered.
     return `<!doctype html>
@@ -169,8 +169,8 @@ ${opts.autoPrint ? '' : `<div class="bar"><button onclick="window.print()">${thi
 <div class="meta">
   <div class="box">
     <div class="row"><span class="k">${this.esc(t.to)}:</span> <b><bdi dir="auto">${this.esc(custName)}</bdi></b></div>
-    ${cu.contactPersonName ? `<div class="row"><span class="k">${this.esc(t.attn)}:</span> <bdi dir="auto">${this.esc(cu.contactPersonName)}</bdi>${cu.contactPersonPhone ? ` (<bdi dir="ltr">${this.esc(cu.contactPersonPhone)}</bdi>)` : ''}</div>` : ''}
-    ${cu.phone ? `<div class="row"><span class="k">${this.esc(t.phone)}:</span> <bdi dir="ltr">${this.esc(cu.phone)}</bdi></div>` : ''}
+    ${cu.managerName ? `<div class="row"><span class="k">${this.esc(t.attn)}:</span> <bdi dir="auto">${this.esc(cu.managerName)}</bdi></div>` : ''}
+    ${cu.phone?.length ? `<div class="row"><span class="k">${this.esc(t.phone)}:</span> <bdi dir="ltr">${this.esc(cu.phone.join(' - '))}</bdi></div>` : ''}
     ${cu.email ? `<div class="row"><span class="k">${this.esc(t.email)}:</span> <bdi dir="ltr">${this.esc(cu.email)}</bdi></div>` : ''}
   </div>
   <div class="box">
