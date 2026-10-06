@@ -16,6 +16,7 @@ export interface UserView {
   fullName: string;
   email: string;
   phone: string | null;
+  avatar: string | null;
   role: string;
   isActive: boolean;
   lastLoginAt: Date | null;
@@ -35,6 +36,7 @@ export class UsersService {
       fullName: u.fullName,
       email: u.email,
       phone: u.phone,
+      avatar: u.avatar ?? null,
       role: u.role?.code,
       isActive: u.isActive,
       lastLoginAt: u.lastLoginAt,

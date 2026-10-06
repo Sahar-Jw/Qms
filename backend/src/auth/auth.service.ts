@@ -1,4 +1,7 @@
 import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
+import { uploadsRoot } from '../config/uploads';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, MoreThan, Repository } from 'typeorm';
@@ -8,7 +11,7 @@ import * as bcrypt from 'bcryptjs';
 import { RoleCode } from '../common/enums';
 import { UsersService } from '../users/users.service';
 import { MailService } from '../mail/mail.service';
-import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto, UpdateProfileDto } from './dto/auth.dto';
 import { PasswordReset } from './password-reset.entity';
 
 // Used to keep response time similar when the e-mail does not exist.
@@ -130,6 +133,36 @@ export class AuthService {
     await this.resets.update({ id: row.id }, { usedAt: new Date() });
     await this.resets.delete({ userId: user.id, usedAt: IsNull() }); // any other pending links
     return { ok: true };
+  }
+
+  async updateProfile(userId: number, dto: UpdateProfileDto) {
+    const u = await this.users.findById(userId);
+    if (!u) throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: 'Session is no longer valid' });
+    u.fullName = dto.fullName;
+    u.phone = dto.phone?.trim() ? dto.phone.trim() : null;
+    await this.users.save(u);
+    return this.users.toView(u);
+  }
+
+  async setAvatar(userId: number, file: Express.Multer.File | undefined) {
+    if (!file) throw new BadRequestException({ code: 'FILE_REQUIRED', message: 'Image file is required (field name: file)' });
+    const u = await this.users.findById(userId);
+    if (!u) throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: 'Session is no longer valid' });
+    const old = u.avatar;
+    u.avatar = `avatars/${file.filename}`;
+    await this.users.save(u);
+    if (old) fs.promises.unlink(path.join(uploadsRoot(), old)).catch(() => undefined);
+    return this.users.toView(u);
+  }
+
+  async removeAvatar(userId: number) {
+    const u = await this.users.findById(userId);
+    if (!u) throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: 'Session is no longer valid' });
+    const old = u.avatar;
+    u.avatar = null;
+    await this.users.save(u);
+    if (old) fs.promises.unlink(path.join(uploadsRoot(), old)).catch(() => undefined);
+    return this.users.toView(u);
   }
 
   private hash(token: string) {

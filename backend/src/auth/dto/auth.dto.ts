@@ -47,3 +47,11 @@ export class ResetPasswordDto {
   @Matches(PASSWORD_RE, { message: PASSWORD_MSG })
   newPassword: string;
 }
+
+export class UpdateProfileDto {
+  @TrimOptional() @IsString() @IsNotEmpty() @MaxLength(150)
+  fullName: string;
+
+  @IsOptional() @IsString() @MaxLength(40)
+  phone?: string;
+}

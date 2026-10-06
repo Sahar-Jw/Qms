@@ -205,7 +205,7 @@ ${opts.autoPrint ? '<script>window.addEventListener("load",function(){setTimeout
       this.logger.error(`Chromium launch failed: ${(e as Error).message}`);
       throw new ServiceUnavailableException({
         code: 'PDF_ENGINE_UNAVAILABLE',
-        message: 'PDF engine (Chromium) is not available on this server. Use the /print HTML endpoint instead or set PUPPETEER_EXECUTABLE_PATH.',
+        message: 'PDF engine (Chromium) is not available on this server. Install Chrome or Edge, run `npx puppeteer browsers install chrome`, or set PUPPETEER_EXECUTABLE_PATH. The /print page works without it.',
       });
     }
     let page;
@@ -240,13 +240,37 @@ ${opts.autoPrint ? '<script>window.addEventListener("load",function(){setTimeout
 
   // ------------------------------------------------------------------ internals
 
+  /**
+   * Which browser to launch: PUPPETEER_EXECUTABLE_PATH, else puppeteer's own Chrome, else any Chrome / Edge / Chromium
+   * already installed on this machine (so PDF still works when puppeteer's download was skipped).
+   */
+  private async resolveBrowserPath(p: typeof import('puppeteer')): Promise<string | undefined> {
+    const env = process.env.PUPPETEER_EXECUTABLE_PATH;
+    if (env) return env;
+    try {
+      const bundled = await p.executablePath();
+      if (bundled && fs.existsSync(bundled)) return undefined; // puppeteer finds it itself
+    } catch { /* not installed */ }
+    const e = process.env;
+    const win = [e.PROGRAMFILES, e['PROGRAMFILES(X86)'], e.LOCALAPPDATA]
+      .filter((x): x is string => !!x)
+      .flatMap((b) => [path.join(b, 'Google/Chrome/Application/chrome.exe'), path.join(b, 'Microsoft/Edge/Application/msedge.exe')]);
+    const candidates =
+      process.platform === 'win32' ? win
+      : process.platform === 'darwin' ? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', '/Applications/Chromium.app/Contents/MacOS/Chromium']
+      : ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/microsoft-edge'];
+    const found = candidates.find((c) => fs.existsSync(c));
+    if (found) this.logger.log(`Using installed browser for PDF: ${found}`);
+    return found;
+  }
+
   /** One shared Chromium; if it ever dies the next request starts a fresh one. */
   private getBrowser() {
     if (!this.browserPromise) {
-      const launched = import('puppeteer').then((p) =>
+      const launched = import('puppeteer').then(async (p) =>
         p.launch({
           headless: true,
-          executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+          executablePath: await this.resolveBrowserPath(p),
           args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
         }),
       );

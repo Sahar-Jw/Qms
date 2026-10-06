@@ -23,6 +23,10 @@ export class User {
   @JoinColumn({ name: 'role_id' })
   role: Role;
 
+  /** Profile picture, relative to the uploads dir (e.g. avatars/<hex>.png). */
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  avatar: string | null;
+
   /** Settings: the company every quotation made by this user is issued from (no per-quotation choice). */
   @ManyToOne(() => Company, { nullable: true })
   @JoinColumn({ name: 'issuing_company_id' })

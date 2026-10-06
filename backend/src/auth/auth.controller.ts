@@ -1,4 +1,10 @@
-import { Body, Controller, Get, HttpCode, Post, Res } from '@nestjs/common';
+import { randomBytes } from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Patch, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { uploadsRoot } from '../config/uploads';
 import { ConfigService } from '@nestjs/config';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -9,7 +15,24 @@ import { Public } from '../common/decorators/public.decorator';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { sessionHours } from '../config/session';
-import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto, UpdateProfileDto } from './dto/auth.dto';
+
+const AVATAR_TYPES: Record<string, string> = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp' };
+
+const avatarUpload = FileInterceptor('file', {
+  storage: diskStorage({
+    destination: (_req, _file, cb) => {
+      const dir = path.join(uploadsRoot(), 'avatars');
+      fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    },
+    filename: (_req, file, cb) => cb(null, randomBytes(16).toString('hex') + AVATAR_TYPES[file.mimetype]),
+  }),
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB
+  // SVG is deliberately not allowed (script injection risk).
+  fileFilter: (_req, file, cb) =>
+    AVATAR_TYPES[file.mimetype] ? cb(null, true) : cb(new BadRequestException({ code: 'INVALID_FILE_TYPE', message: 'Only PNG, JPEG or WEBP images are allowed' }), false),
+});
 
 @ApiTags('auth')
 @Controller('auth')
@@ -67,6 +90,22 @@ export class AuthController {
   async me(@CurrentUser() me: AuthUser, @Res({ passthrough: true }) res: Response) {
     res.cookie(this.cookieName, await this.auth.signToken(me.id, me.role), this.cookieOptions());
     return this.users.get(me.id);
+  }
+
+  @Patch('profile')
+  updateProfile(@CurrentUser() me: AuthUser, @Body() dto: UpdateProfileDto) {
+    return this.auth.updateProfile(me.id, dto);
+  }
+
+  @Post('avatar')
+  @UseInterceptors(avatarUpload)
+  uploadAvatar(@CurrentUser() me: AuthUser, @UploadedFile() file: Express.Multer.File) {
+    return this.auth.setAvatar(me.id, file);
+  }
+
+  @Delete('avatar')
+  removeAvatar(@CurrentUser() me: AuthUser) {
+    return this.auth.removeAvatar(me.id);
   }
 
   @Public()
