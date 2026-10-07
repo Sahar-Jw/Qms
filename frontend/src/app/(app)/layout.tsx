@@ -6,11 +6,13 @@ import { Button, Spinner } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useMe } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useApplyTheme } from '@/lib/theme';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const me = useMe();
   const router = useRouter();
   const { t } = useI18n();
+  useApplyTheme(!!me.data); // site-wide colours, same for every user
 
   useEffect(() => {
     if (me.error instanceof ApiError && me.error.status === 401) router.replace('/login');

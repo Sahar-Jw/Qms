@@ -31,7 +31,7 @@ The browser only calls this Next.js server. `next.config.ts` rewrites `/api/*` a
 | `/quotations/[id]` | Items, totals per currency, status buttons (only the allowed ones), edit, duplicate, print/PDF in Arabic or English, "include cost" for managers |
 | `/customers`, `/materials` | Search, create/edit in a dialog, activate/deactivate (manager+) |
 | `/companies`, `/users` | General manager+: companies with logo upload, user activation and roles |
-| `/settings` | Pick the issuing company (every new quotation uses it), change password |
+| `/settings` | Everyone: pick the issuing company (every new quotation uses it). Manager+ also get two more tabs: **Theme** (change the five brand colours with a live preview card, then save for the whole site) and **Audit log** (who did what, filterable) |
 | `/search?q=` | One search over quotations, customers and materials |
 
 Roles: technical manager and general manager can do everything and cannot change each other; a manager can edit only the quotations he created; an employee also edits only his own and never sees locked quotations. Cost fields exist only for manager and above. The backend enforces every rule again.

@@ -12,7 +12,7 @@ import type { QStatus } from '@/lib/types';
 /* ------------------------------------------------------------------ buttons */
 type Variant = 'primary' | 'dark' | 'soft' | 'outline' | 'ghost' | 'danger';
 const variants: Record<Variant, string> = {
-  primary: 'bg-cocoa text-white hover:bg-ink shadow-[0_8px_16px_-8px_rgb(41_28_14/0.7)]',
+  primary: 'bg-cocoa text-white hover:bg-ink shadow-[0_8px_16px_-8px_color-mix(in_srgb,var(--color-ink)_70%,transparent)]',
   dark: 'bg-ink text-sand hover:bg-black',
   soft: 'bg-sand text-ink hover:bg-stone/70',
   outline: 'border border-clay text-cocoa hover:bg-sand/70',

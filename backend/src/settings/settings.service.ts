@@ -3,13 +3,34 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Company } from '../companies/company.entity';
 import { User } from '../users/user.entity';
+import { AppSetting } from './app-setting.entity';
+import { DEFAULT_THEME, normalizeTheme, THEME_SETTING_KEY, ThemeColors } from './theme';
 
 @Injectable()
 export class SettingsService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(Company) private readonly companies: Repository<Company>,
+    @InjectRepository(AppSetting) private readonly appSettings: Repository<AppSetting>,
   ) {}
+
+  /** The site-wide colour theme (every user sees the same one). */
+  async getTheme(): Promise<{ colors: ThemeColors }> {
+    const row = await this.appSettings.findOneBy({ key: THEME_SETTING_KEY });
+    return { colors: normalizeTheme(row?.value) };
+  }
+
+  async setTheme(colors: ThemeColors, userId: number) {
+    const value = normalizeTheme(colors);
+    await this.appSettings.save({ key: THEME_SETTING_KEY, value, updatedById: userId });
+    return { colors: value };
+  }
+
+  /** Back to the built-in colours. */
+  async resetTheme() {
+    await this.appSettings.delete({ key: THEME_SETTING_KEY });
+    return { colors: { ...DEFAULT_THEME } };
+  }
 
   /** Active companies a user can pick in the settings (name + logo only). */
   async pickList() {

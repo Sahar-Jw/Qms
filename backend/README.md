@@ -23,13 +23,14 @@ npm run seed:demo           # OPTIONAL: demo data for testing everything (see "D
 ```
 src/
   auth/ users/ roles/            self sign-up (inactive until the general manager activates), login lockout, 4 roles
-  companies/ customers/ materials/ settings/   (settings = which company the user issues quotations from)
+  companies/ customers/ materials/ settings/   (settings = which company the user issues quotations from + the site-wide colour theme)
+  audit/                         audit log: a global interceptor records every create / update / delete / sign-in; `GET audit-log`
   calc/                          ALL money math (per currency, decimal.js) + unit tests
   quotations/                    numbering, items, statuses, duplicate, full search, print endpoints
   search/                        one search box over quotations + customers + materials
   pdf/                           HTML template (AR/EN) + Chromium PDF
   common/                        guards, decorators, validators, error filter, base entity
-  database/                      data-source, seed, migrations/InitialSchema
+  database/                      data-source, seed, migrations/ (InitialSchema, ... AuditLogAndThemeSettings)
 ```
 
 ## Endpoints (prefix `/api`)
@@ -45,6 +46,9 @@ src/
 | Customers / Materials | `GET` (list `?q=&status=active\|inactive\|all&page=&limit=`) · `GET :id` · `POST` · `PATCH :id` | any |
 | | `PATCH :id/active` | manager+ |
 | Settings | `GET settings/companies` (active companies to pick from: id, names, logo) · `GET settings` · `PATCH settings` `{ issuingCompanyId }` — the company ALL of this user's new quotations are issued from | any user |
+| | `GET settings/theme` → `{ colors: { ink, cocoa, clay, stone, sand } }` (the site-wide palette, same for everyone) | any user |
+| | `PATCH settings/theme` `{ colors: { ink, cocoa, clay, stone, sand } }` (each `#RRGGBB`) · `DELETE settings/theme` (back to the defaults) | manager+ |
+| Audit log | `GET audit-log` (`q` user/record, `action`, `entity`, `userId`, `from`, `to` as `YYYY-MM-DD`, `page`, `limit`) — newest first. Rows are written automatically for every successful `POST/PATCH/PUT/DELETE` and for failed sign-ins; submitted data is stored with passwords/tokens removed | manager+ (employees get 403) |
 | Quotations | `GET quotations` (`q,status,archived`, `companyId,customerId,responsibleUserId,from,to,page,limit`; `archived=true` = locked only) · `POST` · `GET :id` · `PATCH :id` · `POST :id/duplicate` · `POST :id/status` | any (see rules) |
 | Search | `GET search?q=&limit=` → `{ quotations, customers, materials }` | any |
 | Print | `GET quotations/:id/print?lang=ar\|en[&autoprint=true][&includeCost=true]` (HTML) · `GET quotations/:id/pdf?lang=…` (PDF) | any (`includeCost`: manager+) |

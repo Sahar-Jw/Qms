@@ -24,6 +24,12 @@ export interface Company {
 export interface PickCompany { id: number; name: string; logo: string | null }
 export interface Settings { issuingCompany: (PickCompany & { isActive: boolean }) | null; issuingCompanyIsAutomatic: boolean }
 
+export interface AuditLogEntry {
+  id: number; userId: number | null; userName: string | null; userRole: RoleCode | null;
+  action: string; entity: string; entityId: string | null; entityLabel: string | null;
+  method: string; path: string; ip: string | null; details: Record<string, unknown> | null; createdAt: string;
+}
+
 export interface Customer {
   id: number; companyName: string | null; email: string | null; phone: string[] | null;
   country: string | null; website: string | null; managerName: string | null; businessNature: string | null; notes: string | null; isActive: boolean;

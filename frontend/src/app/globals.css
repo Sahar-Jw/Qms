@@ -7,8 +7,8 @@
   --color-stone: #BEB5A9;
   --color-sand: #E1D4C2;
   --font-sans: "Cairo", ui-sans-serif, system-ui, sans-serif;
-  --shadow-lift: 0 1px 0 rgb(41 28 14 / 0.05), 0 12px 28px -16px rgb(41 28 14 / 0.35);
-  --shadow-pill: 0 -8px 18px -10px rgb(41 28 14 / 0.55);
+  --shadow-lift: 0 1px 0 color-mix(in srgb, var(--color-ink) 5%, transparent), 0 12px 28px -16px color-mix(in srgb, var(--color-ink) 35%, transparent);
+  --shadow-pill: 0 -8px 18px -10px color-mix(in srgb, var(--color-ink) 55%, transparent);
 }
 
 @layer base {
@@ -21,7 +21,7 @@
     background-color: var(--color-sand);
     background-image:
       radial-gradient(60rem 28rem at 90% -8%, rgb(255 255 255 / 0.65), transparent 70%),
-      radial-gradient(48rem 30rem at -10% 105%, rgb(167 141 120 / 0.4), transparent 70%);
+      radial-gradient(48rem 30rem at -10% 105%, color-mix(in srgb, var(--color-clay) 40%, transparent), transparent 70%);
     background-attachment: fixed;
   }
   input, select, textarea, button { font-family: inherit; }
