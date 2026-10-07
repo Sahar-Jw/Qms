@@ -24,7 +24,7 @@ const SUB_ACTION: Record<string, string> = {
   active: 'update',
 };
 
-const LABEL_FIELDS = ['quotationNumber', 'companyName', 'fullName', 'name', 'materialCode', 'email'] as const;
+const LABEL_FIELDS = ['quotationNumber', 'companyName', 'fullName', 'name', 'materialCode', 'email', 'key'] as const;
 const pickLabel = (res: any): string | null => {
   const src = res?.user ?? res;
   if (!src || typeof src !== 'object') return null;

@@ -85,7 +85,7 @@ const en = {
     title: 'Settings', company: 'Issuing company', companySub: 'Every quotation you create is issued from this company.', current: 'Selected',
     automatic: 'Used automatically because it is the only active company', password: 'Change password', currentPassword: 'Current password',
     newPassword: 'New password', passwordChanged: 'Password changed', account: 'Your account', companySaved: 'Issuing company updated', pick: 'Use this company',
-    tabs: { company: 'Company', theme: 'Theme', audit: 'Audit log' },
+    tabs: { company: 'Company', theme: 'Theme', texts: 'Texts', audit: 'Audit log' },
   },
   theme: {
     title: 'Website colours', sub: 'Pick the main colours of the website. The card shows how they will look. Nothing changes for anyone until you save.',
@@ -97,6 +97,12 @@ const en = {
     invalidHex: 'Use a colour like #A1B2C3', weak: 'Low contrast: some text may be hard to read.',
     unreadable: 'Not enough contrast: the text would be unreadable. Use a darker "Dark" colour, a lighter "Background", or a darker "Primary".',
   },
+  texts: {
+    title: 'Website texts', sub: 'Change any fixed text of the website in Arabic or English. Saved texts apply to every user.',
+    searchPh: 'Search by place or text', section: 'Section', allSections: 'All sections', editedOnly: 'Edited only', key: 'Where it appears', arabic: 'Arabic', english: 'English',
+    edited: 'Edited', none: 'No texts found', edit: 'Edit text', defaultText: 'Original text', saved: 'Text saved', resetDone: 'Original text restored',
+    reset: 'Restore original', keepVars: 'Keep these placeholders exactly as they are: {vars}', missingVars: 'Missing placeholder: {vars}', tip: 'Leave a language unchanged to keep its original text.',
+  },
   audit: {
     title: 'Audit log', sub: 'Every change made in the system, newest first.', when: 'When', user: 'User', action: 'Action', record: 'Record', details: 'Details',
     ip: 'IP address', searchPh: 'Search by user or record', allActions: 'All actions', allEntities: 'All records', none: 'No activity found',
@@ -106,7 +112,7 @@ const en = {
       login: 'Signed in', login_failed: 'Failed sign-in', logout: 'Signed out', register: 'Registered', change_password: 'Changed password',
       forgot_password: 'Asked for a password reset', reset_password: 'Reset password', reset: 'Reset to default',
     },
-    entities: { quotations: 'Quotations', customers: 'Customers', materials: 'Materials', companies: 'Companies', users: 'Users', settings: 'Settings', theme: 'Theme', auth: 'Account' },
+    entities: { quotations: 'Quotations', customers: 'Customers', materials: 'Materials', companies: 'Companies', users: 'Users', settings: 'Settings', theme: 'Theme', translations: 'Texts', auth: 'Account' },
   },
   search: { title: 'Search results for "{q}"', empty: 'Type something in the search box above', quotations: 'Quotations', customers: 'Customers', materials: 'Materials', nothing: 'No matches' },
   err: {

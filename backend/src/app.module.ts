@@ -20,6 +20,7 @@ import { QuotationsModule } from './quotations/quotations.module';
 import { RolesModule } from './roles/roles.module';
 import { SearchModule } from './search/search.module';
 import { SettingsModule } from './settings/settings.module';
+import { TranslationsModule } from './translations/translations.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -39,6 +40,7 @@ import { UsersModule } from './users/users.module';
     QuotationsModule,
     SearchModule,
     SettingsModule,
+    TranslationsModule,
   ],
   providers: [
     // Order matters: throttle -> authenticate -> authorize

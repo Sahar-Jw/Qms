@@ -10,7 +10,7 @@ import { useI18n } from '@/lib/i18n';
 import type { AuditLogEntry, Paginated } from '@/lib/types';
 
 const ACTIONS = ['create', 'update', 'delete', 'activate', 'deactivate', 'status_change', 'duplicate', 'login', 'login_failed', 'logout', 'register', 'change_password', 'forgot_password', 'reset_password', 'reset'];
-const ENTITIES = ['quotations', 'customers', 'materials', 'companies', 'users', 'settings', 'theme', 'auth'];
+const ENTITIES = ['quotations', 'customers', 'materials', 'companies', 'users', 'settings', 'theme', 'translations', 'auth'];
 const LIMIT = 20;
 
 const when = (d: string) => new Date(d).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'medium' });

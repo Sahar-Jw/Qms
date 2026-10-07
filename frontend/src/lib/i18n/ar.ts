@@ -87,7 +87,7 @@ const ar: Shape<typeof en> = {
     title: 'الإعدادات', company: 'الشركة المُصدِرة', companySub: 'كل عرض سعر تنشئه يصدر باسم هذه الشركة.', current: 'المحددة',
     automatic: 'تُستخدم تلقائياً لأنها الشركة الفعّالة الوحيدة', password: 'تغيير كلمة المرور', currentPassword: 'كلمة المرور الحالية',
     newPassword: 'كلمة المرور الجديدة', passwordChanged: 'تم تغيير كلمة المرور', account: 'حسابك', companySaved: 'تم تحديث الشركة المُصدِرة', pick: 'استخدام هذه الشركة',
-    tabs: { company: 'الشركة', theme: 'المظهر', audit: 'سجل التدقيق' },
+    tabs: { company: 'الشركة', theme: 'المظهر', texts: 'النصوص', audit: 'سجل التدقيق' },
   },
   theme: {
     title: 'ألوان الموقع', sub: 'اختر الألوان الرئيسية للموقع. تعرض البطاقة شكلها قبل الحفظ، ولا يتغير شيء لدى أحد حتى تضغط حفظ.',
@@ -99,6 +99,12 @@ const ar: Shape<typeof en> = {
     invalidHex: 'استخدم لوناً مثل #A1B2C3', weak: 'التباين ضعيف: قد يصعب قراءة بعض النصوص.',
     unreadable: 'التباين غير كافٍ: ستصبح النصوص غير مقروءة. استخدم لوناً أغمق لـ«الداكن» أو أفتح لـ«الخلفية» أو أغمق لـ«الأساسي».',
   },
+  texts: {
+    title: 'نصوص الموقع', sub: 'غيّر أي نص ثابت في الموقع بالعربية أو الإنجليزية. النصوص المحفوظة تُطبَّق على جميع المستخدمين.',
+    searchPh: 'ابحث بالمكان أو النص', section: 'القسم', allSections: 'كل الأقسام', editedOnly: 'المعدّلة فقط', key: 'مكان الظهور', arabic: 'العربية', english: 'الإنجليزية',
+    edited: 'معدّل', none: 'لا توجد نصوص', edit: 'تعديل النص', defaultText: 'النص الأصلي', saved: 'تم حفظ النص', resetDone: 'تمت استعادة النص الأصلي',
+    reset: 'استعادة الأصلي', keepVars: 'أبقِ هذه الرموز كما هي: {vars}', missingVars: 'رمز ناقص: {vars}', tip: 'اترك اللغة دون تغيير للإبقاء على نصها الأصلي.',
+  },
   audit: {
     title: 'سجل التدقيق', sub: 'كل تغيير تم في النظام، الأحدث أولاً.', when: 'الوقت', user: 'المستخدم', action: 'الإجراء', record: 'السجل', details: 'التفاصيل',
     ip: 'عنوان IP', searchPh: 'ابحث باسم المستخدم أو السجل', allActions: 'كل الإجراءات', allEntities: 'كل السجلات', none: 'لا يوجد نشاط',
@@ -108,7 +114,7 @@ const ar: Shape<typeof en> = {
       login: 'تسجيل دخول', login_failed: 'محاولة دخول فاشلة', logout: 'تسجيل خروج', register: 'تسجيل حساب', change_password: 'تغيير كلمة المرور',
       forgot_password: 'طلب إعادة تعيين كلمة المرور', reset_password: 'إعادة تعيين كلمة المرور', reset: 'إعادة للافتراضي',
     },
-    entities: { quotations: 'عروض الأسعار', customers: 'العملاء', materials: 'المواد', companies: 'الشركات', users: 'المستخدمون', settings: 'الإعدادات', theme: 'المظهر', auth: 'الحساب' },
+    entities: { quotations: 'عروض الأسعار', customers: 'العملاء', materials: 'المواد', companies: 'الشركات', users: 'المستخدمون', settings: 'الإعدادات', theme: 'المظهر', translations: 'النصوص', auth: 'الحساب' },
   },
   search: { title: 'نتائج البحث عن "{q}"', empty: 'اكتب شيئاً في خانة البحث بالأعلى', quotations: 'عروض الأسعار', customers: 'العملاء', materials: 'المواد', nothing: 'لا توجد نتائج' },
   err: {
