@@ -13,7 +13,22 @@ export const DEFAULT_THEME: ThemeColors = {
 };
 
 export const THEME_SETTING_KEY = 'theme';
+export const BRAND_SETTING_KEY = 'brand';
 export const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+export type BrandSettings = {
+  websiteName: string;
+  tagline: string;
+  logo: string | null;
+  icon: string | null;
+};
+
+export const DEFAULT_BRAND: BrandSettings = {
+  websiteName: 'Quotations',
+  tagline: 'Prices, customers and materials in one place',
+  logo: null,
+  icon: null,
+};
 
 /** Saved value -> a complete, valid palette (any missing or malformed colour falls back to the default). */
 export function normalizeTheme(raw: unknown): ThemeColors {
@@ -23,5 +38,24 @@ export function normalizeTheme(raw: unknown): ThemeColors {
     const v = src[k];
     if (typeof v === 'string' && HEX_COLOR.test(v)) out[k] = v.toUpperCase();
   }
+  return out;
+}
+
+export function normalizeBrand(raw: unknown): BrandSettings {
+  const src = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  const out: BrandSettings = { ...DEFAULT_BRAND };
+  const websiteName = typeof src.websiteName === 'string' ? src.websiteName.trim() : '';
+  const tagline = typeof src.tagline === 'string' ? src.tagline.trim() : '';
+  const normalizeAsset = (value: unknown, kind: 'logo' | 'icon') => {
+    if (typeof value !== 'string') return null;
+    const asset = value.trim();
+    if (!asset) return null;
+    // Earlier uploads stored the filename prefix twice in the database.
+    return asset.replace(new RegExp(`^branding/${kind}-${kind}-`), `branding/${kind}-`);
+  };
+  out.websiteName = websiteName || DEFAULT_BRAND.websiteName;
+  out.tagline = tagline || DEFAULT_BRAND.tagline;
+  out.logo = normalizeAsset(src.logo, 'logo');
+  out.icon = normalizeAsset(src.icon, 'icon');
   return out;
 }

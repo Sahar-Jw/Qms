@@ -69,8 +69,8 @@ export class CreateQuotationDto {
   @IsInt()
   customerId: number;
 
-  /** Defaults to the creator. */
-  @IsNotEmpty() @IsInt()
+  /** The creator is always responsible for a new quotation. */
+  @IsOptional() @IsInt()
   responsibleUserId: number;
 
   /** Free text: how the customer will pay (any language). Send "" or null to clear. */
@@ -87,7 +87,7 @@ export class CreateQuotationDto {
   @IsNotEmpty() @DateOnly() @TrimOptional()
   validity: string;
 
-  @IsNotEmpty() @DateOnly() @TrimOptional()
+  @IsOptional() @DateOnly() @TrimOptional()
   deliveryTime: string;
 
   @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(150)
@@ -162,4 +162,3 @@ export class DuplicateQuotationDto {
   @IsOptional() @IsInt()
   customerId?: number;
 }
-

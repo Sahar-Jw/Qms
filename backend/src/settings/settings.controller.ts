@@ -1,11 +1,17 @@
-import { Body, Controller, Delete, Get, Patch } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { BadRequestException, Body, Controller, Delete, Get, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDefined, IsInt, IsObject, Matches, ValidateNested } from 'class-validator';
+import { IsDefined, IsInt, IsObject, IsOptional, Matches, MaxLength, ValidateNested } from 'class-validator';
+import * as fs from 'fs';
+import { diskStorage } from 'multer';
+import * as path from 'path';
+import { randomBytes } from 'crypto';
 import { AuthUser } from '../common/auth-user';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { MinRole } from '../common/decorators/min-role.decorator';
 import { RoleCode } from '../common/enums';
+import { uploadsRoot } from '../config/uploads';
 import { SettingsService } from './settings.service';
 import { HEX_COLOR } from './theme';
 
@@ -29,6 +35,35 @@ class UpdateThemeDto {
   colors: ThemeColorsDto;
 }
 
+class UpdateBrandDto {
+  @IsOptional() @MaxLength(120)
+  websiteName?: string;
+
+  @IsOptional() @MaxLength(200)
+  tagline?: string;
+
+  @IsOptional()
+  logo?: string | null;
+
+  @IsOptional()
+  icon?: string | null;
+}
+
+const BRAND_MIME_TYPES: Record<string, string> = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp' };
+const brandAssetUpload = (fieldName: 'logo' | 'icon') => FileInterceptor('file', {
+  storage: diskStorage({
+    destination: (_req, _file, cb) => {
+      const dir = path.join(uploadsRoot(), 'branding');
+      fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    },
+    filename: (_req, file, cb) => cb(null, `${fieldName}-${randomBytes(12).toString('hex')}${BRAND_MIME_TYPES[file.mimetype]}`),
+  }),
+  limits: { fileSize: 1024 * 1024 },
+  fileFilter: (_req, file, cb) =>
+    BRAND_MIME_TYPES[file.mimetype] ? cb(null, true) : cb(new BadRequestException({ code: 'INVALID_FILE_TYPE', message: 'Only PNG, JPEG or WEBP images are allowed' }), false),
+});
+
 /** Per-user settings (the issuing company) and the site-wide colour theme. */
 @ApiTags('settings')
 @Controller('settings')
@@ -49,6 +84,47 @@ export class SettingsController {
   @Patch()
   update(@Body() dto: UpdateSettingsDto, @CurrentUser() me: AuthUser) {
     return this.settings.setIssuingCompany(me.id, dto.issuingCompanyId);
+  }
+
+  @Get('brand')
+  getBrand() {
+    return this.settings.getBrand();
+  }
+
+  @Patch('brand')
+  @MinRole(RoleCode.MANAGER)
+  updateBrand(@Body() dto: UpdateBrandDto, @CurrentUser() me: AuthUser) {
+    return this.settings.setBrand(dto, me.id);
+  }
+
+  @Post('brand/logo')
+  @MinRole(RoleCode.MANAGER)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+  @UseInterceptors(brandAssetUpload('logo'))
+  uploadBrandLogo(@UploadedFile() file: Express.Multer.File, @CurrentUser() me: AuthUser) {
+    return this.settings.setBrandAsset('logo', file, me.id);
+  }
+
+  @Delete('brand/logo')
+  @MinRole(RoleCode.MANAGER)
+  removeBrandLogo(@CurrentUser() me: AuthUser) {
+    return this.settings.removeBrandAsset('logo', me.id);
+  }
+
+  @Post('brand/icon')
+  @MinRole(RoleCode.MANAGER)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+  @UseInterceptors(brandAssetUpload('icon'))
+  uploadBrandIcon(@UploadedFile() file: Express.Multer.File, @CurrentUser() me: AuthUser) {
+    return this.settings.setBrandAsset('icon', file, me.id);
+  }
+
+  @Delete('brand/icon')
+  @MinRole(RoleCode.MANAGER)
+  removeBrandIcon(@CurrentUser() me: AuthUser) {
+    return this.settings.removeBrandAsset('icon', me.id);
   }
 
   /** Any signed-in user: everyone sees the site in the saved colours. */

@@ -15,9 +15,8 @@ export const ROLE_RANK: Record<RoleCode, number> = {
 
 export enum QuotationStatus {
   DRAFT = 'draft',
-  ISSUED = 'issued',
   EXPIRED = 'expired',
-  LOCKED = 'locked', // read-only; invisible to employees
+  LOCKED = 'locked', // cancelled; read-only and invisible to employees
   INVOICED = 'invoiced', // converted to invoice: read-only, terminal
 }
 

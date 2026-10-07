@@ -6,8 +6,8 @@ export const isTopTier = (role: RoleCode | undefined) => role === 'technical_man
 /** Employees never see locked quotations. */
 export const canSeeLocked = (role: RoleCode | undefined) => role !== 'employee';
 
-export type QStatus = 'draft' | 'issued' | 'expired' | 'locked' | 'invoiced';
-export const STATUSES: QStatus[] = ['draft', 'issued', 'expired', 'locked', 'invoiced'];
+export type QStatus = 'draft' | 'expired' | 'locked' | 'invoiced';
+export const STATUSES: QStatus[] = ['draft', 'expired', 'locked', 'invoiced'];
 
 export interface Paginated<T> { data: T[]; total: number; page: number; limit: number }
 
@@ -23,6 +23,13 @@ export interface Company {
 }
 export interface PickCompany { id: number; name: string; logo: string | null }
 export interface Settings { issuingCompany: (PickCompany & { isActive: boolean }) | null; issuingCompanyIsAutomatic: boolean }
+
+export interface BrandSettings {
+  websiteName: string;
+  tagline: string;
+  logo: string | null;
+  icon: string | null;
+}
 
 export interface AuditLogEntry {
   id: number; userId: number | null; userName: string | null; userRole: RoleCode | null;

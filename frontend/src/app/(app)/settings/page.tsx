@@ -1,9 +1,10 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, Check, Languages, Palette, ScrollText } from 'lucide-react';
+import { Building2, Check, Languages, Palette, ScrollText, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { AuditTab } from '@/components/settings/AuditTab';
+import { BrandTab } from '@/components/settings/BrandTab';
 import { TextsTab } from '@/components/settings/TextsTab';
 import { ThemeTab } from '@/components/settings/ThemeTab';
 import { Card, CardHeader, Loading, PageHeader } from '@/components/ui';
@@ -14,7 +15,7 @@ import { toastError } from '@/lib/errors';
 import { useI18n } from '@/lib/i18n';
 import { hasRole, type PickCompany, type Settings } from '@/lib/types';
 
-type Tab = 'company' | 'theme' | 'texts' | 'audit';
+type Tab = 'company' | 'brand' | 'theme' | 'texts' | 'audit';
 
 export default function SettingsPage() {
   const { t } = useI18n();
@@ -27,6 +28,7 @@ export default function SettingsPage() {
 
   const tabs: { key: Tab; label: string; icon: typeof Building2 }[] = [
     { key: 'company', label: t('settings.tabs.company'), icon: Building2 },
+    { key: 'brand', label: t('settings.tabs.brand'), icon: Sparkles },
     { key: 'theme', label: t('settings.tabs.theme'), icon: Palette },
     { key: 'texts', label: t('settings.tabs.texts'), icon: Languages },
     { key: 'audit', label: t('settings.tabs.audit'), icon: ScrollText },
@@ -47,6 +49,7 @@ export default function SettingsPage() {
       )}
       <div role="tabpanel" id={`settings-panel-${active}`} aria-labelledby={canManage ? `settings-tab-${active}` : undefined}>
         {active === 'company' && <CompanyTab />}
+        {active === 'brand' && <BrandTab />}
         {active === 'theme' && <ThemeTab />}
         {active === 'texts' && <TextsTab />}
         {active === 'audit' && <AuditTab />}

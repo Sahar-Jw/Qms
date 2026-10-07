@@ -22,3 +22,6 @@ Thumbs.db
 
 # Local seed scripts and data
 src/database/seed*.ts
+!src/database/seed-statuses.ts
+!src/database/seed-test-users.ts
+!src/database/seed-demo-data.ts

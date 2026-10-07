@@ -42,9 +42,9 @@ const ar: Shape<typeof en> = {
     changePhoto: 'تغيير الصورة', removePhoto: 'حذف الصورة', photoHint: 'PNG أو JPG أو WEBP حتى 2 ميغابايت', photoSaved: 'تم تحديث الصورة الشخصية', photoRemoved: 'تم حذف الصورة الشخصية',
     tooBig: 'حجم الصورة أكبر من 2 ميغابايت', emailLocked: 'لا يمكن تغيير البريد الإلكتروني من هنا',
   },
-  status: { draft: 'مسودة', issued: 'صادر', expired: 'منتهي', locked: 'مقفل', invoiced: 'محوّل إلى فاتورة' },
+  status: { draft: 'مسودة', expired: 'منتهي', locked: 'ملغي', invoiced: 'محوّل إلى فاتورة' },
   statusAction: {
-    issued: 'إصدار العرض', draft: 'إعادته إلى مسودة', expired: 'تحديده كمنتهي', locked: 'قفل', invoiced: 'تحويل إلى فاتورة', unlock: 'فك القفل',
+    locked: 'إلغاء عرض السعر', invoiced: 'تأكيد إصدار الفاتورة',
     confirm: 'تغيير الحالة إلى "{status}"؟', done: 'تم تغيير الحالة إلى {status}',
   },
   roles: { technical_manager: 'المدير التقني', general_manager: 'المدير العام', manager: 'المدير', employee: 'الموظف' },
@@ -57,7 +57,7 @@ const ar: Shape<typeof en> = {
     title: 'عروض الأسعار', number: 'الرقم', date: 'التاريخ', customer: 'العميل', company: 'الشركة', responsible: 'المسؤول', totals: 'الإجماليات',
     searchPh: 'الرقم، العميل، المادة، المصرف، الملاحظات…', archived: 'المقفلة', active: 'غير المقفلة', allStates: 'الكل',
     newTitle: 'عرض سعر جديد', editTitle: 'تعديل {number}', details: 'بيانات العرض', items: 'البنود', addItem: 'إضافة بند', removeItem: 'حذف البند',
-    bank: 'المصرف', validity: 'مدة الصلاحية', deliveryTime: 'مدة التسليم', paymentMethod: 'طريقة الدفع', paymentLocation: 'مكان الدفع',
+    bank: 'المصرف', validity: 'مدة الصلاحية', deliveryTime: 'مدة التسليم', oneDayRemaining: 'متبقي يوم واحد', daysRemaining: 'متبقي {days} يوم', expired: 'منتهي الصلاحية', paymentMethod: 'طريقة الدفع', paymentLocation: 'مكان الدفع',
     deliveryMethod: 'طريقة التسليم', customerPayment: 'طريقة دفع العميل', customerPaymentPh: 'مثال: دفعة مقدمة 50٪ والباقي عند التسليم',
     tax: 'نسبة الضريبة %', internalNotes: 'ملاحظات داخلية (لا تُطبع)', itemNotes: 'ملاحظة البند (لا تُطبع)',
     material: 'المادة', materialPh: 'ابحث بالرمز أو الاسم', customerPh: 'ابحث عن عميل', quantity: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة',
@@ -87,7 +87,13 @@ const ar: Shape<typeof en> = {
     title: 'الإعدادات', company: 'الشركة المُصدِرة', companySub: 'كل عرض سعر تنشئه يصدر باسم هذه الشركة.', current: 'المحددة',
     automatic: 'تُستخدم تلقائياً لأنها الشركة الفعّالة الوحيدة', password: 'تغيير كلمة المرور', currentPassword: 'كلمة المرور الحالية',
     newPassword: 'كلمة المرور الجديدة', passwordChanged: 'تم تغيير كلمة المرور', account: 'حسابك', companySaved: 'تم تحديث الشركة المُصدِرة', pick: 'استخدام هذه الشركة',
-    tabs: { company: 'الشركة', theme: 'المظهر', texts: 'النصوص', audit: 'سجل التدقيق' },
+    tabs: { company: 'الشركة', brand: 'هوية الموقع', theme: 'المظهر', texts: 'النصوص', audit: 'سجل التدقيق' },
+  },
+  brand: {
+    title: 'هوية الموقع', sub: 'حدّث اسم الموقع، الشعار، الأيقونة والوصف. تظهر المعاينة مباشرة قبل الحفظ.',
+    websiteName: 'اسم الموقع', tagline: 'الشعار النصي', logo: 'الشعار', icon: 'الأيقونة', upload: 'رفع', remove: 'حذف',
+    logoHint: 'PNG أو JPG أو WEBP ويظهر في شريط التطبيق وصفحات النظام.', iconHint: 'يُستخدم في الشريط الجانبي كأيقونة تبويب المتصفح.', preview: 'معاينة مباشرة',
+    saved: 'تم حفظ هوية الموقع', logoSaved: 'تم تحديث الشعار', iconSaved: 'تم تحديث الأيقونة', logoRemoved: 'تم حذف الشعار', iconRemoved: 'تم حذف الأيقونة',
   },
   theme: {
     title: 'ألوان الموقع', sub: 'اختر الألوان الرئيسية للموقع. تعرض البطاقة شكلها قبل الحفظ، ولا يتغير شيء لدى أحد حتى تضغط حفظ.',
@@ -108,7 +114,8 @@ const ar: Shape<typeof en> = {
   audit: {
     title: 'سجل التدقيق', sub: 'كل تغيير تم في النظام، الأحدث أولاً.', when: 'الوقت', user: 'المستخدم', action: 'الإجراء', record: 'السجل', details: 'التفاصيل',
     ip: 'عنوان IP', searchPh: 'ابحث باسم المستخدم أو السجل', allActions: 'كل الإجراءات', allEntities: 'كل السجلات', none: 'لا يوجد نشاط',
-    submitted: 'البيانات المُرسلة', noDetails: 'لم تُسجَّل بيانات إضافية لهذا الإجراء.', unknownUser: 'غير مسجّل الدخول',
+    submitted: 'البيانات المُرسلة', changes: 'التغييرات', before: 'قبل', after: 'بعد', sideBySide: 'جنباً إلى جنب', inline: 'قديم ← جديد', beforeUnavailable: 'القيمة السابقة غير مسجّلة',
+    trueValue: 'نعم', falseValue: 'لا', noDetails: 'لم تُسجَّل بيانات إضافية لهذا الإجراء.', unknownUser: 'غير مسجّل الدخول',
     actions: {
       create: 'إنشاء', update: 'تعديل', delete: 'حذف', activate: 'تفعيل', deactivate: 'إلغاء التفعيل', status_change: 'تغيير الحالة', duplicate: 'نسخ',
       login: 'تسجيل دخول', login_failed: 'محاولة دخول فاشلة', logout: 'تسجيل خروج', register: 'تسجيل حساب', change_password: 'تغيير كلمة المرور',
@@ -126,6 +133,7 @@ const ar: Shape<typeof en> = {
     CUSTOMER_INACTIVE: 'هذا العميل غير فعّال', MATERIAL_INACTIVE: 'هذه المادة غير فعّالة', DUPLICATE_ENTRY: 'يوجد سجل بنفس القيمة الفريدة مسبقاً',
     CUSTOMER_NAME_REQUIRED: 'أدخل اسم العميل بالعربية أو بلغة أجنبية', MATERIAL_NAME_REQUIRED: 'أدخل اسم المادة بالعربية أو بلغة أجنبية',
     PRICE_CURRENCY_REQUIRED: 'أدخل عملة السعر', COMPANY_MISMATCH: 'تصدر العروض باسم الشركة المختارة في الإعدادات', CANNOT_DEACTIVATE_SELF: 'لا يمكنك إيقاف حسابك الخاص',
+    VALIDITY_BEFORE_QUOTATION_DATE: 'لا يمكن أن يكون تاريخ الصلاحية قبل تاريخ عرض السعر',
     CANNOT_CHANGE_OWN_ROLE: 'لا يمكنك تغيير دورك', WRONG_CURRENT_PASSWORD: 'كلمة المرور الحالية غير صحيحة', PDF_ENGINE_UNAVAILABLE: 'خدمة PDF غير متاحة على هذا الخادم. استخدم الطباعة.',
     INVALID_FILE_TYPE: 'يُسمح بصور PNG أو JPG أو WEBP فقط', INTERNAL_ERROR: 'حدث خطأ في الخادم', NETWORK: 'تعذّر الاتصال بالخادم', QUOTATION_NOT_FOUND: 'العرض غير موجود',
   },

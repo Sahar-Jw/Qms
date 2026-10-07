@@ -3,16 +3,19 @@ import { Coins, Languages, Printer, Receipt } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { LangToggle } from '@/components/Shell';
 import { PILL_ORDER, PillStack } from '@/components/ui';
+import { useBrandSettings } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   const { t } = useI18n();
+  const brand = useBrandSettings();
+  const siteName = brand.data?.websiteName || t('app.name');
   return (
     <div className="grid min-h-screen lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
       <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-b from-sand via-clay to-cocoa p-12 lg:flex">
         <div className="flex items-center gap-3">
-          <span className="grid size-12 place-items-center rounded-full bg-ink text-sand"><Receipt className="size-6" /></span>
-          <span className="text-2xl font-bold text-ink">{t('app.name')}</span>
+          {brand.data?.logo ? <img src={`/uploads/${brand.data.logo}`} alt="" className="size-12 rounded-full bg-ink/10 object-contain p-1" /> : brand.data?.icon ? <img src={`/uploads/${brand.data.icon}`} alt="" className="size-12 rounded-full bg-ink/10 object-cover" /> : <span className="grid size-12 place-items-center rounded-full bg-ink text-sand"><Receipt className="size-6" /></span>}
+          <span className="text-2xl font-bold text-ink">{siteName}</span>
         </div>
         <div className="max-w-md">
           <h2 className="text-4xl font-bold leading-snug text-ink">{t('auth.heroTitle')}</h2>

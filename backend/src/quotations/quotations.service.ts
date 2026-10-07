@@ -7,7 +7,7 @@ import { CalcService } from '../calc/calc.service';
 import { AuthUser } from '../common/auth-user';
 import { Paginated, paginated } from '../common/dto/pagination.dto';
 import { QuotationStatus, ROLE_RANK, RoleCode } from '../common/enums';
-import { canEditQuotation, canSeeLocked } from '../common/policy';
+import { canEditQuotation, canSeeLocked, isTopTier } from '../common/policy';
 import { Company } from '../companies/company.entity';
 import { Customer } from '../customers/customer.entity';
 import { Material } from '../materials/material.entity';
@@ -19,21 +19,14 @@ import { Quotation } from './quotation.entity';
 import { ItemView, QuotationView } from './quotation-view';
 import { Sequence } from './sequence.entity';
 
-/** Who may perform each status transition (minimum role). Anything not listed is forbidden. */
-const TRANSITIONS: Record<QuotationStatus, Partial<Record<QuotationStatus, RoleCode>>> = {
-  [QuotationStatus.DRAFT]: { [QuotationStatus.ISSUED]: RoleCode.EMPLOYEE, [QuotationStatus.LOCKED]: RoleCode.MANAGER },
-  [QuotationStatus.ISSUED]: {
-    [QuotationStatus.DRAFT]: RoleCode.MANAGER,
-    [QuotationStatus.EXPIRED]: RoleCode.MANAGER,
-    [QuotationStatus.LOCKED]: RoleCode.MANAGER,
-    [QuotationStatus.INVOICED]: RoleCode.MANAGER,
-  },
-  [QuotationStatus.EXPIRED]: { [QuotationStatus.ISSUED]: RoleCode.MANAGER, [QuotationStatus.LOCKED]: RoleCode.MANAGER },
-  [QuotationStatus.LOCKED]: { [QuotationStatus.ISSUED]: RoleCode.GENERAL_MANAGER }, // unlock
-  [QuotationStatus.INVOICED]: {}, // terminal
+const NEXT_STATUSES: Record<QuotationStatus, QuotationStatus[]> = {
+  [QuotationStatus.DRAFT]: [QuotationStatus.LOCKED, QuotationStatus.INVOICED],
+  [QuotationStatus.EXPIRED]: [QuotationStatus.LOCKED, QuotationStatus.INVOICED],
+  [QuotationStatus.LOCKED]: [],
+  [QuotationStatus.INVOICED]: [],
 };
 
-const EDITABLE = new Set([QuotationStatus.DRAFT, QuotationStatus.ISSUED, QuotationStatus.EXPIRED]);
+const EDITABLE = new Set([QuotationStatus.DRAFT, QuotationStatus.EXPIRED]);
 
 @Injectable()
 export class QuotationsService {
@@ -57,15 +50,43 @@ export class QuotationsService {
     return ROLE_RANK[user.role] >= ROLE_RANK[RoleCode.MANAGER];
   }
 
-  allowedStatuses(status: QuotationStatus, role: RoleCode): QuotationStatus[] {
-    return Object.entries(TRANSITIONS[status])
-      .filter(([, min]) => ROLE_RANK[role] >= ROLE_RANK[min as RoleCode])
-      .map(([to]) => to as QuotationStatus);
+  allowedStatuses(status: QuotationStatus, canUseStatus: boolean): QuotationStatus[] {
+    if (!canUseStatus) return [];
+    return NEXT_STATUSES[status];
+  }
+
+  /** Expiration follows the offer-validity date; expired quotes can return to draft if their validity is extended. */
+  private async refreshExpiryStatuses() {
+    await this.dataSource.query(
+      `UPDATE quotations
+          SET status = CASE
+            WHEN validity IS NOT NULL AND validity < CURRENT_DATE THEN ?
+            ELSE ?
+          END
+        WHERE status = 'issued'
+           OR (status = ? AND validity IS NOT NULL AND validity < CURRENT_DATE)
+           OR (status = ? AND (validity IS NULL OR validity >= CURRENT_DATE))`,
+      [
+        QuotationStatus.EXPIRED,
+        QuotationStatus.DRAFT,
+        QuotationStatus.DRAFT,
+        QuotationStatus.EXPIRED,
+      ],
+    );
   }
 
   private assertPercent(v: string | null | undefined, field: string) {
     if (v !== undefined && v !== null && new Decimal(v).gt(100)) {
       throw new BadRequestException({ code: 'INVALID_PERCENTAGE', message: `${field} must be between 0 and 100` });
+    }
+  }
+
+  private assertValidityDate(quotationDate: string | null | undefined, validity: string | null | undefined) {
+    if (quotationDate && validity && validity < quotationDate) {
+      throw new BadRequestException({
+        code: 'VALIDITY_BEFORE_QUOTATION_DATE',
+        message: 'The validity date cannot be before the quotation date',
+      });
     }
   }
 
@@ -192,7 +213,9 @@ export class QuotationsService {
         throw new BadRequestException({ code: 'COMPANY_MISMATCH', message: 'Quotations are issued from the company chosen in the settings' });
       }
       await this.assertActive(m, Customer, dto.customerId, 'CUSTOMER', 'Customer');
-      const responsibleId = dto.responsibleUserId ?? user.id;
+      const quotationDate = dto.quotationDate ?? new Date().toISOString().slice(0, 10);
+      this.assertValidityDate(quotationDate, dto.validity);
+      const responsibleId = user.id;
       await this.assertActive(m, User, responsibleId, 'USER', 'Responsible user');
 
       const { items, ...header } = dto;
@@ -200,7 +223,7 @@ export class QuotationsService {
         ...header,
         companyId,
         quotationNumber: await this.nextNumber(m),
-        quotationDate: dto.quotationDate ?? new Date().toISOString().slice(0, 10),
+        quotationDate,
         status: QuotationStatus.DRAFT,
         responsibleUserId: responsibleId,
         createdById: user.id,
@@ -230,6 +253,10 @@ export class QuotationsService {
       for (const key of ['customerId', 'quotationDate'] as const) {
         if (header[key] === null) throw new BadRequestException({ code: 'FIELD_REQUIRED', message: `${key} cannot be cleared` });
       }
+      this.assertValidityDate(
+        header.quotationDate === undefined ? q.quotationDate : header.quotationDate,
+        header.validity === undefined ? q.validity : header.validity,
+      );
       if (header.customerId !== undefined && header.customerId !== q.customerId) await this.assertActive(m, Customer, header.customerId, 'CUSTOMER', 'Customer');
       if (header.responsibleUserId && header.responsibleUserId !== q.responsibleUserId) {
         await this.assertActive(m, User, header.responsibleUserId, 'USER', 'Responsible user');
@@ -304,20 +331,43 @@ export class QuotationsService {
   // ------------------------------------------------------------------ status
 
   async changeStatus(id: number, dto: ChangeStatusDto, user: AuthUser): Promise<QuotationView> {
+    await this.refreshExpiryStatuses();
     await this.dataSource.transaction(async (m) => {
       const q = await m.findOne(Quotation, { where: { id }, lock: { mode: 'pessimistic_write' } });
       if (!q) throw new NotFoundException({ code: 'QUOTATION_NOT_FOUND', message: 'Quotation not found' });
       this.hideLockedFrom(user, q.status);
-      const minRole = TRANSITIONS[q.status][dto.status];
-      if (!minRole) {
+      const ownsQuotation = q.createdById === user.id;
+      const canUseStatus = isTopTier(user.role) || ownsQuotation;
+      if (!canUseStatus) {
+        throw new ForbiddenException({ code: 'FORBIDDEN', message: 'You can only change the status of quotations you created' });
+      }
+      if (!NEXT_STATUSES[q.status].includes(dto.status)) {
         throw new ConflictException({ code: 'INVALID_STATUS_TRANSITION', message: `Cannot change status from ${q.status} to ${dto.status}` });
       }
-      if (ROLE_RANK[user.role] < ROLE_RANK[minRole]) {
-        throw new ForbiddenException({ code: 'FORBIDDEN', message: 'You do not have permission to perform this status change' });
-      }
+
+      const prevStatus = q.status;
       q.status = dto.status;
       q.updatedById = user.id;
       await m.save(Quotation, q);
+
+      if (dto.status === QuotationStatus.INVOICED && prevStatus !== QuotationStatus.INVOICED) {
+        const items = await m.find(QuotationItem, { where: { quotationId: id } });
+        for (const item of items) {
+          if (!item.materialId) continue;
+          const material = await m.findOne(Material, { where: { id: item.materialId } });
+          if (!material) continue;
+          const quantity = new Decimal(item.quantity || '0');
+          const stock = new Decimal(material.stockQuantity || '0');
+          if (stock.minus(quantity).lt(0)) {
+            throw new ConflictException({
+              code: 'INSUFFICIENT_STOCK',
+              message: `Material ${material.materialCode} does not have enough stock to invoice this quotation`,
+            });
+          }
+          material.stockQuantity = stock.minus(quantity).toFixed(3);
+          await m.save(Material, material);
+        }
+      }
     });
     return this.findOne(id, user);
   }
@@ -325,6 +375,7 @@ export class QuotationsService {
   // ------------------------------------------------------------------ read
 
   async findOne(id: number, user: AuthUser): Promise<QuotationView> {
+    await this.refreshExpiryStatuses();
     const q = await this.repo.findOne({
       where: { id },
       relations: { company: true, customer: true, responsibleUser: true, items: { amounts: true } },
@@ -390,13 +441,14 @@ export class QuotationsService {
       createdById: q.createdById,
       editable: EDITABLE.has(q.status) && canEditQuotation(user, q.createdById),
       readOnlyReason: !EDITABLE.has(q.status) ? 'status' : !canEditQuotation(user, q.createdById) ? 'not_owner' : null,
-      allowedStatuses: this.allowedStatuses(q.status, user.role),
+      allowedStatuses: this.allowedStatuses(q.status, isTopTier(user.role) || q.createdById === user.id),
       createdAt: q.createdAt,
       updatedAt: q.updatedAt,
     };
   }
 
   async list(q: ListQuotationsDto, user: AuthUser): Promise<Paginated<unknown>> {
+    await this.refreshExpiryStatuses();
     const seesLocked = canSeeLocked(user.role);
     // Employees never get locked quotations: asking for them returns an empty page.
     if (!seesLocked && (q.status === QuotationStatus.LOCKED || q.archived === true)) return paginated([], 0, q.page, q.limit);

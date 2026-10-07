@@ -37,9 +37,9 @@ const en = {
     changePhoto: 'Change photo', removePhoto: 'Remove photo', photoHint: 'PNG, JPG or WEBP, up to 2 MB', photoSaved: 'Profile photo updated', photoRemoved: 'Profile photo removed',
     tooBig: 'The image is larger than 2 MB', emailLocked: 'The email cannot be changed here',
   },
-  status: { draft: 'Draft', issued: 'Issued', expired: 'Expired', locked: 'Locked', invoiced: 'Invoiced' },
+  status: { draft: 'Draft', expired: 'Expired', locked: 'Cancelled', invoiced: 'Invoiced' },
   statusAction: {
-    issued: 'Issue quotation', draft: 'Back to draft', expired: 'Mark as expired', locked: 'Lock', invoiced: 'Convert to invoice', unlock: 'Unlock',
+    locked: 'Cancel quotation', invoiced: 'Mark as invoiced',
     confirm: 'Change the status to "{status}"?', done: 'Status changed to {status}',
   },
   roles: { technical_manager: 'Technical manager', general_manager: 'General manager', manager: 'Manager', employee: 'Employee' },
@@ -52,7 +52,7 @@ const en = {
     title: 'Quotations', number: 'Number', date: 'Date', customer: 'Customer', company: 'Company', responsible: 'Responsible', totals: 'Totals',
     searchPh: 'Number, customer, material, bank, notes…', archived: 'Locked', active: 'Not locked', allStates: 'All',
     newTitle: 'New quotation', editTitle: 'Edit {number}', details: 'Quotation details', items: 'Items', addItem: 'Add item', removeItem: 'Remove item',
-    bank: 'Bank', validity: 'Validity', deliveryTime: 'Delivery time', paymentMethod: 'Payment method', paymentLocation: 'Payment location',
+    bank: 'Bank', validity: 'Validity', deliveryTime: 'Delivery time', oneDayRemaining: '1 day remaining', daysRemaining: '{days} days remaining', expired: 'Expired', paymentMethod: 'Payment method', paymentLocation: 'Payment location',
     deliveryMethod: 'Delivery method', customerPayment: 'How the customer pays', customerPaymentPh: 'e.g. 50% advance, rest on delivery',
     tax: 'Tax %', internalNotes: 'Internal notes (never printed)', itemNotes: 'Item note (never printed)',
     material: 'Material', materialPh: 'Search by code or name', customerPh: 'Search customers', quantity: 'Quantity', unit: 'Unit', unitPrice: 'Unit price',
@@ -85,7 +85,13 @@ const en = {
     title: 'Settings', company: 'Issuing company', companySub: 'Every quotation you create is issued from this company.', current: 'Selected',
     automatic: 'Used automatically because it is the only active company', password: 'Change password', currentPassword: 'Current password',
     newPassword: 'New password', passwordChanged: 'Password changed', account: 'Your account', companySaved: 'Issuing company updated', pick: 'Use this company',
-    tabs: { company: 'Company', theme: 'Theme', texts: 'Texts', audit: 'Audit log' },
+    tabs: { company: 'Company', brand: 'Branding', theme: 'Theme', texts: 'Texts', audit: 'Audit log' },
+  },
+  brand: {
+    title: 'Website branding', sub: 'Edit the site name, tagline, logo and icon. This preview updates live before you save.',
+    websiteName: 'Website name', tagline: 'Tagline', logo: 'Logo', icon: 'Icon', upload: 'Upload', remove: 'Remove',
+    logoHint: 'PNG, JPG or WEBP; shown in the app shell and pages.', iconHint: 'Used in the sidebar and as the browser tab icon.', preview: 'Live preview',
+    saved: 'Brand settings saved', logoSaved: 'Logo updated', iconSaved: 'Icon updated', logoRemoved: 'Logo removed', iconRemoved: 'Icon removed',
   },
   theme: {
     title: 'Website colours', sub: 'Pick the main colours of the website. The card shows how they will look. Nothing changes for anyone until you save.',
@@ -106,7 +112,8 @@ const en = {
   audit: {
     title: 'Audit log', sub: 'Every change made in the system, newest first.', when: 'When', user: 'User', action: 'Action', record: 'Record', details: 'Details',
     ip: 'IP address', searchPh: 'Search by user or record', allActions: 'All actions', allEntities: 'All records', none: 'No activity found',
-    submitted: 'Submitted data', noDetails: 'No extra data was recorded for this action.', unknownUser: 'Not signed in',
+    submitted: 'Submitted data', changes: 'Changes', before: 'Before', after: 'After', sideBySide: 'Side by side', inline: 'Old → new', beforeUnavailable: 'Previous value not recorded',
+    trueValue: 'Yes', falseValue: 'No', noDetails: 'No extra data was recorded for this action.', unknownUser: 'Not signed in',
     actions: {
       create: 'Created', update: 'Updated', delete: 'Deleted', activate: 'Activated', deactivate: 'Deactivated', status_change: 'Status changed', duplicate: 'Duplicated',
       login: 'Signed in', login_failed: 'Failed sign-in', logout: 'Signed out', register: 'Registered', change_password: 'Changed password',
@@ -124,6 +131,7 @@ const en = {
     CUSTOMER_INACTIVE: 'This customer is inactive', MATERIAL_INACTIVE: 'This material is inactive', DUPLICATE_ENTRY: 'A record with the same unique value already exists',
     CUSTOMER_NAME_REQUIRED: 'Enter the customer name in Arabic or in the foreign language', MATERIAL_NAME_REQUIRED: 'Enter the material name in Arabic or in the foreign language',
     PRICE_CURRENCY_REQUIRED: 'Enter the price currency', COMPANY_MISMATCH: 'Quotations are issued from the company chosen in settings', CANNOT_DEACTIVATE_SELF: 'You cannot deactivate your own account',
+    VALIDITY_BEFORE_QUOTATION_DATE: 'The validity date cannot be before the quotation date',
     CANNOT_CHANGE_OWN_ROLE: 'You cannot change your own role', WRONG_CURRENT_PASSWORD: 'The current password is wrong', PDF_ENGINE_UNAVAILABLE: 'PDF is not available on this server. Use Print instead.',
     INVALID_FILE_TYPE: 'Only PNG, JPG or WEBP images are allowed', INTERNAL_ERROR: 'Something went wrong on the server', NETWORK: 'Cannot reach the server', QUOTATION_NOT_FOUND: 'Quotation not found',
   },

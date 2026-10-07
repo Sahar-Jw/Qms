@@ -49,7 +49,7 @@ function QuotationPreview() {
             <p className="text-xs font-semibold text-clay">{t('quotations.number')}</p>
             <p className="text-xl font-bold" dir="ltr">QT-2026-0153</p>
           </div>
-          <span className="rounded-full bg-ink px-3 py-1 text-xs font-bold text-sand">{t('status.issued')}</span>
+          <span className="rounded-full bg-ink px-3 py-1 text-xs font-bold text-sand">{t('status.draft')}</span>
         </div>
         <div className="mt-4 overflow-hidden rounded-2xl ring-1 ring-stone/40">
           {rows.map((r, i) => (

@@ -1,6 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { Eye, Search } from 'lucide-react';
+import { ArrowRight, Eye, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button, Card, CardHeader, Empty, Input, Loading, Modal, Pagination, Select, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -14,6 +14,21 @@ const ENTITIES = ['quotations', 'customers', 'materials', 'companies', 'users', 
 const LIMIT = 20;
 
 const when = (d: string) => new Date(d).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'medium' });
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value);
+const fieldName = (key: string) => key
+  .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+  .replace(/[_-]/g, ' ')
+  .replace(/\b\w/g, (letter) => letter.toUpperCase());
+const valueText = (value: unknown, yes: string, no: string): string => {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'boolean') return value ? yes : no;
+  if (Array.isArray(value)) return value.map((item) => valueText(item, yes, no)).join(', ') || '—';
+  if (isRecord(value)) {
+    return Object.entries(value).map(([key, item]) => `${fieldName(key)}: ${valueText(item, yes, no)}`).join(' · ') || '—';
+  }
+  return String(value);
+};
 
 function actionStyle(a: string) {
   if (a === 'delete' || a === 'login_failed') return 'bg-red-50 text-red-800 ring-1 ring-inset ring-red-800/30';
@@ -32,8 +47,18 @@ export function AuditTab() {
   const [to, setTo] = useState('');
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState<AuditLogEntry | null>(null);
+  const [changeView, setChangeView] = useState<'sideBySide' | 'inline'>('sideBySide');
   const dq = useDebounced(q);
   useEffect(() => setPage(1), [dq, action, entity, from, to]);
+  const hasChangeSet = !!open?.details && ('before' in open.details || 'after' in open.details);
+  const beforeValues = hasChangeSet && isRecord(open?.details?.before) ? open.details.before : null;
+  const afterValues = hasChangeSet
+    ? (isRecord(open?.details?.after) ? open.details.after : null)
+    : (isRecord(open?.details) ? open.details : null);
+  const changedFields = Array.from(new Set([
+    ...Object.keys(beforeValues ?? {}),
+    ...Object.keys(afterValues ?? {}),
+  ]));
 
   const list = useQuery({
     queryKey: ['audit-log', dq, action, entity, from, to, page],
@@ -94,10 +119,9 @@ export function AuditTab() {
                     <td className={td}><span className={cn('inline-flex whitespace-nowrap rounded-full px-3 py-0.5 text-xs font-semibold', actionStyle(r.action))}>{label('actions', r.action)}</span></td>
                     <td className={td}>
                       <div className="font-semibold">{label('entities', r.entity)}</div>
-                      {(r.entityLabel || r.entityId) && (
+                      {r.entityLabel && (
                         <div className="flex max-w-64 items-baseline gap-1.5 text-xs text-cocoa">
-                          {r.entityLabel && <bdi className="truncate">{r.entityLabel}</bdi>}
-                          {r.entityId && <span dir="ltr" className="shrink-0">#{r.entityId}</span>}
+                          <bdi className="truncate">{r.entityLabel}</bdi>
                         </div>
                       )}
                     </td>
@@ -120,15 +144,51 @@ export function AuditTab() {
               <dt className="font-semibold text-cocoa">{t('audit.when')}</dt><dd dir="ltr" className="text-start tabular-nums">{when(open.createdAt)}</dd>
               <dt className="font-semibold text-cocoa">{t('audit.user')}</dt><dd><bdi>{open.userName ?? t('audit.unknownUser')}</bdi>{open.userRole ? ` · ${t(`roles.${open.userRole}`)}` : ''}</dd>
               <dt className="font-semibold text-cocoa">{t('audit.record')}</dt>
-              <dd>{open.entityLabel || open.entityId ? <>{open.entityLabel && <bdi>{open.entityLabel}</bdi>}{open.entityLabel && open.entityId ? ' · ' : ''}{open.entityId && <bdi dir="ltr">#{open.entityId}</bdi>}</> : '—'}</dd>
-              <dt className="font-semibold text-cocoa">{t('audit.ip')}</dt><dd dir="ltr" className="text-start">{open.ip ?? '—'}</dd>
-              <dt className="font-semibold text-cocoa">API</dt><dd dir="ltr" className="break-all text-start font-mono text-xs">{open.method} {open.path}</dd>
+              <dd>{open.entityLabel ? <bdi>{open.entityLabel}</bdi> : '—'}</dd>
             </dl>
-            <div>
-              <div className="mb-1.5 text-xs font-bold text-cocoa">{t('audit.submitted')}</div>
-              {open.details
-                ? <pre dir="ltr" className="max-h-72 overflow-auto rounded-xl bg-sand/60 p-3 text-start font-mono text-xs leading-relaxed">{JSON.stringify(open.details, null, 2)}</pre>
-                : <p className="text-cocoa">{t('audit.noDetails')}</p>}
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs font-bold text-cocoa">{t('audit.changes')}</div>
+                {changedFields.length > 0 && (
+                  <div className="inline-flex rounded-full bg-sand/70 p-0.5" role="group" aria-label={t('audit.changes')}>
+                    <Button size="sm" variant={changeView === 'sideBySide' ? 'soft' : 'ghost'} aria-pressed={changeView === 'sideBySide'} onClick={() => setChangeView('sideBySide')}>
+                      {t('audit.sideBySide')}
+                    </Button>
+                    <Button size="sm" variant={changeView === 'inline' ? 'soft' : 'ghost'} aria-pressed={changeView === 'inline'} onClick={() => setChangeView('inline')}>
+                      {t('audit.inline')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {changedFields.length ? changedFields.map((field) => (
+                changeView === 'sideBySide' ? (
+                  <div key={field} className="grid gap-3 rounded-xl bg-sand/60 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                    <div className="min-w-0">
+                      <div className="mb-1 text-xs font-semibold text-cocoa">{fieldName(field)} · {t('audit.before')}</div>
+                      <div className="break-words">{beforeValues && field in beforeValues
+                        ? valueText(beforeValues[field], t('audit.trueValue'), t('audit.falseValue'))
+                        : open.action === 'create' ? '—' : t('audit.beforeUnavailable')}</div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="mb-1 text-xs font-semibold text-cocoa">{fieldName(field)} · {t('audit.after')}</div>
+                      <div className="break-words">{afterValues && field in afterValues
+                        ? valueText(afterValues[field], t('audit.trueValue'), t('audit.falseValue'))
+                        : '—'}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={field} className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-sand/60 p-3">
+                    <span className="w-full text-xs font-semibold text-cocoa">{fieldName(field)}</span>
+                    <span className="min-w-0 break-words">{beforeValues && field in beforeValues
+                      ? valueText(beforeValues[field], t('audit.trueValue'), t('audit.falseValue'))
+                      : open.action === 'create' ? '—' : t('audit.beforeUnavailable')}</span>
+                    <ArrowRight className="size-4 shrink-0 text-cocoa rtl:rotate-180" aria-hidden="true" />
+                    <span className="min-w-0 break-words font-semibold">{afterValues && field in afterValues
+                      ? valueText(afterValues[field], t('audit.trueValue'), t('audit.falseValue'))
+                      : '—'}</span>
+                  </div>
+                )
+              )) : <p className="text-cocoa">{t('audit.noDetails')}</p>}
             </div>
           </div>
         )}

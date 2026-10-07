@@ -1,11 +1,12 @@
 'use client';
 import { ChevronDown, ChevronLeft, ChevronRight, Eye, EyeOff, Inbox, Loader2, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import {
-  forwardRef, useEffect, useId, useState,
+  forwardRef, useEffect, useId, useRef, useState,
   type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes,
 } from 'react';
 import { cn } from '@/lib/cn';
-import { useActivity } from '@/lib/activity';
+import { trackRequest, useActivity } from '@/lib/activity';
 import { useI18n } from '@/lib/i18n';
 import type { QStatus } from '@/lib/types';
 
@@ -132,7 +133,6 @@ export function PageHeader({ title, sub, actions }: { title: ReactNode; sub?: Re
 /* ------------------------------------------------------------------ status */
 export const STATUS_STYLE: Record<QStatus, { badge: string; pill: string }> = {
   draft: { badge: 'bg-sand text-ink ring-1 ring-inset ring-stone', pill: 'bg-sand text-ink' },
-  issued: { badge: 'bg-stone text-ink', pill: 'bg-stone text-ink' },
   expired: { badge: 'bg-clay text-ink', pill: 'bg-clay text-ink' },
   locked: { badge: 'bg-cocoa text-white', pill: 'bg-cocoa text-white' },
   invoiced: { badge: 'bg-ink text-sand', pill: 'bg-ink text-sand' },
@@ -176,21 +176,44 @@ function useDelayed(on: boolean, ms: number) {
   return v;
 }
 
-/** Top progress bar for any API call + a "working" pill for saves/changes that take a moment. */
+/** Shows ongoing API work and internal page navigation. */
 export function GlobalLoader() {
   const { t } = useI18n();
-  const { all, writes } = useActivity();
-  const bar = useDelayed(all > 0, 120);
-  const pill = useDelayed(writes > 0, 400);
+  const { all } = useActivity();
+  const pathname = usePathname();
+  const navigationDone = useRef<(() => void) | null>(null);
+  const pill = useDelayed(all > 0, 300);
+
+  useEffect(() => {
+    navigationDone.current?.();
+    navigationDone.current = null;
+
+    function onClick(event: MouseEvent) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (!(event.target instanceof Element)) return;
+      const link = event.target.closest<HTMLAnchorElement>('a[href]');
+      if (!link || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
+
+      const destination = new URL(link.href, window.location.href);
+      if (destination.origin !== window.location.origin || destination.pathname === pathname) return;
+      navigationDone.current ??= trackRequest('GET');
+    }
+
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, [pathname]);
+
+  useEffect(() => () => navigationDone.current?.(), []);
+
   return (
     <>
-      <div aria-hidden className={cn('pointer-events-none fixed inset-x-0 top-0 z-[60] h-1 overflow-hidden transition-opacity duration-200', bar ? 'opacity-100' : 'opacity-0')}>
+      <div aria-hidden className={cn('pointer-events-none fixed inset-x-0 top-0 z-[60] h-1 overflow-hidden', all > 0 ? 'opacity-100' : 'opacity-0 transition-opacity duration-200')}>
         <div className="loader-bar h-full w-1/3 rounded-full bg-cocoa" />
       </div>
       {pill && (
         <div role="status" aria-live="polite" className="fixed inset-x-0 bottom-6 z-[60] flex justify-center">
           <div className="flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-sand shadow-lift">
-            <Loader2 className="size-4 animate-spin" />{t('common.working')}
+            <Loader2 className="size-4 animate-spin" />{t('common.loading')}
           </div>
         </div>
       )}
@@ -264,7 +287,7 @@ export function Modal({ open, title, onClose, children, footer, wide }: { open: 
 }
 
 /** The five palette pills stacked and overlapping - the visual signature of the app. */
-export const PILL_ORDER: QStatus[] = ['invoiced', 'locked', 'expired', 'issued', 'draft'];
+export const PILL_ORDER: QStatus[] = ['invoiced', 'locked', 'expired', 'draft'];
 export function PillStack({ items }: { items: { key: QStatus; label: string; value?: ReactNode; onClick?: () => void }[] }) {
   return (
     <div className="flex flex-col">

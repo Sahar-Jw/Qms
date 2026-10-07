@@ -6,11 +6,9 @@ type Actor = Pick<AuthUser, 'id' | 'role'>;
 /** Technical manager and general manager: full access to everything in the system. */
 export const isTopTier = (role: RoleCode) => role === RoleCode.TECHNICAL_MANAGER || role === RoleCode.GENERAL_MANAGER;
 
-/** Roles that may edit only the quotations they created themselves. */
-const OWN_QUOTATIONS_ONLY: RoleCode[] = [RoleCode.MANAGER, RoleCode.EMPLOYEE];
-
+/** Only technical/general managers can edit any quotation. Everyone else may edit only their own. */
 export const canEditQuotation = (user: Actor, createdById: number | null) =>
-  !OWN_QUOTATIONS_ONLY.includes(user.role) || createdById === user.id;
+  isTopTier(user.role) || createdById === user.id;
 
 /** Locked quotations (the locked ones) are invisible to employees. */
 export const canSeeLocked = (role: RoleCode) => role !== RoleCode.EMPLOYEE;

@@ -10,7 +10,7 @@ describe('policy', () => {
     expect(isTopTier(R.MANAGER)).toBe(false);
   });
 
-  it('top tier edits any quotation; manager and employee only their own', () => {
+  it('top tier edits any quotation; every non-top-tier user edits only their own', () => {
     expect(canEditQuotation(u(1, R.TECHNICAL_MANAGER), 9)).toBe(true);
     expect(canEditQuotation(u(2, R.GENERAL_MANAGER), 9)).toBe(true);
     expect(canEditQuotation(u(3, R.MANAGER), 9)).toBe(false);

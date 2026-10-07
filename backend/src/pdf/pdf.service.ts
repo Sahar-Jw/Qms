@@ -16,7 +16,7 @@ export interface PrintOptions {
 const T = {
   ar: {
     title: 'عرض سعر', number: 'رقم العرض', date: 'التاريخ', to: 'السادة', attn: 'عناية', phone: 'هاتف', email: 'البريد',
-    validity: 'مدة صلاحية العرض', deliveryTime: 'مدة التسليم', paymentMethod: 'طريقة الدفع', paymentLocation: 'مكان الدفع',
+    validity: 'مدة صلاحية العرض', deliveryTime: 'مدة التسليم', oneDayRemaining: 'متبقي يوم واحد', daysRemaining: 'متبقي {days} يوم', expired: 'منتهي الصلاحية', paymentMethod: 'طريقة الدفع', paymentLocation: 'مكان الدفع',
     deliveryMethod: 'طريقة التسليم', bank: 'المصرف', customerPayment: 'نظام الدفع', responsible: 'المسؤول',
     no: '#', code: 'الرمز', desc: 'البيان', qty: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة', value: 'القيمة',
     shipping: 'الشحن', customs: 'التخليص الجمركي', required: 'المطلوب', cost: 'التكلفة', totals: 'الإجماليات حسب العملة',
@@ -24,7 +24,7 @@ const T = {
   },
   en: {
     title: 'Quotation', number: 'Quotation No.', date: 'Date', to: 'To', attn: 'Attn', phone: 'Phone', email: 'Email',
-    validity: 'Validity', deliveryTime: 'Delivery time', paymentMethod: 'Payment method', paymentLocation: 'Payment location',
+    validity: 'Validity', deliveryTime: 'Delivery time', oneDayRemaining: '1 day remaining', daysRemaining: '{days} days remaining', expired: 'Expired', paymentMethod: 'Payment method', paymentLocation: 'Payment location',
     deliveryMethod: 'Delivery method', bank: 'Bank', customerPayment: 'Payment terms', responsible: 'Prepared by',
     no: '#', code: 'Code', desc: 'Description', qty: 'Qty', unit: 'Unit', unitPrice: 'Unit price', value: 'Value',
     shipping: 'Shipping', customs: 'Customs', required: 'Required', cost: 'Cost', totals: 'Totals by currency',
@@ -69,7 +69,19 @@ export class PdfService implements OnModuleDestroy {
 
     const terms: [string, string | null | undefined][] = [
       [t.validity, q.validity],
-      [t.deliveryTime, q.deliveryTime],
+      [t.deliveryTime, q.validity ? (() => {
+        const expiry = Date.parse(`${q.validity}T00:00:00.000Z`);
+        const now = new Date();
+        const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+        const days = Math.floor((expiry - today) / (24 * 60 * 60 * 1000));
+        return Number.isFinite(expiry)
+          ? days < 0
+            ? t.expired
+            : days === 1
+              ? t.oneDayRemaining
+              : t.daysRemaining.replace('{days}', nf(String(days), 0))
+          : null;
+      })() : null],
       [t.paymentMethod, q.paymentMethod],
       [t.paymentLocation, q.paymentLocation],
       [t.deliveryMethod, q.deliveryMethod],

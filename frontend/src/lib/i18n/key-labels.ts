@@ -21,6 +21,7 @@ export const SECTION_LABELS: Record<string, Pair> = {
   companies: ['الشركات', 'Companies'],
   users: ['المستخدمون', 'Users'],
   settings: ['الإعدادات', 'Settings'],
+  brand: ['هوية الموقع', 'Branding'],
   theme: ['ألوان الموقع', 'Website colours'],
   texts: ['نصوص الموقع', 'Website texts'],
   audit: ['سجل التدقيق', 'Audit log'],
@@ -33,7 +34,7 @@ export const PART_LABELS: Record<string, Pair> = {
   // groups
   tabs: ['التبويبات', 'Tabs'], colors: ['الألوان', 'Colours'], usedFor: ['يُستخدم في', 'Used for'], actions: ['الإجراءات', 'Actions'], entities: ['السجلات', 'Records'],
   // generic
-  name: ['الاسم', 'Name'], title: ['العنوان', 'Title'], sub: ['الوصف تحت العنوان', 'Description under the title'], tagline: ['الشعار النصي', 'Tagline'],
+  name: ['الاسم', 'Name'], title: ['العنوان', 'Title'], sub: ['الوصف تحت العنوان', 'Description under the title'], tagline: ['الشعار النصي', 'Tagline'], websiteName: ['اسم الموقع', 'Website name'], logo: ['الشعار', 'Logo'], icon: ['الأيقونة', 'Icon'],
   profile: ['الملف الشخصي', 'My profile'], dashboard: ['لوحة التحكم', 'Dashboard'], quotations: ['عروض الأسعار', 'Quotations'], customers: ['العملاء', 'Customers'],
   materials: ['المواد', 'Materials'], companies: ['الشركات', 'Companies'], users: ['المستخدمون', 'Users'], settings: ['الإعدادات', 'Settings'], search: ['البحث', 'Search'],
   save: ['حفظ', 'Save'], cancel: ['إلغاء', 'Cancel'], edit: ['تعديل', 'Edit'], add: ['إضافة', 'Add'], new: ['جديد', 'New'], all: ['الكل', 'All'], status: ['الحالة', 'Status'],
@@ -70,7 +71,7 @@ export const PART_LABELS: Record<string, Pair> = {
   photoHint: ['تلميح الصورة', 'Photo hint'], photoSaved: ['رسالة حفظ الصورة', 'Photo saved message'], photoRemoved: ['رسالة حذف الصورة', 'Photo removed message'], tooBig: ['رسالة الصورة كبيرة', 'Image too big message'],
   emailLocked: ['رسالة البريد غير قابل للتعديل', 'Email cannot be changed message'],
   // statuses
-  draft: ['مسودة', 'Draft'], issued: ['صادر', 'Issued'], expired: ['منتهي', 'Expired'], locked: ['مقفل', 'Locked'], invoiced: ['مفوتر', 'Invoiced'], unlock: ['فتح القفل', 'Unlock'], done: ['تم', 'Done'],
+  draft: ['مسودة', 'Draft'], expired: ['منتهي', 'Expired'], locked: ['ملغي', 'Cancelled'], invoiced: ['مفوتر', 'Invoiced'], done: ['تم', 'Done'],
   technical_manager: ['المدير التقني', 'Technical manager'], general_manager: ['المدير العام', 'General manager'], manager: ['المدير', 'Manager'], employee: ['الموظف', 'Employee'],
   // dashboard
   hello: ['التحية', 'Greeting'], issuingFrom: ['نص الإصدار من الشركة', 'Issuing from text'], noCompany: ['رسالة عدم اختيار شركة', 'No company chosen message'], chooseCompany: ['رابط اختيار الشركة', 'Choose company link'],
@@ -80,7 +81,7 @@ export const PART_LABELS: Record<string, Pair> = {
   number: ['الرقم', 'Number'], customer: ['العميل', 'Customer'], company: ['الشركة', 'Company'], responsible: ['المسؤول', 'Responsible'], totals: ['المجاميع', 'Totals'], searchPh: ['نص مربع البحث', 'Search box hint'],
   archived: ['مؤرشف', 'Archived'], allStates: ['كل الحالات', 'All statuses'], newTitle: ['عنوان عرض جديد', 'New quotation title'], editTitle: ['عنوان تعديل العرض', 'Edit quotation title'],
   details: ['التفاصيل', 'Details'], items: ['البنود', 'Items'], addItem: ['زر إضافة بند', 'Add item button'], removeItem: ['زر حذف بند', 'Remove item button'], bank: ['البنك', 'Bank'],
-  validity: ['مدة الصلاحية', 'Validity period'], deliveryTime: ['مدة التسليم', 'Delivery time'], paymentMethod: ['طريقة الدفع', 'Payment method'], paymentLocation: ['مكان الدفع', 'Payment location'],
+  validity: ['مدة الصلاحية', 'Validity period'], deliveryTime: ['مدة التسليم', 'Delivery time'], oneDayRemaining: ['يوم واحد متبقٍ', 'One day remaining'], daysRemaining: ['الأيام المتبقية', 'Days remaining'], paymentMethod: ['طريقة الدفع', 'Payment method'], paymentLocation: ['مكان الدفع', 'Payment location'],
   deliveryMethod: ['طريقة التسليم', 'Delivery method'], customerPayment: ['طريقة دفع العميل', 'Customer payment way'], customerPaymentPh: ['تلميح طريقة دفع العميل', 'Customer payment hint'], tax: ['الضريبة', 'Tax'],
   internalNotes: ['ملاحظات داخلية', 'Internal notes'], itemNotes: ['ملاحظات البند', 'Item notes'], material: ['المادة', 'Material'], materialPh: ['تلميح اختيار المادة', 'Material picker hint'],
   customerPh: ['تلميح اختيار العميل', 'Customer picker hint'], quantity: ['الكمية', 'Quantity'], unit: ['الوحدة', 'Unit'], unitPrice: ['سعر الوحدة', 'Unit price'], currency: ['العملة', 'Currency'],
@@ -97,13 +98,13 @@ export const PART_LABELS: Record<string, Pair> = {
   companyName: ['اسم الشركة', 'Company name'], nameAr: ['الاسم بالعربية', 'Arabic name'], nameEn: ['الاسم بالإنجليزية', 'English name'], addPhone: ['زر إضافة هاتف', 'Add phone button'],
   contactPerson: ['شخص الاتصال', 'Contact person'], contactPhone: ['هاتف جهة الاتصال', 'Contact phone'], nature: ['طبيعة العمل', 'Business nature'], nameHint: ['تلميح الاسم', 'Name hint'], source: ['المصدر', 'Source'],
   stock: ['المخزون', 'Stock'], origin: ['بلد المنشأ', 'Country of origin'], catalogue: ['الكتالوج', 'Catalogue'], model: ['الموديل', 'Model'], catalogueNo: ['رقم الكتالوج', 'Catalogue number'],
-  addressAr: ['العنوان بالعربية', 'Arabic address'], addressEn: ['العنوان بالإنجليزية', 'English address'], logo: ['الشعار', 'Logo'], uploadLogo: ['زر رفع الشعار', 'Upload logo button'], logoHint: ['تلميح الشعار', 'Logo hint'],
+  addressAr: ['العنوان بالعربية', 'Arabic address'], addressEn: ['العنوان بالإنجليزية', 'English address'], uploadLogo: ['زر رفع الشعار', 'Upload logo button'], logoHint: ['تلميح الشعار', 'Logo hint'],
   saveFirst: ['رسالة احفظ أولاً', 'Save first message'],
   // users / settings
   pending: ['بانتظار التفعيل', 'Awaiting activation'], changeRole: ['تغيير الدور', 'Change role'], cannotSelf: ['رسالة لا يمكن تعديل حسابك', 'Cannot change own account message'],
   protected: ['رسالة حساب محمي', 'Protected account message'], companySub: ['وصف الشركة المُصدِرة', 'Issuing company description'], current: ['المحددة', 'Selected'], automatic: ['رسالة الاختيار التلقائي', 'Chosen automatically message'],
   currentPassword: ['كلمة المرور الحالية', 'Current password'], passwordChanged: ['رسالة تغيير كلمة المرور', 'Password changed message'], account: ['حسابك', 'Your account'], companySaved: ['رسالة حفظ الشركة', 'Company saved message'],
-  pick: ['زر استخدام هذه الشركة', 'Use this company button'], theme: ['المظهر', 'Theme'], texts: ['النصوص', 'Texts'], audit: ['سجل التدقيق', 'Audit log'],
+  pick: ['زر استخدام هذه الشركة', 'Use this company button'],
   // theme
   everyone: ['ملاحظة تنطبق على الجميع', 'Applies to everyone note'], preview: ['معاينة', 'Preview'], hex: ['رمز اللون', 'Hex colour'], ink: ['اللون الداكن', 'Dark colour'], cocoa: ['اللون الأساسي', 'Primary colour'],
   clay: ['لون التمييز', 'Accent colour'], stone: ['اللون الفاتح الهادئ', 'Soft colour'], sand: ['لون الخلفية', 'Background colour'], unsaved: ['رسالة تغييرات غير محفوظة', 'Unsaved changes message'],
@@ -126,6 +127,7 @@ export const PART_LABELS: Record<string, Pair> = {
   ISSUING_COMPANY_NOT_SET: ['لم تُختر الشركة المُصدِرة', 'Issuing company not set'], ISSUING_COMPANY_INACTIVE: ['الشركة المُصدِرة معطّلة', 'Issuing company inactive'], CUSTOMER_INACTIVE: ['العميل معطّل', 'Customer inactive'],
   MATERIAL_INACTIVE: ['المادة معطّلة', 'Material inactive'], DUPLICATE_ENTRY: ['سجل مكرر', 'Duplicate record'], CUSTOMER_NAME_REQUIRED: ['اسم العميل مطلوب', 'Customer name required'],
   MATERIAL_NAME_REQUIRED: ['اسم المادة مطلوب', 'Material name required'], PRICE_CURRENCY_REQUIRED: ['عملة السعر مطلوبة', 'Price currency required'], COMPANY_MISMATCH: ['عدم تطابق الشركة', 'Company mismatch'],
+  VALIDITY_BEFORE_QUOTATION_DATE: ['تاريخ الصلاحية قبل تاريخ العرض', 'Validity date before quotation date'],
   CANNOT_DEACTIVATE_SELF: ['لا يمكن تعطيل حسابك', 'Cannot deactivate yourself'], CANNOT_CHANGE_OWN_ROLE: ['لا يمكن تغيير دورك', 'Cannot change own role'], WRONG_CURRENT_PASSWORD: ['كلمة المرور الحالية خاطئة', 'Wrong current password'],
   PDF_ENGINE_UNAVAILABLE: ['PDF غير متاح', 'PDF unavailable'], INVALID_FILE_TYPE: ['نوع ملف غير مسموح', 'File type not allowed'], INTERNAL_ERROR: ['خطأ في الخادم', 'Server error'],
   NETWORK: ['تعذر الاتصال بالخادم', 'Cannot reach the server'], QUOTATION_NOT_FOUND: ['العرض غير موجود', 'Quotation not found'], DICTIONARY_ENTRY_NOT_FOUND: ['المصطلح غير موجود', 'Term not found'],

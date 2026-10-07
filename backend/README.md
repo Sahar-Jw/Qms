@@ -11,6 +11,8 @@ copy .env.example .env      # (cp on Linux/Mac) then set DB_* and unique JWT/see
 # create an empty database first:  CREATE DATABASE qms CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 npm run start:dev           # DB_SYNC=true in .env creates the tables automatically (dev only)
 npm run seed                # 4 roles, quotation counter, first TECHNICAL MANAGER
+npm run seed:statuses       # normalize quotation statuses after a database reset/upgrade
+npm run seed:demo-data      # complete local test dataset (demo accounts, companies, customers, materials, quotations)
 npm run seed:demo           # OPTIONAL: demo data for testing everything (see "Demo data" below)
 ```
 
@@ -65,7 +67,7 @@ Logos are served at `/uploads/logos/<file>` (the `logo` field of a company).
 - **Quotation number**: sequential across all companies, gap-free (row-locked counter), `QUOTATION_PREFIX` + 6 digits → `QT-000001`.
 - **Items**: price/cost/shipping/customs each have their own currency. Per currency: `value = qty × price`, `cost = qty × unit cost`, `required = value + customs + shipping` (cost is NOT part of required). Currencies are never summed together or converted; totals are per currency. Server recalculates on every save; the client never sends totals.
 - **Snapshots**: item stores material code/names; later material edits don't change old quotations.
-- **Status**: `draft → issued → expired / locked / invoiced`. `locked` and `invoiced` are read-only; only general manager+ can unlock (locked → issued); `invoiced` is final. No deletion of quotations, customers, materials: deactivate instead.
+- **Status**: `draft`, `expired`, `locked` (cancelled), or `invoiced`. New quotations start as `draft`; they automatically become `expired` after their validity date unless invoiced or cancelled. Draft and expired quotations can be cancelled or invoiced; cancelled and invoiced quotations are final/read-only. `npm run seed:statuses` normalizes old rows after a database reset/upgrade.
 - **Cost**: only manager and above can set or change cost; an employee's edit preserves existing costs.
 - **Notes** (quotation and item) are internal and never printed. Tax % (quotation) and commission % (item) are stored but not used in any formula (SRS leaves them undefined).
 - **Customer payment way**: one plain text field on the quotation (`customerPaymentMethod`, max 100 chars). The user types how the client will pay, in any language; it is printed exactly as typed. No select, no lookup table. Send `""` or `null` to clear.

@@ -141,7 +141,7 @@ function Preview({ colors }: { colors: ThemeColors }) {
           <div className="truncate text-[11px] text-cocoa">{t('app.tagline')}</div>
         </div>
         <div className="rounded-xl border border-stone/60 bg-white/90 p-2.5 shadow-lift">
-          <div className="mb-2 flex flex-wrap gap-1">{(['draft', 'issued', 'expired', 'locked', 'invoiced'] as QStatus[]).map(badge)}</div>
+          <div className="mb-2 flex flex-wrap gap-1">{(['draft', 'expired', 'locked', 'invoiced'] as QStatus[]).map(badge)}</div>
           <div className="h-7 truncate rounded-lg border border-stone bg-white px-2.5 text-[11px] leading-7 text-clay">{t('nav.search')}</div>
         </div>
         <div className="mt-auto flex gap-2">

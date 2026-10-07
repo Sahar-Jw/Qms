@@ -11,6 +11,7 @@ import { Ledger } from '@/components/Totals';
 import { Button, Card, CardHeader, Field, Input, PageHeader, Select, Textarea } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe, useSettings } from '@/lib/auth';
+import { daysUntil } from '@/lib/dates';
 import { toastError } from '@/lib/errors';
 import { useI18n } from '@/lib/i18n';
 import { aggregate, calcItem, fmt, trimDec } from '@/lib/money';
@@ -25,7 +26,7 @@ interface ItemForm {
   unitCost: string; costCurrency: string; commissionPercentage: string; notes: string;
 }
 interface FormValues {
-  customer: PickCustomer | null; responsibleUserId: string; quotationDate: string; bankName: string; validity: string; deliveryTime: string;
+  customer: PickCustomer | null; responsibleUserId: string; quotationDate: string; bankName: string; validity: string;
   paymentMethod: string; paymentLocation: string; deliveryMethod: string; customerPaymentMethod: string; notes: string;
   items: ItemForm[];
 }
@@ -40,7 +41,7 @@ function fromView(q: QuotationView): FormValues {
   return {
     customer: { id: q.customer.id, companyName: q.customer.companyName },
     responsibleUserId: q.responsibleUser ? String(q.responsibleUser.id) : '', quotationDate: q.quotationDate,
-    bankName: q.bankName ?? '', validity: isoDate(q.validity), deliveryTime: isoDate(q.deliveryTime), paymentMethod: q.paymentMethod ?? '',
+    bankName: q.bankName ?? '', validity: isoDate(q.validity), paymentMethod: q.paymentMethod ?? '',
     paymentLocation: q.paymentLocation ?? '', deliveryMethod: q.deliveryMethod ?? '', customerPaymentMethod: q.customerPaymentMethod ?? '',
     notes: q.notes ?? '',
     items: q.items.map((i) => ({
@@ -53,7 +54,7 @@ function fromView(q: QuotationView): FormValues {
 }
 
 export function QuotationForm({ initial }: { initial?: QuotationView }) {
-  const { t, has } = useI18n();
+  const { t, has, lang } = useI18n();
   const router = useRouter();
   const qc = useQueryClient();
   const me = useMe().data!;
@@ -62,14 +63,24 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   const editing = !!initial;
   const company = editing ? initial!.company : settings?.issuingCompany;
 
-  const users = useQuery({ queryKey: ['users', 'lookup'], queryFn: () => api.get<{ id: number; fullName: string }[]>('/users/lookup') });
+  const users = useQuery({ queryKey: ['users', 'lookup'], queryFn: () => api.get<{ id: number; fullName: string }[]>('/users/lookup'), enabled: editing });
 
   const { register, control, handleSubmit, setValue, getValues, formState: { errors } } = useForm<FormValues>({
-    defaultValues: initial ? fromView(initial) : { customer: null, responsibleUserId: String(me.id), quotationDate: today(), bankName: '', validity: '', deliveryTime: '', paymentMethod: '', paymentLocation: '', deliveryMethod: '', customerPaymentMethod: '', notes: '', items: [emptyItem()] },
+    defaultValues: initial ? fromView(initial) : { customer: null, responsibleUserId: String(me.id), quotationDate: today(), bankName: '', validity: '', paymentMethod: '', paymentLocation: '', deliveryMethod: '', customerPaymentMethod: '', notes: '', items: [emptyItem()] },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const items = useWatch({ control, name: 'items' });
   const customer = useWatch({ control, name: 'customer' });
+  const quotationDate = useWatch({ control, name: 'quotationDate' });
+  const validity = useWatch({ control, name: 'validity' });
+  const remainingDays = daysUntil(validity);
+  const remainingDaysText = remainingDays === null
+    ? '—'
+    : remainingDays < 0
+      ? t('quotations.expired')
+      : remainingDays === 1
+        ? t('quotations.oneDayRemaining')
+        : t('quotations.daysRemaining', { days: new Intl.NumberFormat(lang).format(remainingDays) });
 
   const computed = useMemo(() => (items ?? []).map((it) => {
     try {
@@ -85,9 +96,9 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
       const body = {
         ...(editing ? {} : { companyId: company?.id }),
         customerId: v.customer!.id,
-        responsibleUserId: Number(v.responsibleUserId),
+        ...(editing ? { responsibleUserId: Number(v.responsibleUserId) } : {}),
         quotationDate: v.quotationDate,
-        bankName: str(v.bankName), validity: v.validity, deliveryTime: v.deliveryTime, paymentMethod: str(v.paymentMethod),
+        bankName: str(v.bankName), validity: v.validity, paymentMethod: str(v.paymentMethod),
         paymentLocation: str(v.paymentLocation), deliveryMethod: str(v.deliveryMethod), customerPaymentMethod: str(v.customerPaymentMethod),
         notes: editing ? (str(v.notes) || null) : (str(v.notes) || undefined),
         items: v.items.map((i) => {
@@ -156,12 +167,22 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                   )} />
               </Field>
               <Field label={t('quotations.date')} required error={errors.quotationDate?.message}><Input type="date" dir="ltr" {...register('quotationDate', req)} /></Field>
-              <Field label={t('quotations.responsible')} required error={errors.responsibleUserId?.message}>
+              {editing && <Field label={t('quotations.responsible')} required error={errors.responsibleUserId?.message}>
                 <Select {...register('responsibleUserId', req)}>{users.data?.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}</Select>
-              </Field>
+              </Field>}
               <Field label={t('quotations.bank')} required error={errors.bankName?.message}><Input maxLength={150} {...register('bankName', reqText)} /></Field>
-              <Field label={t('quotations.validity')} required error={errors.validity?.message}><Input type="date" dir="ltr" {...register('validity', req)} /></Field>
-              <Field label={t('quotations.deliveryTime')} required error={errors.deliveryTime?.message}><Input type="date" dir="ltr" {...register('deliveryTime', req)} /></Field>
+              <Field label={t('quotations.validity')} required error={errors.validity?.message}>
+                <Input type="date" dir="ltr" min={quotationDate || undefined}
+                  {...register('validity', {
+                    ...req,
+                    validate: (value) => !value || !quotationDate || value >= quotationDate || t('err.VALIDITY_BEFORE_QUOTATION_DATE'),
+                  })} />
+              </Field>
+              <Field label={t('quotations.deliveryTime')}>
+                <div className="flex h-10 items-center rounded-xl border border-stone bg-sand/50 px-3.5 text-sm font-semibold text-cocoa" dir="auto">
+                  {remainingDaysText}
+                </div>
+              </Field>
               <Field label={t('quotations.paymentMethod')} required error={errors.paymentMethod?.message}><Input maxLength={150} {...register('paymentMethod', reqText)} /></Field>
               <Field label={t('quotations.paymentLocation')} required error={errors.paymentLocation?.message}><Input maxLength={150} {...register('paymentLocation', reqText)} /></Field>
               <Field label={t('quotations.deliveryMethod')} required error={errors.deliveryMethod?.message}><Input maxLength={150} {...register('deliveryMethod', reqText)} /></Field>

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Avatar } from '@/components/ui';
 import { api } from '@/lib/api';
-import { useSettings } from '@/lib/auth';
+import { useBrandSettings, useSettings } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
 import { hasRole, type User } from '@/lib/types';
@@ -37,7 +37,25 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
   const settings = useSettings();
+  const brand = useBrandSettings();
   const company = settings.data?.issuingCompany;
+  const siteName = brand.data?.websiteName || t('app.name');
+  const siteTagline = brand.data?.tagline || t('app.tagline');
+
+  useEffect(() => {
+    const href = brand.data?.icon ? `/uploads/${brand.data.icon}` : '';
+    document.title = siteName;
+    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!link && href) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    if (link) {
+      if (href) link.href = href;
+      else link.remove();
+    }
+  }, [brand.data?.icon, siteName]);
 
   const nav = [
     { href: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
@@ -99,10 +117,16 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
         !open && 'max-lg:-translate-x-full max-lg:rtl:translate-x-full',
       )}>
         <div className="flex items-center gap-3 px-5 pb-4 pt-5">
-          <span className="grid size-11 place-items-center rounded-full bg-sand text-ink"><Receipt className="size-5" /></span>
+          {brand.data?.logo ? (
+            <img src={`/uploads/${brand.data.logo}`} alt="" className="size-11 rounded-full bg-sand object-contain p-1" />
+          ) : brand.data?.icon ? (
+            <img src={`/uploads/${brand.data.icon}`} alt="" className="size-11 rounded-full bg-sand object-cover" />
+          ) : (
+            <span className="grid size-11 place-items-center rounded-full bg-sand text-ink"><Receipt className="size-5" /></span>
+          )}
           <div className="min-w-0 leading-tight">
-            <div className="truncate text-lg font-bold">{t('app.name')}</div>
-            <div className="truncate text-[11px] text-stone">{t('app.tagline')}</div>
+            <div className="truncate text-lg font-bold">{siteName}</div>
+            <div className="truncate text-[11px] text-stone">{siteTagline}</div>
           </div>
           <button className="ms-auto grid size-8 place-items-center rounded-full hover:bg-cocoa lg:hidden" onClick={() => setOpen(false)}><X className="size-4" /></button>
         </div>

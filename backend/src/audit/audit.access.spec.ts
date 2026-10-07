@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
+import { DataSource } from 'typeorm';
 import { RoleCode } from '../common/enums';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { SettingsController } from '../settings/settings.controller';
@@ -32,6 +33,7 @@ describe('settings tabs: who can use what', () => {
       providers: [
         { provide: AuditService, useValue: audit },
         { provide: SettingsService, useValue: settings },
+        { provide: DataSource, useValue: { entityMetadatas: [], getRepository: jest.fn() } },
         AuditInterceptor,
         { provide: APP_GUARD, useClass: RolesGuard },
         { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },

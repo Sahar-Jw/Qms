@@ -1,10 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Repository } from 'typeorm';
 import { Company } from '../companies/company.entity';
 import { User } from '../users/user.entity';
+import { uploadsRoot } from '../config/uploads';
 import { AppSetting } from './app-setting.entity';
-import { DEFAULT_THEME, normalizeTheme, THEME_SETTING_KEY, ThemeColors } from './theme';
+import { BRAND_SETTING_KEY, BrandSettings, DEFAULT_THEME, normalizeBrand, normalizeTheme, THEME_SETTING_KEY, ThemeColors } from './theme';
 
 @Injectable()
 export class SettingsService {
@@ -24,6 +27,38 @@ export class SettingsService {
     const value = normalizeTheme(colors);
     await this.appSettings.save({ key: THEME_SETTING_KEY, value, updatedById: userId });
     return { colors: value };
+  }
+
+  async getBrand(): Promise<BrandSettings> {
+    const row = await this.appSettings.findOneBy({ key: BRAND_SETTING_KEY });
+    return normalizeBrand(row?.value);
+  }
+
+  async setBrand(dto: Partial<BrandSettings>, userId: number): Promise<BrandSettings> {
+    const current = await this.getBrand();
+    const next = normalizeBrand({ ...current, ...dto });
+    await this.appSettings.save({ key: BRAND_SETTING_KEY, value: next, updatedById: userId });
+    return next;
+  }
+
+  async setBrandAsset(kind: 'logo' | 'icon', file: Express.Multer.File | undefined, userId: number): Promise<BrandSettings> {
+    if (!file) throw new BadRequestException({ code: 'FILE_REQUIRED', message: 'Image file is required (field name: file)' });
+    const current = await this.getBrand();
+    const old = kind === 'logo' ? current.logo : current.icon;
+    const stored = `branding/${file.filename}`;
+    const next = { ...current, [kind]: stored } as BrandSettings;
+    await this.appSettings.save({ key: BRAND_SETTING_KEY, value: next, updatedById: userId });
+    if (old) fs.promises.unlink(path.join(uploadsRoot(), old)).catch(() => undefined);
+    return next;
+  }
+
+  async removeBrandAsset(kind: 'logo' | 'icon', userId: number): Promise<BrandSettings> {
+    const current = await this.getBrand();
+    const old = kind === 'logo' ? current.logo : current.icon;
+    const next = { ...current, [kind]: null } as BrandSettings;
+    await this.appSettings.save({ key: BRAND_SETTING_KEY, value: next, updatedById: userId });
+    if (old) fs.promises.unlink(path.join(uploadsRoot(), old)).catch(() => undefined);
+    return next;
   }
 
   /** Back to the built-in colours. */

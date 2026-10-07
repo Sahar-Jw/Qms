@@ -42,7 +42,7 @@ export class QuotationsController {
     return this.quotations.duplicate(id, dto, me);
   }
 
-  /** Status workflow: draft -> issued -> expired / locked / invoiced. See TRANSITIONS in the service. */
+  /** Status workflow: draft / expired -> locked (cancelled) or invoiced; expiry is automatic. */
   @Post(':id/status')
   changeStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: ChangeStatusDto, @CurrentUser() me: AuthUser) {
     return this.quotations.changeStatus(id, dto, me);

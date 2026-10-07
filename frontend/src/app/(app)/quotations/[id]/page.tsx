@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Clock, Copy, Eye, FileDown, Lock, Pencil, Printer, Receipt, Undo2, Unlock } from 'lucide-react';
+import { Copy, Eye, FileDown, Lock, Pencil, Printer, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
@@ -9,7 +9,9 @@ import { useConfirm } from '@/components/confirm';
 import { Ledger } from '@/components/Totals';
 import { Button, Card, CardHeader, Empty, Loading, StatusBadge, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
+import { trackRequest } from '@/lib/activity';
 import { useMe } from '@/lib/auth';
+import { daysUntil } from '@/lib/dates';
 import { toastError } from '@/lib/errors';
 import { useI18n } from '@/lib/i18n';
 import { fmt, isZero } from '@/lib/money';
@@ -33,7 +35,7 @@ function Info({ label, value }: { label: string; value?: ReactNode }) {
 
 export default function QuotationDetail() {
   const { id } = useParams<{ id: string }>();
-  const { t, has, pick } = useI18n();
+  const { t, has, pick, lang } = useI18n();
   const me = useMe().data!;
   const qc = useQueryClient();
   const router = useRouter();
@@ -58,8 +60,18 @@ export default function QuotationDetail() {
   if (query.isLoading) return <Loading />;
   if (!q) return <Card><Empty text={t('err.QUOTATION_NOT_FOUND')} /></Card>;
 
+  const remainingDays = daysUntil(q.validity);
+  const remainingDaysText = remainingDays === null
+    ? null
+    : remainingDays < 0
+      ? t('quotations.expired')
+      : remainingDays === 1
+        ? t('quotations.oneDayRemaining')
+        : t('quotations.daysRemaining', { days: new Intl.NumberFormat(lang).format(remainingDays) });
+
   const printUrl = (lang: 'ar' | 'en') => `/api/quotations/${q.id}/print?lang=${lang}&autoprint=true${cost ? '&includeCost=true' : ''}`;
   async function downloadPdf(lang: 'ar' | 'en') {
+    const done = trackRequest('GET');
     try {
       const res = await fetch(`/api/quotations/${q!.id}/pdf?lang=${lang}${cost ? '&includeCost=true' : ''}`, { credentials: 'same-origin' });
       if (!res.ok) {
@@ -79,18 +91,17 @@ export default function QuotationDetail() {
         return;
       }
       toast.error(code && has(`err.${code}`) ? t(`err.${code}`) : (e as Error).message);
+    } finally {
+      done();
     }
   }
 
   const statusIcon = (to: QStatus) => {
-    if (q.status === 'locked') return <Unlock className="size-4" />;
     if (to === 'locked') return <Lock className="size-4" />;
-    if (to === 'issued') return <CheckCircle2 className="size-4" />;
-    if (to === 'expired') return <Clock className="size-4" />;
     if (to === 'invoiced') return <Receipt className="size-4" />;
-    return <Undo2 className="size-4 rtl:-scale-x-100" />;
+    return null;
   };
-  const statusLabel = (to: QStatus) => (q.status === 'locked' && to === 'issued' ? t('statusAction.unlock') : t(`statusAction.${to}`));
+  const statusLabel = (to: QStatus) => t(`statusAction.${to}`);
   const co = q.company;
 
   return (
@@ -184,7 +195,7 @@ export default function QuotationDetail() {
               <Info label={t('quotations.responsible')} value={q.responsibleUser?.fullName} />
               <Info label={t('quotations.bank')} value={q.bankName} />
               <Info label={t('quotations.validity')} value={q.validity} />
-              <Info label={t('quotations.deliveryTime')} value={q.deliveryTime} />
+              <Info label={t('quotations.deliveryTime')} value={remainingDaysText} />
               <Info label={t('quotations.paymentMethod')} value={q.paymentMethod} />
               <Info label={t('quotations.paymentLocation')} value={q.paymentLocation} />
               <Info label={t('quotations.deliveryMethod')} value={q.deliveryMethod} />
