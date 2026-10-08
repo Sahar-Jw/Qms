@@ -8,5 +8,6 @@ import { TranslationsService } from './translations.service';
   imports: [TypeOrmModule.forFeature([TranslationOverride])],
   controllers: [TranslationsController],
   providers: [TranslationsService],
+  exports: [TranslationsService],
 })
 export class TranslationsModule {}

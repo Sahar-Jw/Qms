@@ -109,6 +109,14 @@ const en = {
     edited: 'Edited', none: 'No texts found', edit: 'Edit text', defaultText: 'Original text', saved: 'Text saved', resetDone: 'Original text restored',
     reset: 'Restore original', keepVars: 'Keep these placeholders exactly as they are: {vars}', missingVars: 'Missing placeholder: {vars}', tip: 'Leave a language unchanged to keep its original text.',
   },
+  pdf: {
+    title: 'Quotation', number: 'Quotation No.', date: 'Date', to: 'To', attn: 'Attn', phone: 'Phone', email: 'Email',
+    validity: 'Validity', deliveryTime: 'Delivery time', paymentMethod: 'Payment method', paymentLocation: 'Payment location',
+    deliveryMethod: 'Delivery method', bank: 'Bank', customerPayment: 'Payment terms', responsible: 'Prepared by',
+    no: '#', code: 'Code', desc: 'Description', qty: 'Qty', unit: 'Unit', unitPrice: 'Unit price', value: 'Value',
+    shipping: 'Shipping', customs: 'Customs', required: 'Required', cost: 'Cost', totals: 'Totals by currency',
+    currency: 'Currency', print: 'Print', page: 'Page',
+  },
   audit: {
     title: 'Audit log', sub: 'Every change made in the system, newest first.', when: 'When', user: 'User', action: 'Action', record: 'Record', details: 'Details',
     ip: 'IP address', searchPh: 'Search by user or record', allActions: 'All actions', allEntities: 'All records', none: 'No activity found',
@@ -133,7 +141,7 @@ const en = {
     PRICE_CURRENCY_REQUIRED: 'Enter the price currency', COMPANY_MISMATCH: 'Quotations are issued from the company chosen in settings', CANNOT_DEACTIVATE_SELF: 'You cannot deactivate your own account',
     VALIDITY_BEFORE_QUOTATION_DATE: 'The validity date cannot be before the quotation date',
     CANNOT_CHANGE_OWN_ROLE: 'You cannot change your own role', WRONG_CURRENT_PASSWORD: 'The current password is wrong', PDF_ENGINE_UNAVAILABLE: 'PDF is not available on this server. Use Print instead.',
-    INVALID_FILE_TYPE: 'Only PNG, JPG or WEBP images are allowed', INTERNAL_ERROR: 'Something went wrong on the server', NETWORK: 'Cannot reach the server', QUOTATION_NOT_FOUND: 'Quotation not found',
+    INVALID_FILE_TYPE: 'Only PNG, JPG or WEBP images are allowed', INTERNAL_ERROR: 'Something went wrong on the server', NETWORK: 'Cannot reach the server', QUOTATION_NOT_FOUND: 'Quotation not found', COMPANY_NOT_FOUND: 'Company not found', COMPANY_INACTIVE: 'This company is inactive', COMPANY_CANNOT_CHANGE: 'The issuing company of an existing quotation cannot be changed', CUSTOMER_NOT_FOUND: 'Customer not found', MATERIAL_NOT_FOUND: 'Material not found', ROLE_NOT_FOUND: 'Role not found', USER_NOT_FOUND: 'User not found', FILE_REQUIRED: 'Please choose a file', INVALID_PERCENTAGE: 'A percentage must be between 0 and 100', ITEM_NOT_IN_QUOTATION: 'This item does not belong to the quotation', FIELD_REQUIRED: 'This field cannot be cleared',
   },
 };
 export default en;

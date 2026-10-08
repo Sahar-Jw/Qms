@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
+import { TranslationsModule } from '../translations/translations.module';
 import { PdfService } from './pdf.service';
 
-@Module({ providers: [PdfService], exports: [PdfService] })
+@Module({ imports: [TranslationsModule], providers: [PdfService], exports: [PdfService] })
 export class PdfModule {}

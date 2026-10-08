@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
+import arTexts from '@/lib/i18n/ar';
+import enTexts from '@/lib/i18n/en';
 import '@fontsource/cairo/arabic-400.css';
 import '@fontsource/cairo/arabic-600.css';
 import '@fontsource/cairo/arabic-700.css';
@@ -13,8 +15,6 @@ import { Providers } from '@/components/providers';
 import { I18nProvider, type Lang, type Overrides } from '@/lib/i18n';
 import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 
-export const metadata: Metadata = { title: 'عروض الأسعار · Quotations', description: 'Quotation management system' };
-
 /** Edited UI texts, fetched on the server so the first paint already has them. Never blocks the page on failure. */
 async function loadOverrides(): Promise<Overrides> {
   try {
@@ -23,6 +23,14 @@ async function loadOverrides(): Promise<Overrides> {
   } catch {
     return {};
   }
+}
+
+/** Browser-tab title and description in the visitor's language (and as edited in Settings > Texts). */
+export async function generateMetadata(): Promise<Metadata> {
+  const lang: Lang = (await cookies()).get('lang')?.value === 'en' ? 'en' : 'ar';
+  const all = await loadOverrides();
+  const base = lang === 'ar' ? arTexts.app : enTexts.app;
+  return { title: all['app.name']?.[lang] || base.name, description: all['app.tagline']?.[lang] || base.tagline };
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {

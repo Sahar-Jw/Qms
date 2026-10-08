@@ -25,6 +25,7 @@ export const SECTION_LABELS: Record<string, Pair> = {
   theme: ['ألوان الموقع', 'Website colours'],
   texts: ['نصوص الموقع', 'Website texts'],
   audit: ['سجل التدقيق', 'Audit log'],
+  pdf: ['عرض السعر المطبوع (PDF)', 'Printed quotation (PDF)'],
   search: ['البحث', 'Search'],
   err: ['رسائل الخطأ', 'Error messages'],
 };
@@ -119,7 +120,13 @@ export const PART_LABELS: Record<string, Pair> = {
   create: ['إنشاء', 'Created'], update: ['تحديث', 'Updated'], delete: ['حذف', 'Deleted'], status_change: ['تغيير الحالة', 'Status changed'], login_failed: ['فشل تسجيل الدخول', 'Failed sign-in'],
   change_password: ['تغيير كلمة المرور', 'Changed password'], forgot_password: ['طلب إعادة كلمة المرور', 'Asked for password reset'], reset_password: ['إعادة تعيين كلمة المرور', 'Reset password'],
   translations: ['نصوص الموقع', 'Website texts'], auth: ['الحساب', 'Account'], nothing: ['رسالة لا نتائج', 'No matches message'],
+  // printed quotation columns
+  attn: ['عناية', 'Attention'], desc: ['البيان', 'Description'], qty: ['الكمية', 'Quantity'],
   // error codes
+  COMPANY_NOT_FOUND: ['الشركة غير موجودة', 'Company not found'], COMPANY_INACTIVE: ['الشركة معطّلة', 'Company inactive'], COMPANY_CANNOT_CHANGE: ['لا يمكن تغيير الشركة المُصدِرة', 'Issuing company cannot be changed'],
+  CUSTOMER_NOT_FOUND: ['العميل غير موجود', 'Customer not found'], MATERIAL_NOT_FOUND: ['المادة غير موجودة', 'Material not found'], ROLE_NOT_FOUND: ['الدور غير موجود', 'Role not found'],
+  USER_NOT_FOUND: ['المستخدم غير موجود', 'User not found'], FILE_REQUIRED: ['الملف مطلوب', 'File required'], INVALID_PERCENTAGE: ['نسبة غير صالحة', 'Invalid percentage'],
+  ITEM_NOT_IN_QUOTATION: ['البند لا يتبع العرض', 'Item not in quotation'], FIELD_REQUIRED: ['الحقل مطلوب', 'Field required'],
   INVALID_CREDENTIALS: ['بريد أو كلمة مرور خاطئة', 'Wrong email or password'], ACCOUNT_LOCKED: ['الحساب مقفل مؤقتاً', 'Account temporarily locked'], ACCOUNT_NOT_ACTIVATED: ['الحساب غير مفعّل', 'Account not activated'],
   INVALID_RESET_TOKEN: ['رابط إعادة التعيين غير صالح', 'Invalid reset link'], EMAIL_TAKEN: ['البريد مستخدم مسبقاً', 'Email already registered'], VALIDATION_FAILED: ['فشل التحقق من الحقول', 'Fields failed validation'],
   FORBIDDEN: ['ممنوع: لا صلاحية', 'Forbidden: no permission'], UNAUTHORIZED: ['غير مصرّح: سجّل الدخول', 'Unauthorized: sign in again'], QUOTATION_READ_ONLY: ['العرض للقراءة فقط', 'Quotation is read-only'],
@@ -130,7 +137,7 @@ export const PART_LABELS: Record<string, Pair> = {
   VALIDITY_BEFORE_QUOTATION_DATE: ['تاريخ الصلاحية قبل تاريخ العرض', 'Validity date before quotation date'],
   CANNOT_DEACTIVATE_SELF: ['لا يمكن تعطيل حسابك', 'Cannot deactivate yourself'], CANNOT_CHANGE_OWN_ROLE: ['لا يمكن تغيير دورك', 'Cannot change own role'], WRONG_CURRENT_PASSWORD: ['كلمة المرور الحالية خاطئة', 'Wrong current password'],
   PDF_ENGINE_UNAVAILABLE: ['PDF غير متاح', 'PDF unavailable'], INVALID_FILE_TYPE: ['نوع ملف غير مسموح', 'File type not allowed'], INTERNAL_ERROR: ['خطأ في الخادم', 'Server error'],
-  NETWORK: ['تعذر الاتصال بالخادم', 'Cannot reach the server'], QUOTATION_NOT_FOUND: ['العرض غير موجود', 'Quotation not found'], DICTIONARY_ENTRY_NOT_FOUND: ['المصطلح غير موجود', 'Term not found'],
+  NETWORK: ['تعذر الاتصال بالخادم', 'Cannot reach the server'], QUOTATION_NOT_FOUND: ['العرض غير موجود', 'Quotation not found'],
 };
 
 const humanize = (s: string) => s.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase().replace(/^./, (c) => c.toUpperCase());

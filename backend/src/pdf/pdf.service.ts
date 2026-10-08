@@ -6,6 +6,7 @@ import { CurrencyAmounts } from '../calc/calc.types';
 import { Lang } from '../common/enums';
 import { uploadsRoot } from '../config/uploads';
 import { ItemView, QuotationView } from '../quotations/quotation-view';
+import { TranslationsService } from '../translations/translations.service';
 
 export interface PrintOptions {
   lang: Lang;
@@ -41,13 +42,28 @@ export class PdfService implements OnModuleDestroy {
   private browserPromise?: Promise<import('puppeteer').Browser>;
   private fontCssCache?: string;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService, private readonly translations: TranslationsService) {}
+
+  /** The printed words for one language: the built-in text unless a manager edited it in Settings > Texts (keys `pdf.*`). */
+  private async labels(lang: Lang): Promise<Record<keyof (typeof T)['ar'], string>> {
+    const out: Record<string, string> = { ...T[lang] };
+    try {
+      const edited = await this.translations.map();
+      for (const k of Object.keys(out)) {
+        const v = edited[`pdf.${k}`]?.[lang];
+        if (v) out[k] = v;
+      }
+    } catch (e) {
+      this.logger.warn(`Could not load edited print texts: ${(e as Error).message}`);
+    }
+    return out as Record<keyof (typeof T)['ar'], string>;
+  }
 
   // ------------------------------------------------------------------ public API
 
   /** Self-contained print-ready HTML (fonts + logo inlined). Works everywhere - open it and use the browser's "Save as PDF". */
-  renderHtml(q: QuotationView, opts: PrintOptions): string {
-    const t = T[opts.lang];
+  async renderHtml(q: QuotationView, opts: PrintOptions): Promise<string> {
+    const t = await this.labels(opts.lang);
     const rtl = opts.lang === 'ar';
     const nf = this.numberFormatter(opts.lang);
     const money = (v: string, cur: string) => `${nf(v)} ${this.esc(cur)}`;
@@ -209,7 +225,7 @@ ${opts.autoPrint ? '<script>window.addEventListener("load",function(){setTimeout
   }
 
   async renderPdf(q: QuotationView, opts: PrintOptions): Promise<Buffer> {
-    const html = this.renderHtml(q, { ...opts, autoPrint: false });
+    const html = await this.renderHtml(q, { ...opts, autoPrint: false });
     let browser;
     try {
       browser = await this.getBrowser();

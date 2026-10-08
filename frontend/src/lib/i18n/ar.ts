@@ -111,6 +111,14 @@ const ar: Shape<typeof en> = {
     edited: 'معدّل', none: 'لا توجد نصوص', edit: 'تعديل النص', defaultText: 'النص الأصلي', saved: 'تم حفظ النص', resetDone: 'تمت استعادة النص الأصلي',
     reset: 'استعادة الأصلي', keepVars: 'أبقِ هذه الرموز كما هي: {vars}', missingVars: 'رمز ناقص: {vars}', tip: 'اترك اللغة دون تغيير للإبقاء على نصها الأصلي.',
   },
+  pdf: {
+    title: 'عرض سعر', number: 'رقم العرض', date: 'التاريخ', to: 'السادة', attn: 'عناية', phone: 'هاتف', email: 'البريد',
+    validity: 'مدة صلاحية العرض', deliveryTime: 'مدة التسليم', paymentMethod: 'طريقة الدفع', paymentLocation: 'مكان الدفع',
+    deliveryMethod: 'طريقة التسليم', bank: 'المصرف', customerPayment: 'نظام الدفع', responsible: 'المسؤول',
+    no: '#', code: 'الرمز', desc: 'البيان', qty: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة', value: 'القيمة',
+    shipping: 'الشحن', customs: 'التخليص الجمركي', required: 'المطلوب', cost: 'التكلفة', totals: 'الإجماليات حسب العملة',
+    currency: 'العملة', print: 'طباعة', page: 'صفحة',
+  },
   audit: {
     title: 'سجل التدقيق', sub: 'كل تغيير تم في النظام، الأحدث أولاً.', when: 'الوقت', user: 'المستخدم', action: 'الإجراء', record: 'السجل', details: 'التفاصيل',
     ip: 'عنوان IP', searchPh: 'ابحث باسم المستخدم أو السجل', allActions: 'كل الإجراءات', allEntities: 'كل السجلات', none: 'لا يوجد نشاط',
@@ -135,7 +143,7 @@ const ar: Shape<typeof en> = {
     PRICE_CURRENCY_REQUIRED: 'أدخل عملة السعر', COMPANY_MISMATCH: 'تصدر العروض باسم الشركة المختارة في الإعدادات', CANNOT_DEACTIVATE_SELF: 'لا يمكنك إيقاف حسابك الخاص',
     VALIDITY_BEFORE_QUOTATION_DATE: 'لا يمكن أن يكون تاريخ الصلاحية قبل تاريخ عرض السعر',
     CANNOT_CHANGE_OWN_ROLE: 'لا يمكنك تغيير دورك', WRONG_CURRENT_PASSWORD: 'كلمة المرور الحالية غير صحيحة', PDF_ENGINE_UNAVAILABLE: 'خدمة PDF غير متاحة على هذا الخادم. استخدم الطباعة.',
-    INVALID_FILE_TYPE: 'يُسمح بصور PNG أو JPG أو WEBP فقط', INTERNAL_ERROR: 'حدث خطأ في الخادم', NETWORK: 'تعذّر الاتصال بالخادم', QUOTATION_NOT_FOUND: 'العرض غير موجود',
+    INVALID_FILE_TYPE: 'يُسمح بصور PNG أو JPG أو WEBP فقط', INTERNAL_ERROR: 'حدث خطأ في الخادم', NETWORK: 'تعذّر الاتصال بالخادم', QUOTATION_NOT_FOUND: 'العرض غير موجود', COMPANY_NOT_FOUND: 'الشركة غير موجودة', COMPANY_INACTIVE: 'هذه الشركة معطّلة', COMPANY_CANNOT_CHANGE: 'لا يمكن تغيير الشركة المُصدِرة لعرض موجود', CUSTOMER_NOT_FOUND: 'العميل غير موجود', MATERIAL_NOT_FOUND: 'المادة غير موجودة', ROLE_NOT_FOUND: 'الدور غير موجود', USER_NOT_FOUND: 'المستخدم غير موجود', FILE_REQUIRED: 'يرجى اختيار ملف', INVALID_PERCENTAGE: 'يجب أن تكون النسبة بين 0 و100', ITEM_NOT_IN_QUOTATION: 'هذا البند لا يتبع العرض', FIELD_REQUIRED: 'لا يمكن ترك هذا الحقل فارغاً',
   },
 };
 export default ar;
