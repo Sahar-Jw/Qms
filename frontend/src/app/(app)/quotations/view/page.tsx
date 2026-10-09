@@ -162,17 +162,16 @@ function QuotationDetail() {
 
       <Card>
             <CardHeader title={<>{t('quotations.items')} <span className="rounded-full bg-sand px-2.5 py-0.5 text-xs font-bold text-cocoa">{q.items.length}</span></>} />
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px]">
-                <thead><tr>
-                  <th className={th}>#</th><th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('quotations.quantity')}</th>
+            <div className="max-h-[32rem] overflow-auto">
+              <table className="w-full min-w-[860px]">
+                <thead className="sticky top-0 z-10"><tr>
+                  <th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('quotations.quantity')}</th>
                   <th className={th}>{t('quotations.unitPrice')}</th><th className={th}>{t('quotations.value')}</th><th className={th}>{t('quotations.shipping')}</th>
                   <th className={th}>{t('quotations.customs')}</th><th className={th}>{t('quotations.tax')}</th><th className={th}>{t('quotations.required')}</th>{canCost && <th className={th}>{t('quotations.totalCost')}</th>}
                 </tr></thead>
                 <tbody>
-                  {q.items.map((i, n) => (
+                  {q.items.map((i) => (
                     <tr key={i.id} className={tr}>
-                      <td className={td}>{n + 1}</td>
                       <td className={`${td} font-semibold`} dir="ltr">{i.materialCode}</td>
                       <td className={td}>{i.materialName ?? ''}{i.notes && <div className="text-xs text-clay">{i.notes}</div>}</td>
                       <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.quantity)} <span className="text-xs text-cocoa">{i.unit}</span></td>
