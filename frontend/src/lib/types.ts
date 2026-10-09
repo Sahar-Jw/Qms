@@ -73,7 +73,7 @@ export interface QuotationView {
   responsibleUser: { id: number; fullName: string } | null;
   customerPaymentMethod: string | null;
   bankName: string | null; validity: string | null; deliveryTime: string | null; paymentMethod: string | null;
-  paymentLocation: string | null; deliveryMethod: string | null; taxPercentage: string | null; notes: string | null;
+  paymentLocation: string | null; deliveryMethod: string | null; taxPercentage: string; notes: string | null;
   items: ItemView[]; totals: Amounts[]; createdById: number | null; editable: boolean; readOnlyReason: 'status' | 'not_owner' | null; allowedStatuses: QStatus[];
   createdAt: string; updatedAt: string;
 }

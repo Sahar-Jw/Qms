@@ -42,7 +42,7 @@ export default function SettingsPage() {
         <div role="tablist" aria-label={t('settings.title')} className="mb-4 flex flex-wrap gap-2">
           {tabs.map(({ key, label, icon: Icon }) => (
             <button key={key} role="tab" id={`settings-tab-${key}`} aria-selected={active === key} aria-controls={`settings-panel-${key}`} onClick={() => setTab(key)}
-              className={cn('inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ring-1 ring-inset transition-colors', active === key ? 'bg-ink text-sand ring-ink' : 'bg-white text-cocoa ring-stone hover:bg-sand')}>
+              className={cn('inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold ring-1 ring-inset transition-colors sm:px-4', active === key ? 'bg-ink text-sand ring-ink' : 'bg-white text-cocoa ring-stone hover:bg-sand')}>
               <Icon className="size-4" />{label}
             </button>
           ))}

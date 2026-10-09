@@ -80,10 +80,10 @@ export function BrandTab() {
   if (brand.isLoading) return <Card><Loading /></Card>;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-12">
-      <Card className="lg:col-span-7">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-12">
+      <Card className="min-w-0 lg:col-span-7">
         <CardHeader title={t('brand.title')} />
-        <div className="space-y-5 p-5">
+        <div className="space-y-5 p-4 sm:p-5">
           <p className="text-sm text-cocoa">{t('brand.sub')}</p>
 
           <Field label={t('brand.websiteName')}>
@@ -94,13 +94,13 @@ export function BrandTab() {
             <Input value={form.tagline} onChange={(e) => setDraft({ ...form, tagline: e.target.value })} />
           </Field>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
             <Field label={t('brand.logo')} hint={t('brand.logoHint')}>
-              <div className="flex items-center gap-3">
-                <div className="grid size-16 place-items-center overflow-hidden rounded-2xl border border-stone bg-sand">
+              <div className="flex flex-col items-start gap-3 min-[400px]:flex-row min-[400px]:items-center">
+                <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-stone bg-sand">
                   {assetUrl(form.logo) ? <img src={assetUrl(form.logo)} alt="" className="size-full object-contain p-2" /> : <ImageIcon className="size-6 text-cocoa" />}
                 </div>
-                <div className="flex flex-1 flex-wrap items-center gap-2">
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-sand px-3 py-2 text-xs font-bold text-cocoa ring-1 ring-stone">
                     <ImagePlus className="size-4" />{t('brand.upload')}
                     <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={onFilePick('logo')} />
@@ -115,11 +115,11 @@ export function BrandTab() {
             </Field>
 
             <Field label={t('brand.icon')} hint={t('brand.iconHint')}>
-              <div className="flex items-center gap-3">
-                <div className="grid size-16 place-items-center overflow-hidden rounded-2xl border border-stone bg-sand">
+              <div className="flex flex-col items-start gap-3 min-[400px]:flex-row min-[400px]:items-center">
+                <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-stone bg-sand">
                   {assetUrl(form.icon) ? <img src={assetUrl(form.icon)} alt="" className="size-full object-cover p-2" /> : <Sparkles className="size-6 text-cocoa" />}
                 </div>
-                <div className="flex flex-1 flex-wrap items-center gap-2">
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-sand px-3 py-2 text-xs font-bold text-cocoa ring-1 ring-stone">
                     <ImagePlus className="size-4" />{t('brand.upload')}
                     <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={onFilePick('icon')} />
@@ -134,7 +134,7 @@ export function BrandTab() {
             </Field>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-stone/60 pt-4">
+          <div className="flex flex-col gap-2 border-t border-stone/60 pt-4 min-[420px]:flex-row min-[420px]:flex-wrap min-[420px]:items-center">
             <Button loading={save.isPending} disabled={!changed || save.isPending} onClick={() => save.mutate(form)}>
               <Save className="size-4" />{t('common.save')}
             </Button>
@@ -145,12 +145,12 @@ export function BrandTab() {
         </div>
       </Card>
 
-      <Card className="self-start lg:sticky lg:top-20 lg:col-span-5">
+      <Card className="min-w-0 self-start lg:sticky lg:top-20 lg:col-span-5">
         <CardHeader title={t('brand.preview')} />
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           <div className="overflow-hidden rounded-2xl border border-stone bg-sand shadow-lift">
-            <div className="flex items-center gap-3 bg-ink p-4 text-sand">
-              <div className="grid size-12 place-items-center overflow-hidden rounded-full bg-sand text-ink">
+            <div className="flex items-center gap-3 bg-ink p-3 text-sand sm:p-4">
+              <div className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-full bg-sand text-ink">
                 {assetUrl(form.icon) ? <img src={assetUrl(form.icon)} alt="" className="size-full object-cover" /> : <Sparkles className="size-5" />}
               </div>
               <div className="min-w-0">
@@ -158,17 +158,17 @@ export function BrandTab() {
                 <div className="truncate text-xs text-sand/80">{form.tagline || t('app.tagline')}</div>
               </div>
             </div>
-            <div className="flex items-center justify-between gap-3 bg-white p-4">
-              <div className="flex items-center gap-3">
-                <div className="grid size-12 place-items-center overflow-hidden rounded-2xl border border-stone bg-sand">
+            <div className="flex items-center justify-between gap-3 bg-white p-3 sm:p-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-2xl border border-stone bg-sand">
                   {assetUrl(form.logo) ? <img src={assetUrl(form.logo)} alt="" className="size-full object-contain p-2" /> : <ImageIcon className="size-5 text-cocoa" />}
                 </div>
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-cocoa">{t('settings.title')}</div>
-                  <div className="text-sm font-semibold text-ink">{form.websiteName || t('app.name')}</div>
+                <div className="min-w-0">
+                  <div className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-cocoa">{t('settings.title')}</div>
+                  <div className="truncate text-sm font-semibold text-ink">{form.websiteName || t('app.name')}</div>
                 </div>
               </div>
-              <button type="button" className={cn('rounded-full bg-cocoa px-3 py-2 text-xs font-bold text-white')}>
+              <button type="button" className={cn('shrink-0 rounded-full bg-cocoa px-3 py-2 text-xs font-bold text-white')}>
                 {t('common.save')}
               </button>
             </div>

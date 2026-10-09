@@ -28,7 +28,7 @@ interface ItemForm {
 }
 interface FormValues {
   customer: PickCustomer | null; responsibleUserId: string; quotationDate: string; bankName: string; validity: string;
-  paymentMethod: string; paymentLocation: string; deliveryMethod: string; customerPaymentMethod: string; notes: string;
+  paymentMethod: string; paymentLocation: string; deliveryMethod: string; customerPaymentMethod: string; taxPercentage: string; notes: string;
   items: ItemForm[];
 }
 
@@ -44,6 +44,7 @@ function fromView(q: QuotationView): FormValues {
     responsibleUserId: q.responsibleUser ? String(q.responsibleUser.id) : '', quotationDate: q.quotationDate,
     bankName: q.bankName ?? '', validity: isoDate(q.validity), paymentMethod: q.paymentMethod ?? '',
     paymentLocation: q.paymentLocation ?? '', deliveryMethod: q.deliveryMethod ?? '', customerPaymentMethod: q.customerPaymentMethod ?? '',
+    taxPercentage: trimDec(q.taxPercentage),
     notes: q.notes ?? '',
     items: q.items.map((i) => ({
       id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, name: i.materialName } : null,
@@ -67,7 +68,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   const users = useQuery({ queryKey: ['users', 'lookup'], queryFn: () => api.get<{ id: number; fullName: string }[]>('/users/lookup'), enabled: editing });
 
   const { register, control, handleSubmit, setValue, getValues, formState: { errors } } = useForm<FormValues>({
-    defaultValues: initial ? fromView(initial) : { customer: null, responsibleUserId: String(me.id), quotationDate: today(), bankName: '', validity: '', paymentMethod: '', paymentLocation: '', deliveryMethod: '', customerPaymentMethod: '', notes: '', items: [emptyItem()] },
+    defaultValues: initial ? fromView(initial) : { customer: null, responsibleUserId: String(me.id), quotationDate: today(), bankName: '', validity: '', paymentMethod: '', paymentLocation: '', deliveryMethod: '', customerPaymentMethod: '', taxPercentage: '', notes: '', items: [emptyItem()] },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const items = useWatch({ control, name: 'items' });
@@ -100,7 +101,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
         ...(editing ? { responsibleUserId: Number(v.responsibleUserId) } : {}),
         quotationDate: v.quotationDate,
         bankName: str(v.bankName), validity: v.validity, paymentMethod: str(v.paymentMethod),
-        paymentLocation: str(v.paymentLocation), deliveryMethod: str(v.deliveryMethod), customerPaymentMethod: str(v.customerPaymentMethod),
+        paymentLocation: str(v.paymentLocation), deliveryMethod: str(v.deliveryMethod), customerPaymentMethod: str(v.customerPaymentMethod), taxPercentage: str(v.taxPercentage),
         notes: editing ? (str(v.notes) || null) : (str(v.notes) || undefined),
         items: v.items.map((i) => {
           const cur = i.priceCurrency.trim().toUpperCase(); // one currency for price, shipping, customs and cost
@@ -187,6 +188,12 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
               <Field label={t('quotations.paymentMethod')} required error={errors.paymentMethod?.message}><Input maxLength={150} {...register('paymentMethod', reqText)} /></Field>
               <Field label={t('quotations.paymentLocation')} required error={errors.paymentLocation?.message}><Input maxLength={150} {...register('paymentLocation', reqText)} /></Field>
               <Field label={t('quotations.deliveryMethod')} required error={errors.deliveryMethod?.message}><Input maxLength={150} {...register('deliveryMethod', reqText)} /></Field>
+              <Field label={t('quotations.tax')} required error={errors.taxPercentage?.message}>
+                <Input inputMode="decimal" dir="ltr" placeholder="0" {...register('taxPercentage', {
+                  ...req,
+                  validate: (v) => (DEC.test(v.trim()) && Number(v) <= 100) || t('err.INVALID_PERCENTAGE'),
+                })} />
+              </Field>
               <Field label={t('quotations.customerPayment')} required error={errors.customerPaymentMethod?.message} className="sm:col-span-2 xl:col-span-3"><Input maxLength={100} placeholder={t('quotations.customerPaymentPh')} {...register('customerPaymentMethod', reqText)} /></Field>
               <Field label={t('quotations.internalNotes')} className="sm:col-span-2 xl:col-span-3"><Textarea rows={2} {...register('notes')} /></Field>
             </div>

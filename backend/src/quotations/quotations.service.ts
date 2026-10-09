@@ -218,6 +218,7 @@ export class QuotationsService {
       const responsibleId = user.id;
       await this.assertActive(m, User, responsibleId, 'USER', 'Responsible user');
 
+      this.assertPercent(dto.taxPercentage, 'taxPercentage');
       const { items, ...header } = dto;
       const q = m.create(Quotation, {
         ...header,
@@ -250,9 +251,10 @@ export class QuotationsService {
       }
 
       const { items, ...header } = dto;
-      for (const key of ['customerId', 'quotationDate'] as const) {
+      for (const key of ['customerId', 'quotationDate', 'taxPercentage'] as const) {
         if (header[key] === null) throw new BadRequestException({ code: 'FIELD_REQUIRED', message: `${key} cannot be cleared` });
       }
+      this.assertPercent(header.taxPercentage, 'taxPercentage');
       this.assertValidityDate(
         header.quotationDate === undefined ? q.quotationDate : header.quotationDate,
         header.validity === undefined ? q.validity : header.validity,

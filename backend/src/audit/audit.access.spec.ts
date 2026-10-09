@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
+import { lastValueFrom, of } from 'rxjs';
 import { RoleCode } from '../common/enums';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { SettingsController } from '../settings/settings.controller';
@@ -151,5 +152,59 @@ describe('audit helpers', () => {
   it('theme colours: bad or missing values fall back to the defaults', () => {
     expect(normalizeTheme(null)).toEqual(DEFAULT_THEME);
     expect(normalizeTheme({ ink: '#abcdef', cocoa: 'nope', sand: 5 })).toEqual({ ...DEFAULT_THEME, ink: '#ABCDEF' });
+  });
+});
+
+describe('audit interceptor: uploads and deletes keep what changed', () => {
+  const record = jest.fn();
+  const brandRow = { value: { websiteName: 'Old', tagline: 'T', logo: 'branding/logo-old.png', icon: null } };
+  const userRow = { id: 7, fullName: 'Boss', avatar: 'avatars/old.png', name: 'x', passwordHash: 'h', createdAt: new Date(), isActive: true };
+  const dataSource = {
+    entityMetadatas: [{ name: 'User', tableName: 'users', primaryColumns: [{ propertyName: 'id' }], target: 'User' }],
+    getRepository: jest.fn((target: unknown) => (target === 'User'
+      ? { createQueryBuilder: () => ({ where: () => ({ getOne: async () => userRow }) }) }
+      : { findOneBy: async () => brandRow })),
+  };
+  const interceptor = new AuditInterceptor({ record } as unknown as AuditService, dataSource as unknown as DataSource);
+
+  const run = async (method: string, path: string, response: unknown, body: unknown = {}) => {
+    const req = { method, path, body, ip: '::1', user: { id: 7, fullName: 'Boss', role: 'manager' } };
+    const ctx = { getType: () => 'http', switchToHttp: () => ({ getRequest: () => req }) } as any;
+    await lastValueFrom(interceptor.intercept(ctx, { handle: () => of(response) }));
+    await new Promise((r) => setTimeout(r, 10));
+    return record.mock.calls.at(-1)![0];
+  };
+  beforeEach(() => record.mockClear());
+
+  it('brand icon upload: logged as an update of settings, with old and new file', async () => {
+    const entry = await run('POST', '/api/settings/brand/icon', { websiteName: 'Old', tagline: 'T', logo: null, icon: 'branding/icon-new.png' });
+    expect(entry).toMatchObject({
+      action: 'update', entity: 'settings', entityLabel: 'Old',
+      details: { before: { icon: null }, after: { icon: 'branding/icon-new.png' } },
+    });
+  });
+
+  it('brand logo removal shows the removed file', async () => {
+    const entry = await run('DELETE', '/api/settings/brand/logo', { websiteName: 'Old', logo: null, icon: null });
+    expect(entry).toMatchObject({ action: 'update', details: { before: { logo: 'branding/logo-old.png' }, after: { logo: null } } });
+  });
+
+  it('avatar upload shows the old and new picture', async () => {
+    const entry = await run('POST', '/api/auth/avatar', { fullName: 'Boss', avatar: 'avatars/new.png' });
+    expect(entry).toMatchObject({ action: 'update', entity: 'auth', details: { before: { avatar: 'avatars/old.png' }, after: { avatar: 'avatars/new.png' } } });
+  });
+
+  it('brand save lists only the fields that changed', async () => {
+    const body = { websiteName: 'New', tagline: 'T', logo: 'branding/logo-old.png', icon: null };
+    const entry = await run('PATCH', '/api/settings/brand', body, body);
+    expect(entry.details).toEqual({ before: { websiteName: 'Old' }, after: { websiteName: 'New' } });
+  });
+
+  it('delete keeps a copy of the removed record, without secrets or bookkeeping columns', async () => {
+    const entry = await run('DELETE', '/api/users/7', { ok: true });
+    expect(entry.action).toBe('delete');
+    expect(entry.details.before).toMatchObject({ fullName: 'Boss', passwordHash: '[hidden]', isActive: true });
+    expect(entry.details.before).not.toHaveProperty('id');
+    expect(entry.details.before).not.toHaveProperty('createdAt');
   });
 });

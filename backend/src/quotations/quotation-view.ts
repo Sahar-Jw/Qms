@@ -43,7 +43,7 @@ export interface QuotationView {
   paymentMethod: string | null;
   paymentLocation: string | null;
   deliveryMethod: string | null;
-  taxPercentage: string | null; // stored only, not used in totals
+  taxPercentage: string; // required, stored only, not used in totals
   notes: string | null; // internal - never printed
   items: ItemView[];
   totals: CurrencyAmounts[];

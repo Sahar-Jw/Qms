@@ -3,6 +3,8 @@ import { Request } from 'express';
 import { DataSource, EntityTarget, ObjectLiteral } from 'typeorm';
 import { from, mergeMap, Observable, tap } from 'rxjs';
 import { AuthUser } from '../common/auth-user';
+import { AppSetting } from '../settings/app-setting.entity';
+import { BRAND_SETTING_KEY, normalizeBrand, normalizeTheme, THEME_SETTING_KEY } from '../settings/theme';
 import { AuditService, sanitizeDetails } from './audit.service';
 
 const METHOD_ACTION: Record<string, string> = { POST: 'create', PUT: 'update', PATCH: 'update', DELETE: 'delete' };
@@ -25,7 +27,7 @@ const SUB_ACTION: Record<string, string> = {
   active: 'update',
 };
 
-const LABEL_FIELDS = ['quotationNumber', 'companyName', 'fullName', 'name', 'materialCode', 'email', 'key'] as const;
+const LABEL_FIELDS = ['quotationNumber', 'companyName', 'fullName', 'name', 'materialCode', 'email', 'websiteName', 'key'] as const;
 const pickLabel = (res: any): string | null => {
   const src = res?.user ?? res;
   if (!src || typeof src !== 'object') return null;
@@ -36,6 +38,20 @@ const pickLabel = (res: any): string | null => {
 const CHANGE_ACTIONS = new Set(['update', 'activate', 'deactivate', 'status_change']);
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
+
+/** Uploads / removals of a single image: they carry no JSON body, so the log would otherwise stay empty. */
+type AssetField = 'logo' | 'icon' | 'avatar';
+const assetFieldOf = (resource: string, segs: string[]): AssetField | null => {
+  if (resource === 'settings' && segs[1] === 'brand' && (segs[2] === 'logo' || segs[2] === 'icon')) return segs[2];
+  if (resource === 'auth' && segs[1] === 'avatar') return 'avatar';
+  return null;
+};
+
+/** Bookkeeping columns that say nothing useful about a deleted record. */
+const SNAPSHOT_SKIP = new Set(['id', 'createdAt', 'updatedAt', 'createdById', 'updatedById']);
+/** Dates and the like become plain JSON values, so they survive sanitizing. */
+const jsonSafe = (value: unknown): unknown => (value === undefined ? null : JSON.parse(JSON.stringify(value)));
+const sameValue = (a: unknown, b: unknown) => JSON.stringify(jsonSafe(a)) === JSON.stringify(jsonSafe(b));
 
 /**
  * Records every successful create / update / delete / sign-in in the audit log, plus failed sign-ins.
@@ -67,12 +83,34 @@ export class AuditInterceptor implements NestInterceptor {
       .getOne();
   }
 
+  private async brandValue(): Promise<Record<string, unknown>> {
+    const row = await this.dataSource.getRepository(AppSetting).findOneBy({ key: BRAND_SETTING_KEY });
+    return { ...normalizeBrand(row?.value) };
+  }
+
+  private async themeValue(): Promise<Record<string, unknown>> {
+    const row = await this.dataSource.getRepository(AppSetting).findOneBy({ key: THEME_SETTING_KEY });
+    return { colors: normalizeTheme(row?.value) };
+  }
+
   private detailsFor(
     action: string,
     body: unknown,
     before: Record<string, unknown> | null,
     response: unknown,
+    assetField: AssetField | null = null,
   ): Record<string, unknown> | null {
+    if (assetField) {
+      const next = isRecord(response) && typeof response[assetField] === 'string' ? response[assetField] : null;
+      return { before: { [assetField]: before?.[assetField] ?? null }, after: { [assetField]: next } };
+    }
+
+    if (action === 'delete' && before) {
+      const removed = Object.fromEntries(Object.entries(before).filter(([key]) => !SNAPSHOT_SKIP.has(key)));
+      const clean = sanitizeDetails(jsonSafe(removed));
+      return clean ? { before: clean } : null;
+    }
+
     const submitted = isRecord(body) ? body : null;
     if (!submitted) return sanitizeDetails(body);
 
@@ -90,12 +128,14 @@ export class AuditInterceptor implements NestInterceptor {
         }
       }
 
-      const previous = Object.fromEntries(fields.map((field) => [field, before[field]]));
       const responseRecord = isRecord(response) ? response : null;
-      const current = Object.fromEntries(fields.map((field) => [
-        field,
-        responseRecord && Object.hasOwn(responseRecord, field) ? responseRecord[field] : submitted[field],
-      ]));
+      const valueAfter = (field: string) =>
+        responseRecord && Object.hasOwn(responseRecord, field) ? responseRecord[field] : submitted[field];
+      // Forms send every field on save: list only what really changed (all of them if nothing did).
+      const changed = fields.filter((field) => !sameValue(before[field], valueAfter(field)));
+      const shown = changed.length ? changed : fields;
+      const previous = Object.fromEntries(shown.map((field) => [field, jsonSafe(before[field])]));
+      const current = Object.fromEntries(shown.map((field) => [field, valueAfter(field)]));
       return {
         before: sanitizeDetails(previous),
         after: sanitizeDetails(current),
@@ -123,6 +163,8 @@ export class AuditInterceptor implements NestInterceptor {
       entity = 'theme';
       action = req.method === 'DELETE' ? 'reset' : 'update';
     }
+    const assetField = assetFieldOf(resource, segs);
+    if (assetField) action = 'update'; // uploading or removing an image edits the profile / the branding
 
     const base = {
       entity,
@@ -132,10 +174,23 @@ export class AuditInterceptor implements NestInterceptor {
       details: sanitizeDetails(req.body),
     };
 
-    const needsSnapshot = hasId && CHANGE_ACTIONS.has(action);
-    const before = needsSnapshot
-      ? this.snapshot(resource, segs[1]).catch((error: unknown) => {
-          this.log.error(`Could not capture previous audit state for ${resource}#${segs[1]}: ${(error as Error).message}`);
+    // What to read *before* the request runs, so the log can show old -> new.
+    const myId = req.user?.id;
+    let loadBefore: (() => Promise<Record<string, unknown> | null>) | null = null;
+    if (assetField === 'avatar' || (resource === 'auth' && sub === 'profile')) {
+      if (myId != null) loadBefore = () => this.snapshot('users', String(myId));
+    } else if (assetField || (resource === 'settings' && sub === 'brand')) {
+      loadBefore = () => this.brandValue();
+    } else if (entity === 'theme' && action === 'update') {
+      loadBefore = () => this.themeValue();
+    } else if (resource === 'settings' && !sub && req.method === 'PATCH') {
+      if (myId != null) loadBefore = () => this.snapshot('users', String(myId)); // the issuing company
+    } else if (hasId && (CHANGE_ACTIONS.has(action) || action === 'delete')) {
+      loadBefore = () => this.snapshot(resource, segs[1]);
+    }
+    const before = loadBefore
+      ? loadBefore().catch((error: unknown) => {
+          this.log.error(`Could not capture previous audit state for ${resource}${hasId ? `#${segs[1]}` : ''}: ${(error as Error).message}`);
           return null;
         })
       : Promise.resolve(null);
@@ -150,7 +205,7 @@ export class AuditInterceptor implements NestInterceptor {
             void this.audit.record({
               ...base,
               action,
-              details: this.detailsFor(action, req.body, previous, res),
+              details: this.detailsFor(action, req.body, previous, res, assetField),
               userId: who?.id ?? null,
               userName: (who as any)?.fullName ?? null,
               userRole: typeof role === 'string' ? role : role?.code ?? null,

@@ -297,7 +297,7 @@ export function PillStack({ items }: { items: { key: QStatus; label: string; val
         return (
           <Tag
             key={it.key} onClick={it.onClick} style={{ zIndex: i + 1 }}
-            className={cn('relative flex h-[4.25rem] items-center justify-between rounded-full px-7 text-start shadow-pill', i > 0 && '-mt-5', STATUS_STYLE[it.key].pill, it.onClick && 'cursor-pointer transition-transform hover:-translate-y-0.5')}
+            className={cn('relative flex h-14 items-center justify-between gap-3 rounded-full px-5 text-start shadow-pill sm:h-[4.25rem] sm:px-7', i > 0 && '-mt-4 sm:-mt-5', STATUS_STYLE[it.key].pill, it.onClick && 'cursor-pointer transition-transform hover:-translate-y-0.5')}
           >
             <span className="text-sm font-semibold">{it.label}</span>
             {it.value !== undefined && <span className="text-2xl font-bold tabular-nums">{it.value}</span>}
