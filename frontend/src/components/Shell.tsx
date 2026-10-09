@@ -1,5 +1,6 @@
 'use client';
 import { useQueryClient } from '@tanstack/react-query';
+import { uploadUrl } from '@/lib/urls';
 import { Building2, FileText, LayoutDashboard, LogOut, Menu, Package, Receipt, Search, Settings as SettingsIcon, UserCircle, UserCog, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -43,7 +44,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
   const siteTagline = brand.data?.tagline || t('app.tagline');
 
   useEffect(() => {
-    const href = brand.data?.icon ? `/uploads/${brand.data.icon}` : '';
+    const href = brand.data?.icon ? uploadUrl(brand.data.icon) : '';
     document.title = siteName;
     let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (!link && href) {
@@ -118,9 +119,9 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
       )}>
         <div className="flex items-center gap-3 px-5 pb-4 pt-5">
           {brand.data?.logo ? (
-            <img src={`/uploads/${brand.data.logo}`} alt="" className="size-11 rounded-full bg-sand object-contain p-1" />
+            <img src={uploadUrl(brand.data.logo)} alt="" className="size-11 rounded-full bg-sand object-contain p-1" />
           ) : brand.data?.icon ? (
-            <img src={`/uploads/${brand.data.icon}`} alt="" className="size-11 rounded-full bg-sand object-cover" />
+            <img src={uploadUrl(brand.data.icon)} alt="" className="size-11 rounded-full bg-sand object-cover" />
           ) : (
             <span className="grid size-11 place-items-center rounded-full bg-sand text-ink"><Receipt className="size-5" /></span>
           )}
@@ -174,7 +175,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
               <Link href="/settings" className="hidden items-center gap-2 rounded-full bg-white/80 py-1 pe-4 ps-1 text-sm font-semibold ring-1 ring-stone/60 hover:bg-white md:flex" title={t('quotations.issuingCompany')}>
                 {company.logo
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={`/uploads/${company.logo}`} alt="" className="size-8 rounded-full bg-white object-contain" />
+                  ? <img src={uploadUrl(company.logo)} alt="" className="size-8 rounded-full bg-white object-contain" />
                   : <span className="grid size-8 place-items-center rounded-full bg-cocoa text-xs font-bold text-white">{company.name.charAt(0)}</span>}
                 <span className="max-w-40 truncate">{company.name}</span>
               </Link>

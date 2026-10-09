@@ -1,0 +1,23 @@
+# Static QMS frontend on Apache (cPanel). Upload together with the rest of the "out" folder.
+Options -Indexes
+DirectoryIndex index.html
+
+# Force HTTPS (the auth cookie is Secure)
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [L,R=301]
+
+ErrorDocument 404 /404.html
+
+# Cache the hashed build assets for a year; never cache the HTML shells
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <If "%{REQUEST_URI} =~ m#^/_next/static/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "same-origin"
+</IfModule>

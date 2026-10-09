@@ -12,6 +12,8 @@
     "seed:test-users": "ts-node src/database/seed-test-users.ts",
     "seed:demo-data": "ts-node src/database/seed-demo-data.ts",
     "seed:prod": "node dist/database/seed.js",
+    "admin:create": "ts-node src/database/create-admin.ts",
+    "admin:create:prod": "node dist/database/create-admin.js",
     "seed:statuses:prod": "node dist/database/seed-statuses.js",
     "typeorm": "ts-node ./node_modules/typeorm/cli.js -d src/database/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run",

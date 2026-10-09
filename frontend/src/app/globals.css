@@ -63,3 +63,6 @@ input:autofill, textarea:autofill, select:autofill {
   background-color: #fff !important;
   color: var(--color-ink) !important;
 }
+
+/* Static build: hide the first paint until I18nProvider has applied the saved language (no Arabic->English flash). */
+html:not([data-ready]) body { visibility: hidden; }

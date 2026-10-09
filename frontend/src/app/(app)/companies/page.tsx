@@ -1,5 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { uploadUrl } from '@/lib/urls';
 import { Building2, ImagePlus, Mail, Pencil, Phone, Plus, Power } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -21,7 +22,7 @@ function Logo({ company, size = 'size-14' }: { company: Pick<Company, 'logo' | '
   const { pick } = useI18n();
   return company.logo
     // eslint-disable-next-line @next/next/no-img-element
-    ? <img src={`/uploads/${company.logo}`} alt="" className={`${size} shrink-0 rounded-2xl border border-stone/60 bg-white object-contain p-1`} />
+    ? <img src={uploadUrl(company.logo)} alt="" className={`${size} shrink-0 rounded-2xl border border-stone/60 bg-white object-contain p-1`} />
     : <span className={`${size} grid shrink-0 place-items-center rounded-2xl bg-ink text-xl font-bold text-sand`}>{company.name.charAt(0)}</span>;
 }
 

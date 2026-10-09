@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { uploadUrl } from '@/lib/urls';
 import { ImagePlus, Image as ImageIcon, Save, Sparkles, Trash2 } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useState } from 'react';
@@ -16,7 +17,7 @@ import type { BrandSettings } from '@/lib/types';
 const empty: BrandSettings = { websiteName: 'Quotations', tagline: 'Prices, customers and materials in one place', logo: null, icon: null };
 
 function assetUrl(value: string | null | undefined) {
-  return value ? `/uploads/${value}` : '';
+  return value ? uploadUrl(value) : '';
 }
 
 const clampValue = (v: string) => v.replace(/\n/g, ' ').trim();

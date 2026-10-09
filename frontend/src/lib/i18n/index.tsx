@@ -1,5 +1,6 @@
 'use client';
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { apiUrl } from '../urls';
 import ar from './ar';
 import en from './en';
 
@@ -46,9 +47,32 @@ interface Ctx {
 
 const I18nContext = createContext<Ctx | null>(null);
 
-export function I18nProvider({ initialLang, initialOverrides = {}, children }: { initialLang: Lang; initialOverrides?: Overrides; children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(initialLang);
-  const [overrides, setOverrides] = useState<Overrides>(initialOverrides);
+/** Runs before first paint (see layout.tsx): puts the saved language on <html> so there is no RTL/LTR flash. Default: Arabic. */
+export const LANG_BOOT_SCRIPT = `(function(){try{var m=document.cookie.match(/(?:^|; )lang=(ar|en)/),l=m?m[1]:'ar',d=document.documentElement;d.lang=l;d.dir=l==='ar'?'rtl':'ltr';d.setAttribute('data-lang',l)}catch(e){}})();`;
+
+function cookieLang(): Lang {
+  const m = typeof document === 'undefined' ? null : document.cookie.match(/(?:^|; )lang=(ar|en)/);
+  return m && m[1] === 'en' ? 'en' : 'ar';
+}
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  // Always start as Arabic so the first client render matches the pre-built HTML; the effect below switches to the saved language.
+  const [lang, setLangState] = useState<Lang>('ar');
+  const [overrides, setOverrides] = useState<Overrides>({});
+
+  useEffect(() => {
+    setLangState(cookieLang());
+    document.documentElement.setAttribute('data-ready', '1'); // reveals the page (see globals.css)
+    // Edited UI texts (Settings > Texts). Public endpoint; never blocks the page on failure.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    fetch(apiUrl('/translations'), { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((o: Overrides) => setOverrides(o ?? {}))
+      .catch(() => undefined)
+      .finally(() => clearTimeout(timer));
+    return () => { clearTimeout(timer); ctrl.abort(); };
+  }, []);
 
   const setLang = useCallback((l: Lang) => {
     document.cookie = `lang=${l}; path=/; max-age=31536000; samesite=lax`;
@@ -75,6 +99,11 @@ export function I18nProvider({ initialLang, initialOverrides = {}, children }: {
       pick: (a, e) => (lang === 'ar' ? a || e || '' : e || a || ''),
     };
   }, [lang, setLang, overrides]);
+
+  // Browser-tab title in the visitor's language (and as edited in Settings > Texts).
+  useEffect(() => {
+    document.title = value.t('app.name');
+  }, [value]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

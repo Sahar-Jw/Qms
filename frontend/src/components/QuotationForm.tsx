@@ -1,5 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { quotationHref, uploadUrl } from '@/lib/urls';
 import { AlertTriangle, Building2, Plus, Save, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -117,7 +118,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
       qc.invalidateQueries({ queryKey: ['quotations'] });
       qc.setQueryData(['quotation', q.id], q);
       toast.success(editing ? t('quotations.savedOk') : t('quotations.createdOk', { number: q.quotationNumber }));
-      router.push(`/quotations/${q.id}`);
+      router.push(quotationHref(q.id));
     },
     onError: (e) => toastError(e, t, has),
   });
@@ -142,7 +143,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   return (
     <form onSubmit={handleSubmit((v) => save.mutate(v))} noValidate>
       <PageHeader title={editing ? t('quotations.editTitle', { number: initial!.quotationNumber }) : t('quotations.newTitle')}
-        actions={<Link href={editing ? `/quotations/${initial!.id}` : '/quotations'}><Button variant="outline">{t('common.cancel')}</Button></Link>} />
+        actions={<Link href={editing ? quotationHref(initial!.id) : '/quotations'}><Button variant="outline">{t('common.cancel')}</Button></Link>} />
 
       {missingCompany && (
         <div className="mb-4 flex items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm text-sand">
@@ -265,7 +266,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
               <div className="mb-4 flex items-center gap-3">
                 {company?.logo
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={`/uploads/${company.logo}`} alt="" className="size-11 rounded-full bg-white object-contain" />
+                  ? <img src={uploadUrl(company.logo)} alt="" className="size-11 rounded-full bg-white object-contain" />
                   : <span className="grid size-11 place-items-center rounded-full bg-sand text-ink"><Building2 className="size-5" /></span>}
                 <div className="min-w-0 leading-tight">
                   <div className="text-xs text-stone">{t('quotations.issuingCompany')}</div>

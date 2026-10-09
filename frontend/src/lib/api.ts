@@ -1,4 +1,5 @@
 import { trackRequest } from './activity';
+import { apiUrl, FETCH_CREDENTIALS } from './urls';
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public details?: string[], public extra?: Record<string, unknown>) {
@@ -22,9 +23,9 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   let res: Response;
   let text: string;
   try {
-    res = await fetch(`/api${url}`, {
+    res = await fetch(apiUrl(url), {
       method,
-      credentials: 'same-origin',
+      credentials: FETCH_CREDENTIALS,
       headers: body !== undefined && !isForm ? { 'Content-Type': 'application/json' } : undefined,
       body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
     });

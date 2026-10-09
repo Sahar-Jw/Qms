@@ -1,5 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { uploadUrl } from '@/lib/urls';
 import { Building2, Check, Languages, Palette, ScrollText, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -87,7 +88,7 @@ function CompanyTab() {
                     className={cn('flex items-center gap-4 rounded-2xl border-2 p-4 text-start transition-colors', on ? 'border-cocoa bg-sand' : 'border-stone/60 bg-white hover:border-clay hover:bg-sand/40')}>
                     {c.logo
                       // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={`/uploads/${c.logo}`} alt="" className="size-14 shrink-0 rounded-xl bg-white object-contain p-1" />
+                      ? <img src={uploadUrl(c.logo)} alt="" className="size-14 shrink-0 rounded-xl bg-white object-contain p-1" />
                       : <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-ink text-xl font-bold text-sand">{c.name.charAt(0)}</span>}
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-bold">{c.name}</span>

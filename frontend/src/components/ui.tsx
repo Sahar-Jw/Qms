@@ -1,5 +1,6 @@
 'use client';
 import { ChevronDown, ChevronLeft, ChevronRight, Eye, EyeOff, Inbox, Loader2, X } from 'lucide-react';
+import { uploadUrl } from '@/lib/urls';
 import { usePathname } from 'next/navigation';
 import {
   forwardRef, useEffect, useId, useRef, useState,
@@ -54,7 +55,7 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
 export function Avatar({ name, src, className }: { name: string; src?: string | null; className?: string }) {
   return src
     // eslint-disable-next-line @next/next/no-img-element
-    ? <img src={`/uploads/${src}`} alt="" className={cn('shrink-0 rounded-full bg-white object-cover', className)} />
+    ? <img src={uploadUrl(src)} alt="" className={cn('shrink-0 rounded-full bg-white object-cover', className)} />
     : <span className={cn('grid shrink-0 place-items-center rounded-full bg-clay font-bold text-ink', className)}>{name.trim().charAt(0).toUpperCase()}</span>;
 }
 

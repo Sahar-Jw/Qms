@@ -1,14 +1,16 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { uploadUrl } from '@/lib/urls';
 import { Copy, Eye, FileDown, Lock, Pencil, Printer, Receipt } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/confirm';
 import { Ledger } from '@/components/Totals';
 import { Button, Card, CardHeader, Empty, Loading, StatusBadge, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
+import { apiUrl, FETCH_CREDENTIALS, quotationEditHref, quotationHref } from '@/lib/urls';
 import { trackRequest } from '@/lib/activity';
 import { useMe } from '@/lib/auth';
 import { daysUntil } from '@/lib/dates';
@@ -33,8 +35,12 @@ function Info({ label, value }: { label: string; value?: ReactNode }) {
   );
 }
 
-export default function QuotationDetail() {
-  const { id } = useParams<{ id: string }>();
+export default function QuotationDetailPage() {
+  return <Suspense fallback={<Loading />}><QuotationDetail /></Suspense>;
+}
+
+function QuotationDetail() {
+  const id = useSearchParams().get('id') ?? '';
   const { t, has, pick, lang } = useI18n();
   const me = useMe().data!;
   const qc = useQueryClient();
@@ -53,7 +59,7 @@ export default function QuotationDetail() {
   });
   const duplicate = useMutation({
     mutationFn: () => api.post<QuotationView>(`/quotations/${id}/duplicate`, {}),
-    onSuccess: (data) => { qc.invalidateQueries({ queryKey: ['quotations'] }); toast.success(t('quotations.duplicated', { number: data.quotationNumber })); router.push(`/quotations/${data.id}`); },
+    onSuccess: (data) => { qc.invalidateQueries({ queryKey: ['quotations'] }); toast.success(t('quotations.duplicated', { number: data.quotationNumber })); router.push(quotationHref(data.id)); },
     onError: (e) => toastError(e, t, has),
   });
 
@@ -69,11 +75,11 @@ export default function QuotationDetail() {
         ? t('quotations.oneDayRemaining')
         : t('quotations.daysRemaining', { days: new Intl.NumberFormat(lang).format(remainingDays) });
 
-  const printUrl = (lang: 'ar' | 'en') => `/api/quotations/${q.id}/print?lang=${lang}&autoprint=true${cost ? '&includeCost=true' : ''}`;
+  const printUrl = (lang: 'ar' | 'en') => apiUrl(`/quotations/${q.id}/print?lang=${lang}&autoprint=true${cost ? '&includeCost=true' : ''}`);
   async function downloadPdf(lang: 'ar' | 'en') {
     const done = trackRequest('GET');
     try {
-      const res = await fetch(`/api/quotations/${q!.id}/pdf?lang=${lang}${cost ? '&includeCost=true' : ''}`, { credentials: 'same-origin' });
+      const res = await fetch(apiUrl(`/quotations/${q!.id}/pdf?lang=${lang}${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
         throw Object.assign(new Error(d.message ?? res.statusText), { code: d.code });
@@ -112,7 +118,7 @@ export default function QuotationDetail() {
           <div className="flex items-center gap-4">
             {co.logo
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={`/uploads/${co.logo}`} alt="" className="size-16 rounded-2xl bg-white object-contain p-1" />
+              ? <img src={uploadUrl(co.logo)} alt="" className="size-16 rounded-2xl bg-white object-contain p-1" />
               : <span className="grid size-16 place-items-center rounded-2xl bg-sand text-2xl font-bold text-ink">{co.name.charAt(0)}</span>}
             <div>
               <div className="flex flex-wrap items-center gap-3">
@@ -127,7 +133,7 @@ export default function QuotationDetail() {
             {q.readOnlyReason === 'not_owner' && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-ink/40 px-3.5 py-2 text-xs font-semibold" title={t('quotations.notOwner')}><Eye className="size-4" />{t('quotations.mineOnly')}</span>
             )}
-            {q.editable && <Link href={`/quotations/${q.id}/edit`}><Button variant="soft"><Pencil className="size-4" />{t('common.edit')}</Button></Link>}
+            {q.editable && <Link href={quotationEditHref(q.id)}><Button variant="soft"><Pencil className="size-4" />{t('common.edit')}</Button></Link>}
             <Button variant="dark" loading={duplicate.isPending} onClick={async () => { if (await confirm({ message: t('quotations.duplicateConfirm') })) duplicate.mutate(); }}><Copy className="size-4" />{t('common.duplicate')}</Button>
           </div>
         </div>
