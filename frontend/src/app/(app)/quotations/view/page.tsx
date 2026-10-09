@@ -91,9 +91,19 @@ function QuotationDetail() {
     } catch (e) {
       const code = (e as { code?: string }).code;
       if (code === 'PDF_ENGINE_UNAVAILABLE') {
-        // No Chrome on the server: open the print page instead, and "Save as PDF" in the print dialog.
-        window.open(printUrl(lang), '_blank');
-        toast.info(t('quotations.pdfFallback'));
+        // No Chrome on the server (shared hosting): build the PDF in the browser from the print HTML.
+        try {
+          const r = await fetch(apiUrl(`/quotations/${q!.id}/print?lang=${lang}${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
+          if (!r.ok) throw new Error(r.statusText);
+          const { htmlToPdfBlob } = await import('@/lib/client-pdf');
+          const url = URL.createObjectURL(await htmlToPdfBlob(await r.text()));
+          const a = document.createElement('a');
+          a.href = url; a.download = `${q!.quotationNumber}-${lang}.pdf`; a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        } catch {
+          window.open(printUrl(lang), '_blank');
+          toast.info(t('quotations.pdfFallback'));
+        }
         return;
       }
       toast.error(code && has(`err.${code}`) ? t(`err.${code}`) : (e as Error).message);
