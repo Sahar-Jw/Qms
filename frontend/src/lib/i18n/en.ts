@@ -121,7 +121,9 @@ const en = {
     title: 'Audit log', sub: 'Every change made in the system, newest first.', when: 'When', user: 'User', action: 'Action', record: 'Record', details: 'Details',
     ip: 'IP address', searchPh: 'Search by user or record', allActions: 'All actions', allEntities: 'All records', none: 'No activity found',
     submitted: 'Submitted data', changes: 'Changes', before: 'Before', after: 'After', sideBySide: 'Side by side', inline: 'Old → new', beforeUnavailable: 'Previous value not recorded',
-    trueValue: 'Yes', falseValue: 'No', noDetails: 'No extra data was recorded for this action.', unknownUser: 'Not signed in',
+    trueValue: 'Yes', falseValue: 'No', noDetails: 'No extra data was recorded for this action.',
+    imageAdded: 'New image uploaded', imageReplaced: 'Image replaced with a new one', imageRemoved: 'Image removed',
+    assets: { logo: 'Logo', icon: 'Icon', avatar: 'Profile picture' }, unknownUser: 'Not signed in',
     actions: {
       create: 'Created', update: 'Updated', delete: 'Deleted', activate: 'Activated', deactivate: 'Deactivated', status_change: 'Status changed', duplicate: 'Duplicated',
       login: 'Signed in', login_failed: 'Failed sign-in', logout: 'Signed out', register: 'Registered', change_password: 'Changed password',

@@ -24,17 +24,17 @@ type PickMaterial = Pick<Material, 'id' | 'materialCode' | 'name'> & Partial<Mat
 interface ItemForm {
   id?: number; material: PickMaterial | null; quantity: string; unit: string; unitPrice: string; priceCurrency: string;
   shippingCost: string; shippingCurrency: string; customsCost: string; customsCurrency: string;
-  unitCost: string; costCurrency: string; commissionPercentage: string; notes: string;
+  unitCost: string; costCurrency: string; commissionPercentage: string; taxPercentage: string; notes: string;
 }
 interface FormValues {
   customer: PickCustomer | null; responsibleUserId: string; quotationDate: string; bankName: string; validity: string;
-  paymentMethod: string; paymentLocation: string; deliveryMethod: string; customerPaymentMethod: string; taxPercentage: string; notes: string;
+  paymentMethod: string; paymentLocation: string; deliveryMethod: string; customerPaymentMethod: string; notes: string;
   items: ItemForm[];
 }
 
 const CURRENCIES = ['USD', 'EUR', 'SYP', 'TRY', 'AED', 'SAR', 'GBP', 'JOD', 'EGP'];
 const DEC = /^\d{1,14}(\.\d{1,4})?$/;
-const emptyItem = (): ItemForm => ({ material: null, quantity: '1', unit: '', unitPrice: '', priceCurrency: '', shippingCost: '', shippingCurrency: '', customsCost: '', customsCurrency: '', unitCost: '', costCurrency: '', commissionPercentage: '', notes: '' });
+const emptyItem = (): ItemForm => ({ material: null, quantity: '1', unit: '', unitPrice: '', priceCurrency: '', shippingCost: '', shippingCurrency: '', customsCost: '', customsCurrency: '', unitCost: '', costCurrency: '', commissionPercentage: '', taxPercentage: '', notes: '' });
 const today = () => new Date().toISOString().slice(0, 10);
 const isoDate = (v?: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
 
@@ -44,13 +44,12 @@ function fromView(q: QuotationView): FormValues {
     responsibleUserId: q.responsibleUser ? String(q.responsibleUser.id) : '', quotationDate: q.quotationDate,
     bankName: q.bankName ?? '', validity: isoDate(q.validity), paymentMethod: q.paymentMethod ?? '',
     paymentLocation: q.paymentLocation ?? '', deliveryMethod: q.deliveryMethod ?? '', customerPaymentMethod: q.customerPaymentMethod ?? '',
-    taxPercentage: trimDec(q.taxPercentage),
     notes: q.notes ?? '',
     items: q.items.map((i) => ({
       id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, name: i.materialName } : null,
       quantity: trimDec(i.quantity), unit: i.unit ?? '', unitPrice: trimDec(i.unitPrice), priceCurrency: i.priceCurrency,
       shippingCost: trimDec(i.shippingCost), shippingCurrency: i.priceCurrency, customsCost: trimDec(i.customsCost), customsCurrency: i.priceCurrency,
-      unitCost: trimDec(i.unitCost), costCurrency: i.priceCurrency, commissionPercentage: trimDec(i.commissionPercentage), notes: i.notes ?? '',
+      unitCost: trimDec(i.unitCost), costCurrency: i.priceCurrency, commissionPercentage: trimDec(i.commissionPercentage), taxPercentage: trimDec(i.taxPercentage), notes: i.notes ?? '',
     })),
   };
 }
@@ -68,7 +67,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   const users = useQuery({ queryKey: ['users', 'lookup'], queryFn: () => api.get<{ id: number; fullName: string }[]>('/users/lookup'), enabled: editing });
 
   const { register, control, handleSubmit, setValue, getValues, formState: { errors } } = useForm<FormValues>({
-    defaultValues: initial ? fromView(initial) : { customer: null, responsibleUserId: String(me.id), quotationDate: today(), bankName: '', validity: '', paymentMethod: '', paymentLocation: '', deliveryMethod: '', customerPaymentMethod: '', taxPercentage: '', notes: '', items: [emptyItem()] },
+    defaultValues: initial ? fromView(initial) : { customer: null, responsibleUserId: String(me.id), quotationDate: today(), bankName: '', validity: '', paymentMethod: '', paymentLocation: '', deliveryMethod: '', customerPaymentMethod: '', notes: '', items: [emptyItem()] },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const items = useWatch({ control, name: 'items' });
@@ -101,7 +100,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
         ...(editing ? { responsibleUserId: Number(v.responsibleUserId) } : {}),
         quotationDate: v.quotationDate,
         bankName: str(v.bankName), validity: v.validity, paymentMethod: str(v.paymentMethod),
-        paymentLocation: str(v.paymentLocation), deliveryMethod: str(v.deliveryMethod), customerPaymentMethod: str(v.customerPaymentMethod), taxPercentage: str(v.taxPercentage),
+        paymentLocation: str(v.paymentLocation), deliveryMethod: str(v.deliveryMethod), customerPaymentMethod: str(v.customerPaymentMethod),
         notes: editing ? (str(v.notes) || null) : (str(v.notes) || undefined),
         items: v.items.map((i) => {
           const cur = i.priceCurrency.trim().toUpperCase(); // one currency for price, shipping, customs and cost
@@ -109,7 +108,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
             id: i.id, materialId: i.material!.id, quantity: str(i.quantity), unit: str(i.unit), unitPrice: str(i.unitPrice), priceCurrency: cur,
             shippingCost: str(i.shippingCost), shippingCurrency: cur, customsCost: str(i.customsCost), customsCurrency: cur,
             ...(canCost ? { unitCost: str(i.unitCost), costCurrency: cur } : {}),
-            commissionPercentage: str(i.commissionPercentage), notes: str(i.notes) || undefined,
+            commissionPercentage: str(i.commissionPercentage), taxPercentage: str(i.taxPercentage), notes: str(i.notes) || undefined,
           };
         }),
       };
@@ -188,12 +187,6 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
               <Field label={t('quotations.paymentMethod')} required error={errors.paymentMethod?.message}><Input maxLength={150} {...register('paymentMethod', reqText)} /></Field>
               <Field label={t('quotations.paymentLocation')} required error={errors.paymentLocation?.message}><Input maxLength={150} {...register('paymentLocation', reqText)} /></Field>
               <Field label={t('quotations.deliveryMethod')} required error={errors.deliveryMethod?.message}><Input maxLength={150} {...register('deliveryMethod', reqText)} /></Field>
-              <Field label={t('quotations.tax')} required error={errors.taxPercentage?.message}>
-                <Input inputMode="decimal" dir="ltr" placeholder="0" {...register('taxPercentage', {
-                  ...req,
-                  validate: (v) => (DEC.test(v.trim()) && Number(v) <= 100) || t('err.INVALID_PERCENTAGE'),
-                })} />
-              </Field>
               <Field label={t('quotations.customerPayment')} required error={errors.customerPaymentMethod?.message} className="sm:col-span-2 xl:col-span-3"><Input maxLength={100} placeholder={t('quotations.customerPaymentPh')} {...register('customerPaymentMethod', reqText)} /></Field>
               <Field label={t('quotations.internalNotes')} className="sm:col-span-2 xl:col-span-3"><Textarea rows={2} {...register('notes')} /></Field>
             </div>
@@ -235,6 +228,12 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                       <Field label={t('quotations.customs')} required error={e?.customsCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.customsCost`, decRule(true))} /></Field>
                       {canCost && <Field label={t('quotations.cost')} required error={e?.unitCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.unitCost`, decRule(true))} /></Field>}
                       <Field label={t('quotations.commission')} required error={e?.commissionPercentage?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.commissionPercentage`, decRule(true))} /></Field>
+                      <Field label={t('quotations.tax')} required error={e?.taxPercentage?.message}>
+                        <Input inputMode="decimal" dir="ltr" placeholder="0" {...register(`items.${i}.taxPercentage`, {
+                          ...req,
+                          validate: (v) => (DEC.test(String(v).trim()) && Number(v) <= 100) || t('err.INVALID_PERCENTAGE'),
+                        })} />
+                      </Field>
 
                       <Field label={t('quotations.itemNotes')} className={canCost ? 'col-span-2 md:col-span-3' : 'col-span-2 md:col-span-4'}><Input {...register(`items.${i}.notes`)} /></Field>
                       {canCost && (

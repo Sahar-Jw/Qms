@@ -1,6 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Eye, Search } from 'lucide-react';
+import { ArrowRight, Eye, Image as ImageIcon, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button, Card, CardHeader, Empty, Input, Loading, Modal, Pagination, Select, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -29,6 +29,9 @@ const valueText = (value: unknown, yes: string, no: string): string => {
   }
   return String(value);
 };
+
+/** Fields that hold an uploaded picture. */
+const IMAGE_FIELDS = new Set(['avatar', 'logo', 'icon']);
 
 function actionStyle(a: string) {
   if (a === 'delete' || a === 'login_failed') return 'bg-red-50 text-red-800 ring-1 ring-inset ring-red-800/30';
@@ -66,6 +69,8 @@ export function AuditTab() {
     placeholderData: (p) => p,
   });
 
+  const imageChange = (before: unknown, after: unknown) =>
+    t(!after ? 'audit.imageRemoved' : before ? 'audit.imageReplaced' : 'audit.imageAdded');
   const label = (group: 'actions' | 'entities', key: string) => (has(`audit.${group}.${key}`) ? t(`audit.${group}.${key}`) : key);
   const filtered = !!(q || action || entity || from || to);
   const clear = () => { setQ(''); setAction(''); setEntity(''); setFrom(''); setTo(''); };
@@ -161,7 +166,15 @@ export function AuditTab() {
                 )}
               </div>
               {changedFields.length ? changedFields.map((field) => (
-                changeView === 'sideBySide' ? (
+                IMAGE_FIELDS.has(field) ? (
+                  // Pictures are not shown (only their file name is stored): say which one changed and how.
+                  <div key={field} className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-sand/60 p-3">
+                    <ImageIcon className="size-4 shrink-0 text-cocoa" aria-hidden="true" />
+                    <span className="font-semibold">{t(`audit.assets.${field}`)}</span>
+                    <span className="text-cocoa">·</span>
+                    <span>{imageChange(beforeValues?.[field], afterValues?.[field])}</span>
+                  </div>
+                ) : changeView === 'sideBySide' ? (
                   <div key={field} className="grid gap-3 rounded-xl bg-sand/60 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                     <div className="min-w-0">
                       <div className="mb-1 text-xs font-semibold text-cocoa">{fieldName(field)} · {t('audit.before')}</div>

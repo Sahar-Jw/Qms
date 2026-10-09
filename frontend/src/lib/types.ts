@@ -54,7 +54,7 @@ export interface ItemView {
   id: number; materialId: number | null; materialCode: string; materialName: string | null;
   unit: string | null; sortOrder: number; quantity: string; unitPrice: string; priceCurrency: string;
   unitCost: string | null; costCurrency: string | null; shippingCost: string | null; shippingCurrency: string | null;
-  customsCost: string | null; customsCurrency: string | null; commissionPercentage: string | null; notes: string | null;
+  customsCost: string | null; customsCurrency: string | null; commissionPercentage: string | null; taxPercentage: string; notes: string | null;
   amounts: Amounts[];
 }
 
@@ -73,7 +73,7 @@ export interface QuotationView {
   responsibleUser: { id: number; fullName: string } | null;
   customerPaymentMethod: string | null;
   bankName: string | null; validity: string | null; deliveryTime: string | null; paymentMethod: string | null;
-  paymentLocation: string | null; deliveryMethod: string | null; taxPercentage: string; notes: string | null;
+  paymentLocation: string | null; deliveryMethod: string | null; notes: string | null;
   items: ItemView[]; totals: Amounts[]; createdById: number | null; editable: boolean; readOnlyReason: 'status' | 'not_owner' | null; allowedStatuses: QStatus[];
   createdAt: string; updatedAt: string;
 }

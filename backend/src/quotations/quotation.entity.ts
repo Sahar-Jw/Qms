@@ -64,10 +64,6 @@ export class Quotation extends AuditBase {
   @Column({ type: 'varchar', length: 150, nullable: true })
   deliveryMethod: string | null;
 
-  /** Quotation-level tax % (0-100), required. Stored only - NOT used in any formula until the SRS defines it. */
-  @Column({ type: 'decimal', precision: 7, scale: 4, default: 0 })
-  taxPercentage: string;
-
   /** Internal notes - never printed. */
   @Column({ type: 'text', nullable: true })
   notes: string | null;

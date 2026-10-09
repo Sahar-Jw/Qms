@@ -116,7 +116,7 @@ export const PART_LABELS: Record<string, Pair> = {
   edited: ['معدّل', 'Edited'], defaultText: ['النص الأصلي', 'Original text'], keepVars: ['تنبيه الرموز', 'Placeholders note'], missingVars: ['رسالة رمز ناقص', 'Missing placeholder message'], tip: ['نصيحة', 'Tip'],
   // audit
   when: ['الوقت', 'When'], user: ['المستخدم', 'User'], action: ['الإجراء', 'Action'], record: ['السجل', 'Record'], ip: ['عنوان IP', 'IP address'], allActions: ['كل الإجراءات', 'All actions'],
-  allEntities: ['كل السجلات', 'All records'], submitted: ['البيانات المُرسلة', 'Submitted data'], noDetails: ['رسالة لا تفاصيل', 'No details message'], unknownUser: ['مستخدم غير مسجّل', 'Not signed in user'],
+  allEntities: ['كل السجلات', 'All records'], submitted: ['البيانات المُرسلة', 'Submitted data'], noDetails: ['رسالة لا تفاصيل', 'No details message'], imageAdded: ['رسالة رفع صورة', 'Image uploaded message'], imageReplaced: ['رسالة استبدال صورة', 'Image replaced message'], imageRemoved: ['رسالة حذف صورة', 'Image removed message'], avatar: ['الصورة الشخصية', 'Profile picture'], unknownUser: ['مستخدم غير مسجّل', 'Not signed in user'],
   create: ['إنشاء', 'Created'], update: ['تحديث', 'Updated'], delete: ['حذف', 'Deleted'], status_change: ['تغيير الحالة', 'Status changed'], login_failed: ['فشل تسجيل الدخول', 'Failed sign-in'],
   change_password: ['تغيير كلمة المرور', 'Changed password'], forgot_password: ['طلب إعادة كلمة المرور', 'Asked for password reset'], reset_password: ['إعادة تعيين كلمة المرور', 'Reset password'],
   translations: ['نصوص الموقع', 'Website texts'], auth: ['الحساب', 'Account'], nothing: ['رسالة لا نتائج', 'No matches message'],

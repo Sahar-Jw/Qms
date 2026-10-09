@@ -56,6 +56,10 @@ export class QuotationItemDto {
   @IsNotEmpty() @DecimalString()
   commissionPercentage: string;
 
+  /** Tax % of this line (0-100). Required on every line. */
+  @IsNotEmpty() @DecimalString()
+  taxPercentage: string;
+
   /** Internal note, never printed. */
   @IsOptional() @TrimOptional() @IsString()
   notes?: string;
@@ -98,10 +102,6 @@ export class CreateQuotationDto {
 
   @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(150)
   deliveryMethod: string;
-
-  /** Tax percentage (0-100). Required on a new quotation. */
-  @IsNotEmpty() @DecimalString()
-  taxPercentage: string;
 
   /** Internal note, never printed. */
   @IsOptional() @TrimOptional() @IsString()

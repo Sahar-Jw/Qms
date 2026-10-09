@@ -173,7 +173,6 @@ async function saveFixture(manager: EntityManager) {
       paymentMethod: spec.payment ?? null,
       paymentLocation: 'As agreed with the customer',
       deliveryMethod: 'Road freight',
-      taxPercentage: '5',
       notes: spec.notes ?? null,
       createdById: creator.id,
       updatedById: creator.id,
@@ -199,6 +198,7 @@ async function saveFixture(manager: EntityManager) {
         customsCost: line.customs ?? null,
         customsCurrency: line.customs ? line.customsCurrency ?? material.currency : null,
         commissionPercentage: line.commission ?? null,
+        taxPercentage: '5',
         notes: line.notes ?? null,
       }));
       const { amounts } = calc.calcItem(item);

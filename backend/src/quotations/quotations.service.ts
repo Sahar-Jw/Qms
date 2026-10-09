@@ -195,6 +195,8 @@ export class QuotationsService {
 
       this.assertPercent(inc.commissionPercentage, 'commissionPercentage');
       item.commissionPercentage = inc.commissionPercentage ?? null;
+      this.assertPercent(inc.taxPercentage, 'taxPercentage');
+      item.taxPercentage = inc.taxPercentage;
       item.notes = inc.notes ?? null;
 
       const saved = await m.save(QuotationItem, item);
@@ -218,7 +220,6 @@ export class QuotationsService {
       const responsibleId = user.id;
       await this.assertActive(m, User, responsibleId, 'USER', 'Responsible user');
 
-      this.assertPercent(dto.taxPercentage, 'taxPercentage');
       const { items, ...header } = dto;
       const q = m.create(Quotation, {
         ...header,
@@ -251,10 +252,9 @@ export class QuotationsService {
       }
 
       const { items, ...header } = dto;
-      for (const key of ['customerId', 'quotationDate', 'taxPercentage'] as const) {
+      for (const key of ['customerId', 'quotationDate'] as const) {
         if (header[key] === null) throw new BadRequestException({ code: 'FIELD_REQUIRED', message: `${key} cannot be cleared` });
       }
-      this.assertPercent(header.taxPercentage, 'taxPercentage');
       this.assertValidityDate(
         header.quotationDate === undefined ? q.quotationDate : header.quotationDate,
         header.validity === undefined ? q.validity : header.validity,
@@ -310,7 +310,6 @@ export class QuotationsService {
         paymentMethod: src.paymentMethod,
         paymentLocation: src.paymentLocation,
         deliveryMethod: src.deliveryMethod,
-        taxPercentage: src.taxPercentage,
         notes: src.notes,
         createdById: user.id,
         updatedById: user.id,
@@ -407,6 +406,7 @@ export class QuotationsService {
         customsCost: i.customsCost,
         customsCurrency: i.customsCurrency,
         commissionPercentage: i.commissionPercentage,
+        taxPercentage: i.taxPercentage,
         notes: i.notes,
         amounts: [...(i.amounts ?? [])]
           .sort((a, b) => a.currency.localeCompare(b.currency))
@@ -436,7 +436,6 @@ export class QuotationsService {
       paymentMethod: q.paymentMethod,
       paymentLocation: q.paymentLocation,
       deliveryMethod: q.deliveryMethod,
-      taxPercentage: q.taxPercentage,
       notes: q.notes,
       items,
       totals: this.calc.aggregate(items.map((i) => i.amounts)),

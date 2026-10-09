@@ -69,7 +69,7 @@ Logos are served at `/uploads/logos/<file>` (the `logo` field of a company).
 - **Snapshots**: item stores material code/names; later material edits don't change old quotations.
 - **Status**: `draft`, `expired`, `locked` (cancelled), or `invoiced`. New quotations start as `draft`; they automatically become `expired` after their validity date unless invoiced or cancelled. Draft and expired quotations can be cancelled or invoiced; cancelled and invoiced quotations are final/read-only. `npm run seed:statuses` normalizes old rows after a database reset/upgrade.
 - **Cost**: only manager and above can set or change cost; an employee's edit preserves existing costs.
-- **Notes** (quotation and item) are internal and never printed. Tax % (quotation, **required**, 0-100) and commission % (item) are stored but not used in any formula (SRS leaves them undefined). Old rows without a tax are filled by migration `QuotationTaxRequired` (or `backend/sql/2026-10-10-quotation-tax-required.sql`).
+- **Notes** (quotation and item) are internal and never printed. Tax % (**per item**, required, 0-100) and commission % (item) are stored but not used in any formula (SRS leaves them undefined). Migration `QuotationTaxOnItems` moves the tax from the quotation to its items (`backend/sql/2026-10-10-tax-on-items.sql`).
 - **Customer payment way**: one plain text field on the quotation (`customerPaymentMethod`, max 100 chars). The user types how the client will pay, in any language; it is printed exactly as typed. No select, no lookup table. Send `""` or `null` to clear.
 - **Print/PDF**: Arabic (RTL) or English (LTR) chosen per print; Cairo font embedded, logo inlined. Customer/material names print in the chosen language (fallback to the other one).
 

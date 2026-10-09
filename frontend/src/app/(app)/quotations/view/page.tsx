@@ -167,7 +167,7 @@ function QuotationDetail() {
                 <thead><tr>
                   <th className={th}>#</th><th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('quotations.quantity')}</th>
                   <th className={th}>{t('quotations.unitPrice')}</th><th className={th}>{t('quotations.value')}</th><th className={th}>{t('quotations.shipping')}</th>
-                  <th className={th}>{t('quotations.customs')}</th><th className={th}>{t('quotations.required')}</th>{canCost && <th className={th}>{t('quotations.totalCost')}</th>}
+                  <th className={th}>{t('quotations.customs')}</th><th className={th}>{t('quotations.tax')}</th><th className={th}>{t('quotations.required')}</th>{canCost && <th className={th}>{t('quotations.totalCost')}</th>}
                 </tr></thead>
                 <tbody>
                   {q.items.map((i, n) => (
@@ -180,6 +180,7 @@ function QuotationDetail() {
                       <td className={td}><Money amounts={i.amounts} field="value" /></td>
                       <td className={td}><Money amounts={i.amounts} field="shipping" /></td>
                       <td className={td}><Money amounts={i.amounts} field="customs" /></td>
+                      <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.taxPercentage)}%</td>
                       <td className={`${td} font-bold`}><Money amounts={i.amounts} field="required" /></td>
                       {canCost && <td className={`${td} text-cocoa`}><Money amounts={i.amounts} field="cost" /></td>}
                     </tr>
@@ -206,7 +207,6 @@ function QuotationDetail() {
               <Info label={t('quotations.paymentLocation')} value={q.paymentLocation} />
               <Info label={t('quotations.deliveryMethod')} value={q.deliveryMethod} />
               <Info label={t('quotations.customerPayment')} value={q.customerPaymentMethod} />
-              <Info label={t('quotations.tax')} value={q.taxPercentage ? `${fmt(q.taxPercentage)}%` : null} />
             </dl>
           </Card>
           {q.notes && (

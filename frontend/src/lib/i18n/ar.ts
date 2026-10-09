@@ -123,7 +123,9 @@ const ar: Shape<typeof en> = {
     title: 'سجل التدقيق', sub: 'كل تغيير تم في النظام، الأحدث أولاً.', when: 'الوقت', user: 'المستخدم', action: 'الإجراء', record: 'السجل', details: 'التفاصيل',
     ip: 'عنوان IP', searchPh: 'ابحث باسم المستخدم أو السجل', allActions: 'كل الإجراءات', allEntities: 'كل السجلات', none: 'لا يوجد نشاط',
     submitted: 'البيانات المُرسلة', changes: 'التغييرات', before: 'قبل', after: 'بعد', sideBySide: 'جنباً إلى جنب', inline: 'قديم ← جديد', beforeUnavailable: 'القيمة السابقة غير مسجّلة',
-    trueValue: 'نعم', falseValue: 'لا', noDetails: 'لم تُسجَّل بيانات إضافية لهذا الإجراء.', unknownUser: 'غير مسجّل الدخول',
+    trueValue: 'نعم', falseValue: 'لا', noDetails: 'لم تُسجَّل بيانات إضافية لهذا الإجراء.',
+    imageAdded: 'تم رفع صورة جديدة', imageReplaced: 'تم استبدال الصورة بصورة جديدة', imageRemoved: 'تم حذف الصورة',
+    assets: { logo: 'الشعار', icon: 'الأيقونة', avatar: 'الصورة الشخصية' }, unknownUser: 'غير مسجّل الدخول',
     actions: {
       create: 'إنشاء', update: 'تعديل', delete: 'حذف', activate: 'تفعيل', deactivate: 'إلغاء التفعيل', status_change: 'تغيير الحالة', duplicate: 'نسخ',
       login: 'تسجيل دخول', login_failed: 'محاولة دخول فاشلة', logout: 'تسجيل خروج', register: 'تسجيل حساب', change_password: 'تغيير كلمة المرور',
