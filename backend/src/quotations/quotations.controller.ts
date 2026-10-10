@@ -1,9 +1,8 @@
-import { Body, Controller, ForbiddenException, Get, Header, Param, ParseIntPipe, Patch, Post, Query, StreamableFile } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, ParseIntPipe, Patch, Post, Query, StreamableFile } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthUser } from '../common/auth-user';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { MinRole } from '../common/decorators/min-role.decorator';
-import { ROLE_RANK, RoleCode } from '../common/enums';
 import { PdfService } from '../pdf/pdf.service';
 import { ChangeStatusDto, CreateQuotationDto, DuplicateQuotationDto, ListQuotationsDto, PrintQueryDto, UpdateQuotationDto } from './dto/quotation.dto';
 import { QuotationsService } from './quotations.service';
@@ -65,11 +64,7 @@ export class QuotationsController {
     return new StreamableFile(buf, { type: 'application/pdf', disposition: `inline; filename="${view.quotationNumber}-${q.lang}.pdf"` });
   }
 
-  private costAllowed(q: PrintQueryDto, me: AuthUser): boolean {
-    if (!q.includeCost) return false;
-    if (ROLE_RANK[me.role] < ROLE_RANK[RoleCode.MANAGER]) {
-      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Only managers can print cost lines' });
-    }
-    return true;
+  private costAllowed(q: PrintQueryDto, _me: AuthUser): boolean {
+    return !!q.includeCost;
   }
 }

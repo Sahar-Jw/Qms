@@ -17,7 +17,7 @@ import { daysUntil } from '@/lib/dates';
 import { toastError } from '@/lib/errors';
 import { useI18n } from '@/lib/i18n';
 import { fmt, isZero } from '@/lib/money';
-import { hasRole, type Amounts, type QStatus, type QuotationView } from '@/lib/types';
+import { type Amounts, type QStatus, type QuotationView } from '@/lib/types';
 
 function Money({ amounts, field }: { amounts: Amounts[]; field: 'value' | 'shipping' | 'customs' | 'required' | 'cost' }) {
   const rows = amounts.filter((a) => !isZero(a[field]));
@@ -47,7 +47,7 @@ function QuotationDetail() {
   const router = useRouter();
   const confirm = useConfirm();
   const [cost, setCost] = useState(false);
-  const canCost = hasRole(me.role, 'manager');
+  const canCost = true; // cost is open to every role
 
   const query = useQuery({ queryKey: ['quotation', Number(id)], queryFn: () => api.get<QuotationView>(`/quotations/${id}`) });
   const q = query.data;

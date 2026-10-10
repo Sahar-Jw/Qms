@@ -16,7 +16,7 @@ import { daysUntil } from '@/lib/dates';
 import { toastError } from '@/lib/errors';
 import { useI18n } from '@/lib/i18n';
 import { aggregate, calcItem, fmt, trimDec } from '@/lib/money';
-import { hasRole, type Customer, type Material, type Paginated, type QuotationView } from '@/lib/types';
+import { type Customer, type Material, type Paginated, type QuotationView } from '@/lib/types';
 
 type PickCustomer = Pick<Customer, 'id' | 'companyName'> & Partial<Customer>;
 type PickMaterial = Pick<Material, 'id' | 'materialCode' | 'name'> & Partial<Material>;
@@ -60,7 +60,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   const qc = useQueryClient();
   const me = useMe().data!;
   const settings = useSettings().data;
-  const canCost = hasRole(me.role, 'manager');
+  const canCost = true; // cost is open to every role
   const editing = !!initial;
   const company = editing ? initial!.company : settings?.issuingCompany;
 

@@ -6,7 +6,7 @@ import { DataSource, EntityManager, In, ObjectLiteral, Repository } from 'typeor
 import { CalcService } from '../calc/calc.service';
 import { AuthUser } from '../common/auth-user';
 import { Paginated, paginated } from '../common/dto/pagination.dto';
-import { QuotationStatus, ROLE_RANK, RoleCode } from '../common/enums';
+import { QuotationStatus } from '../common/enums';
 import { canEditQuotation, canSeeLocked, isTopTier } from '../common/policy';
 import { Company } from '../companies/company.entity';
 import { Customer } from '../customers/customer.entity';
@@ -46,8 +46,9 @@ export class QuotationsService {
     }
   }
 
-  private canEditCost(user: AuthUser) {
-    return ROLE_RANK[user.role] >= ROLE_RANK[RoleCode.MANAGER];
+  /** Cost is open to every role (employees included). */
+  private canEditCost(_user: AuthUser) {
+    return true;
   }
 
   allowedStatuses(status: QuotationStatus, canUseStatus: boolean): QuotationStatus[] {
