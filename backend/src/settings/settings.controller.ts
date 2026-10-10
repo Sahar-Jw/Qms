@@ -10,6 +10,7 @@ import { randomBytes } from 'crypto';
 import { AuthUser } from '../common/auth-user';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { MinRole } from '../common/decorators/min-role.decorator';
+import { Public } from '../common/decorators/public.decorator';
 import { RoleCode } from '../common/enums';
 import { uploadsRoot } from '../config/uploads';
 import { SettingsService } from './settings.service';
@@ -38,6 +39,10 @@ class UpdateThemeDto {
 class UpdateBrandDto {
   @IsOptional() @MaxLength(120)
   websiteName?: string;
+
+  /** Browser tab title. Empty string = fall back to the website name. */
+  @IsOptional() @MaxLength(120)
+  tabTitle?: string;
 
   @IsOptional() @MaxLength(200)
   tagline?: string;
@@ -86,6 +91,8 @@ export class SettingsController {
     return this.settings.setIssuingCompany(me.id, dto.issuingCompanyId);
   }
 
+  /** Public: the landing and login pages show the site name and logo before anyone signs in. */
+  @Public()
   @Get('brand')
   getBrand() {
     return this.settings.getBrand();
@@ -127,7 +134,8 @@ export class SettingsController {
     return this.settings.removeBrandAsset('icon', me.id);
   }
 
-  /** Any signed-in user: everyone sees the site in the saved colours. */
+  /** Public: visitors (landing / login) see the site in the saved colours too, not only signed-in users. */
+  @Public()
   @Get('theme')
   theme() {
     return this.settings.getTheme();

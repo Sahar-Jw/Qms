@@ -35,7 +35,7 @@ export const PART_LABELS: Record<string, Pair> = {
   // groups
   tabs: ['التبويبات', 'Tabs'], colors: ['الألوان', 'Colours'], usedFor: ['يُستخدم في', 'Used for'], actions: ['الإجراءات', 'Actions'], entities: ['السجلات', 'Records'],
   // generic
-  name: ['الاسم', 'Name'], title: ['العنوان', 'Title'], sub: ['الوصف تحت العنوان', 'Description under the title'], tagline: ['الشعار النصي', 'Tagline'], websiteName: ['اسم الموقع', 'Website name'], logo: ['الشعار', 'Logo'], icon: ['الأيقونة', 'Icon'],
+  name: ['الاسم', 'Name'], title: ['العنوان', 'Title'], sub: ['الوصف تحت العنوان', 'Description under the title'], tagline: ['الشعار النصي', 'Tagline'], websiteName: ['اسم الموقع', 'Website name'], tabTitle: ['عنوان تبويب المتصفح', 'Browser tab title'], tabTitleHint: ['وصف عنوان التبويب', 'Tab title hint'], logo: ['الشعار', 'Logo'], icon: ['الأيقونة', 'Icon'],
   profile: ['الملف الشخصي', 'My profile'], dashboard: ['لوحة التحكم', 'Dashboard'], quotations: ['عروض الأسعار', 'Quotations'], customers: ['العملاء', 'Customers'],
   materials: ['المواد', 'Materials'], companies: ['الشركات', 'Companies'], users: ['المستخدمون', 'Users'], settings: ['الإعدادات', 'Settings'], search: ['البحث', 'Search'],
   save: ['حفظ', 'Save'], cancel: ['إلغاء', 'Cancel'], edit: ['تعديل', 'Edit'], add: ['إضافة', 'Add'], new: ['جديد', 'New'], all: ['الكل', 'All'], status: ['الحالة', 'Status'],
@@ -88,7 +88,7 @@ export const PART_LABELS: Record<string, Pair> = {
   customerPh: ['تلميح اختيار العميل', 'Customer picker hint'], quantity: ['الكمية', 'Quantity'], unit: ['الوحدة', 'Unit'], unitPrice: ['سعر الوحدة', 'Unit price'], currency: ['العملة', 'Currency'],
   shipping: ['الشحن', 'Shipping'], customs: ['الجمارك', 'Customs'], cost: ['التكلفة', 'Cost'], totalCost: ['إجمالي التكلفة', 'Total cost'], summary: ['الملخص', 'Summary'], itemsCount: ['عدد البنود', 'Number of items'],
   currenciesCount: ['عدد العملات', 'Number of currencies'], commission: ['العمولة', 'Commission'], value: ['القيمة', 'Value'], perCurrency: ['المجاميع حسب العملة', 'Totals by currency'],
-  noItems: ['رسالة إضافة بند', 'Add at least one item message'], issuingCompany: ['الشركة المُصدِرة', 'Issuing company'], changeInSettings: ['رابط التغيير من الإعدادات', 'Change in settings link'],
+  noItems: ['رسالة إضافة بند', 'Add at least one item message'], issuingCompany: ['الشركة المُصدِرة', 'Issuing company'], changeInSettings: ['رابط التغيير من الإعدادات', 'Change in settings link'], companyDraftHint: ['تلميح تغيير الشركة', 'Change company hint'],
   companyMissing: ['رسالة اختيار الشركة', 'Choose company message'], printAr: ['زر الطباعة بالعربية', 'Print Arabic button'], printEn: ['زر الطباعة بالإنجليزية', 'Print English button'],
   pdfFallback: ['رسالة تعذر ملف PDF', 'PDF unavailable message'], pdfAr: ['زر PDF عربي', 'Arabic PDF button'], pdfEn: ['زر PDF إنجليزي', 'English PDF button'], includeCost: ['خيار تضمين التكلفة', 'Include cost option'],
   readOnly: ['رسالة العرض للقراءة فقط', 'Read-only message'], notOwner: ['رسالة ليس صاحب العرض', 'Not the owner message'], mineOnly: ['عروضي فقط', 'My quotations only'],

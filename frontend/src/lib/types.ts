@@ -26,6 +26,7 @@ export interface Settings { issuingCompany: (PickCompany & { isActive: boolean }
 
 export interface BrandSettings {
   websiteName: string;
+  tabTitle: string;
   tagline: string;
   logo: string | null;
   icon: string | null;

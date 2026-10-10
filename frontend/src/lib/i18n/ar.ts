@@ -62,7 +62,7 @@ const ar: Shape<typeof en> = {
     tax: 'نسبة الضريبة %', internalNotes: 'ملاحظات داخلية (لا تُطبع)', itemNotes: 'ملاحظة البند (لا تُطبع)',
     material: 'المادة', materialPh: 'ابحث بالرمز أو الاسم', customerPh: 'ابحث عن عميل', quantity: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة',
     currency: 'العملة', shipping: 'الشحن', customs: 'التخليص الجمركي', cost: 'تكلفة الوحدة', totalCost: 'التكلفة', summary: 'الملخص', itemsCount: 'البنود', currenciesCount: 'العملات', commission: 'العمولة %', value: 'القيمة', required: 'المطلوب',
-    perCurrency: 'الإجماليات حسب العملة', noItems: 'أضف بنداً واحداً على الأقل', issuingCompany: 'تصدر باسم', changeInSettings: 'تغيير من الإعدادات',
+    perCurrency: 'الإجماليات حسب العملة', noItems: 'أضف بنداً واحداً على الأقل', issuingCompany: 'تصدر باسم', changeInSettings: 'تغيير من الإعدادات', companyDraftHint: 'يمكنك تغيير الشركة طالما أن العرض مسودة.',
     companyMissing: 'اختر الشركة المُصدِرة من الإعدادات قبل إنشاء العروض.', printAr: 'طباعة عربي', printEn: 'طباعة إنجليزي',
     pdfFallback: 'محرك PDF غير مثبّت على الخادم. فُتحت صفحة الطباعة: اختر "حفظ كـ PDF" كطابعة.', pdfAr: 'PDF عربي', pdfEn: 'PDF إنجليزي', includeCost: 'مع التكلفة', readOnly: 'هذا العرض للقراءة فقط.', notOwner: 'يمكنك تعديل العروض التي أنشأتها فقط.', mineOnly: 'للعرض فقط', duplicated: 'تم إنشاء النسخة: {number}',
     duplicateConfirm: 'إنشاء نسخة كاملة من هذا العرض كمسودة جديدة؟', info: 'المعلومات', contact: 'جهة الاتصال', createdBy: 'المسؤول',
@@ -90,8 +90,8 @@ const ar: Shape<typeof en> = {
     tabs: { company: 'الشركة', brand: 'هوية الموقع', theme: 'المظهر', texts: 'النصوص', audit: 'سجل التدقيق' },
   },
   brand: {
-    title: 'هوية الموقع', sub: 'حدّث اسم الموقع، الشعار، الأيقونة والوصف. تظهر المعاينة مباشرة قبل الحفظ.',
-    websiteName: 'اسم الموقع', tagline: 'الشعار النصي', logo: 'الشعار', icon: 'الأيقونة', upload: 'رفع', remove: 'حذف',
+    title: 'هوية الموقع', sub: 'حدّث اسم الموقع، عنوان تبويب المتصفح، الشعار، الأيقونة والوصف. تظهر المعاينة مباشرة قبل الحفظ.',
+    websiteName: 'اسم الموقع', tabTitle: 'عنوان تبويب المتصفح', tabTitleHint: 'النص الذي يظهر بجانب أيقونة الموقع في تبويب المتصفح. اتركه فارغاً لاستخدام اسم الموقع.', tagline: 'الشعار النصي', logo: 'الشعار', icon: 'الأيقونة', upload: 'رفع', remove: 'حذف',
     logoHint: 'PNG أو JPG أو WEBP ويظهر في شريط التطبيق وصفحات النظام.', iconHint: 'يُستخدم في الشريط الجانبي كأيقونة تبويب المتصفح.', preview: 'معاينة مباشرة',
     saved: 'تم حفظ هوية الموقع', logoSaved: 'تم تحديث الشعار', iconSaved: 'تم تحديث الأيقونة', logoRemoved: 'تم حذف الشعار', iconRemoved: 'تم حذف الأيقونة',
   },
@@ -145,7 +145,7 @@ const ar: Shape<typeof en> = {
     PRICE_CURRENCY_REQUIRED: 'أدخل عملة السعر', COMPANY_MISMATCH: 'تصدر العروض باسم الشركة المختارة في الإعدادات', CANNOT_DEACTIVATE_SELF: 'لا يمكنك إيقاف حسابك الخاص',
     VALIDITY_BEFORE_QUOTATION_DATE: 'لا يمكن أن يكون تاريخ الصلاحية قبل تاريخ عرض السعر',
     CANNOT_CHANGE_OWN_ROLE: 'لا يمكنك تغيير دورك', WRONG_CURRENT_PASSWORD: 'كلمة المرور الحالية غير صحيحة', PDF_ENGINE_UNAVAILABLE: 'خدمة PDF غير متاحة على هذا الخادم. استخدم الطباعة.',
-    INVALID_FILE_TYPE: 'يُسمح بصور PNG أو JPG أو WEBP فقط', INTERNAL_ERROR: 'حدث خطأ في الخادم', NETWORK: 'تعذّر الاتصال بالخادم', QUOTATION_NOT_FOUND: 'العرض غير موجود', COMPANY_NOT_FOUND: 'الشركة غير موجودة', COMPANY_INACTIVE: 'هذه الشركة معطّلة', COMPANY_CANNOT_CHANGE: 'لا يمكن تغيير الشركة المُصدِرة لعرض موجود', CUSTOMER_NOT_FOUND: 'العميل غير موجود', MATERIAL_NOT_FOUND: 'المادة غير موجودة', ROLE_NOT_FOUND: 'الدور غير موجود', USER_NOT_FOUND: 'المستخدم غير موجود', FILE_REQUIRED: 'يرجى اختيار ملف', INVALID_PERCENTAGE: 'يجب أن تكون النسبة بين 0 و100', ITEM_NOT_IN_QUOTATION: 'هذا البند لا يتبع العرض', FIELD_REQUIRED: 'لا يمكن ترك هذا الحقل فارغاً',
+    INVALID_FILE_TYPE: 'يُسمح بصور PNG أو JPG أو WEBP فقط', INTERNAL_ERROR: 'حدث خطأ في الخادم', NETWORK: 'تعذّر الاتصال بالخادم', QUOTATION_NOT_FOUND: 'العرض غير موجود', COMPANY_NOT_FOUND: 'الشركة غير موجودة', COMPANY_INACTIVE: 'هذه الشركة معطّلة', COMPANY_CANNOT_CHANGE: 'لا يمكن تغيير الشركة المُصدِرة إلا طالما أن العرض مسودة', CUSTOMER_NOT_FOUND: 'العميل غير موجود', MATERIAL_NOT_FOUND: 'المادة غير موجودة', ROLE_NOT_FOUND: 'الدور غير موجود', USER_NOT_FOUND: 'المستخدم غير موجود', FILE_REQUIRED: 'يرجى اختيار ملف', INVALID_PERCENTAGE: 'يجب أن تكون النسبة بين 0 و100', ITEM_NOT_IN_QUOTATION: 'هذا البند لا يتبع العرض', FIELD_REQUIRED: 'لا يمكن ترك هذا الحقل فارغاً',
   },
 };
 export default ar;

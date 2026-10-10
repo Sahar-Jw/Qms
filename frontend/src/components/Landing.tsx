@@ -5,8 +5,9 @@ import { useEffect, useState } from 'react';
 import { LoginForm, RegisterForm } from '@/components/AuthForms';
 import { LangToggle } from '@/components/Shell';
 import { Button, PILL_ORDER, PillStack } from '@/components/ui';
-import { useMe } from '@/lib/auth';
+import { useBrandSettings, useMe } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { uploadUrl } from '@/lib/urls';
 
 type Panel = 'login' | 'register' | null;
 
@@ -72,6 +73,8 @@ export function Landing({ initial }: { initial: Panel }) {
   const { t } = useI18n();
   const router = useRouter();
   const me = useMe();
+  const brand = useBrandSettings(); // public endpoint: works before sign-in
+  const siteName = brand.data?.websiteName || t('app.name');
   const [panel, setPanel] = useState<Panel>(initial);
 
   // Already signed in (valid session cookie): skip the landing page.
@@ -82,8 +85,14 @@ export function Landing({ initial }: { initial: Panel }) {
       <header className="sticky top-0 z-30 border-b border-stone/40 bg-sand/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-sand sm:size-10"><Receipt className="size-5" /></span>
-            <span className="truncate text-lg font-bold sm:text-xl">{t('app.name')}</span>
+            {brand.data?.logo
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={uploadUrl(brand.data.logo)} alt="" className="size-9 shrink-0 rounded-full bg-white object-contain p-1 ring-1 ring-stone/50 sm:size-10" />
+              : brand.data?.icon
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={uploadUrl(brand.data.icon)} alt="" className="size-9 shrink-0 rounded-full bg-white object-cover ring-1 ring-stone/50 sm:size-10" />
+                : <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-sand sm:size-10"><Receipt className="size-5" /></span>}
+            <span className="truncate text-lg font-bold sm:text-xl">{siteName}</span>
           </div>
           <nav className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <LangToggle />
@@ -160,7 +169,7 @@ export function Landing({ initial }: { initial: Panel }) {
         </section>
       </main>
 
-      <footer className="border-t border-stone/40 py-6 text-center text-xs text-cocoa">© {new Date().getFullYear()} {t('app.name')}</footer>
+      <footer className="border-t border-stone/40 py-6 text-center text-xs text-cocoa">© {new Date().getFullYear()} {siteName}</footer>
 
       {panel && <AuthModal panel={panel} onClose={() => setPanel(null)} onSwitch={setPanel} />}
     </div>

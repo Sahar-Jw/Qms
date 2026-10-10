@@ -265,10 +265,13 @@ export class QuotationsService {
         await this.assertActive(m, User, header.responsibleUserId, 'USER', 'Responsible user');
       }
 
+      // The issuing company may be changed only while the quotation is still a draft.
       if (header.companyId !== undefined && header.companyId !== q.companyId) {
-        throw new BadRequestException({ code: 'COMPANY_CANNOT_CHANGE', message: 'The issuing company of an existing quotation cannot be changed' });
+        if (q.status !== QuotationStatus.DRAFT) {
+          throw new BadRequestException({ code: 'COMPANY_CANNOT_CHANGE', message: 'The issuing company can only be changed while the quotation is a draft' });
+        }
+        await this.assertActive(m, Company, header.companyId, 'ISSUING_COMPANY', 'Issuing company');
       }
-      delete (header as Record<string, unknown>).companyId;
       for (const [k, v] of Object.entries(header)) {
         if (v !== undefined) (q as any)[k] = v;
       }

@@ -31,12 +31,12 @@ export function applyTheme(c: ThemeColors) {
   try { localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(c)); } catch { /* storage blocked: the colours still apply for this visit */ }
 }
 
-/** The saved site-wide theme. Any signed-in user can read it; managers and above can change it. */
+/** The saved site-wide theme. Public (visitors need it on the landing page); managers and above can change it. */
 export const useTheme = (enabled = true) =>
   useQuery({ queryKey: ['theme'], enabled, staleTime: 5 * 60_000, queryFn: () => api.get<{ colors: ThemeColors }>('/settings/theme') });
 
-/** Paints the whole app in the saved colours (call once, in the signed-in layout). */
-export function useApplyTheme(enabled: boolean) {
+/** Paints the whole site in the saved colours. Mounted once for every page (see providers.tsx), signed in or not. */
+export function useApplyTheme(enabled = true) {
   const { data } = useTheme(enabled);
   useEffect(() => { if (data) applyTheme(data.colors); }, [data]);
 }

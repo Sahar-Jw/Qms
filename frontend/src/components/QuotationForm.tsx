@@ -4,7 +4,7 @@ import { quotationHref, uploadUrl } from '@/lib/urls';
 import { AlertTriangle, Building2, Plus, Save, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { AsyncPick } from '@/components/AsyncPick';
@@ -16,7 +16,7 @@ import { daysUntil } from '@/lib/dates';
 import { toastError } from '@/lib/errors';
 import { useI18n } from '@/lib/i18n';
 import { aggregate, calcItem, fmt, trimDec } from '@/lib/money';
-import { type Customer, type Material, type Paginated, type QuotationView } from '@/lib/types';
+import { type Customer, type Material, type Paginated, type PickCompany, type QuotationView } from '@/lib/types';
 
 type PickCustomer = Pick<Customer, 'id' | 'companyName'> & Partial<Customer>;
 type PickMaterial = Pick<Material, 'id' | 'materialCode' | 'name'> & Partial<Material>;
@@ -62,7 +62,18 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   const settings = useSettings().data;
   const canCost = true; // cost is open to every role
   const editing = !!initial;
-  const company = editing ? initial!.company : settings?.issuingCompany;
+  // A draft can still change the company that issues it; once it is locked / invoiced / expired it cannot.
+  const canPickCompany = editing && initial!.status === 'draft';
+  const [pickedCompanyId, setPickedCompanyId] = useState<number | null>(editing ? initial!.company.id : null);
+  const companies = useQuery({ queryKey: ['settings', 'companies'], queryFn: () => api.get<PickCompany[]>('/settings/companies'), enabled: canPickCompany });
+  const companyOptions: PickCompany[] = useMemo(() => {
+    const list = companies.data ?? [];
+    // keep the current company selectable even if it has since been deactivated
+    return list.some((c) => c.id === initial?.company.id) || !initial ? list : [{ id: initial.company.id, name: initial.company.name, logo: initial.company.logo }, ...list];
+  }, [companies.data, initial]);
+  const company: PickCompany | null | undefined = editing
+    ? (canPickCompany ? companyOptions.find((c) => c.id === pickedCompanyId) ?? initial!.company : initial!.company)
+    : settings?.issuingCompany;
 
   const users = useQuery({ queryKey: ['users', 'lookup'], queryFn: () => api.get<{ id: number; fullName: string }[]>('/users/lookup'), enabled: editing });
 
@@ -95,7 +106,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
     mutationFn: (v: FormValues) => {
       const str = (s: string) => s.trim();
       const body = {
-        ...(editing ? {} : { companyId: company?.id }),
+        ...(editing ? (canPickCompany ? { companyId: pickedCompanyId ?? initial!.company.id } : {}) : { companyId: company?.id }),
         customerId: v.customer!.id,
         ...(editing ? { responsibleUserId: Number(v.responsibleUserId) } : {}),
         quotationDate: v.quotationDate,
@@ -280,6 +291,15 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                   {!editing && <Link href="/settings" className="text-xs underline decoration-clay underline-offset-4">{t('quotations.changeInSettings')}</Link>}
                 </div>
               </div>
+              {canPickCompany && (
+                <div className="mb-4">
+                  <Select aria-label={t('quotations.issuingCompany')} value={pickedCompanyId ?? ''} onChange={(e) => setPickedCompanyId(Number(e.target.value))}
+                    className="!bg-white/95 !text-ink" disabled={companies.isLoading}>
+                    {companyOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </Select>
+                  <p className="mt-1.5 text-xs text-stone">{t('quotations.companyDraftHint')}</p>
+                </div>
+              )}
               <h3 className="mb-2 text-sm font-bold text-white">{t('quotations.perCurrency')}</h3>
               <Ledger totals={totals} showCost={canCost} />
               <Button type="submit" size="lg" variant="soft" className="mt-5 w-full" loading={save.isPending} disabled={missingCompany}>

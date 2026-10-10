@@ -100,10 +100,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     };
   }, [lang, setLang, overrides]);
 
-  // Browser-tab title in the visitor's language (and as edited in Settings > Texts).
-  useEffect(() => {
-    document.title = value.t('app.name');
-  }, [value]);
+  // The browser-tab title is set by SiteSync (components/providers.tsx): the saved site name, else t('app.name').
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

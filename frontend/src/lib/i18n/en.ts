@@ -57,7 +57,7 @@ const en = {
     tax: 'Tax %', internalNotes: 'Internal notes (never printed)', itemNotes: 'Item note (never printed)',
     material: 'Material', materialPh: 'Search by code or name', customerPh: 'Search customers', quantity: 'Quantity', unit: 'Unit', unitPrice: 'Unit price',
     currency: 'Currency', shipping: 'Shipping', customs: 'Customs', cost: 'Unit cost', totalCost: 'Cost', summary: 'Summary', itemsCount: 'Items', currenciesCount: 'Currencies', commission: 'Commission %', value: 'Value', required: 'Required',
-    perCurrency: 'Totals by currency', noItems: 'Add at least one item', issuingCompany: 'Issued from', changeInSettings: 'Change in settings',
+    perCurrency: 'Totals by currency', noItems: 'Add at least one item', issuingCompany: 'Issued from', changeInSettings: 'Change in settings', companyDraftHint: 'You can change the company while the quotation is a draft.',
     companyMissing: 'Choose the issuing company in settings before creating quotations.', printAr: 'Print Arabic', printEn: 'Print English',
     pdfFallback: 'PDF engine is not installed on the server. The print page opened: choose "Save as PDF" as the printer.', pdfAr: 'PDF Arabic', pdfEn: 'PDF English', includeCost: 'Include cost', readOnly: 'This quotation is read-only.', notOwner: 'You can only edit the quotations you created.', mineOnly: 'View only', duplicated: 'Copy created: {number}',
     duplicateConfirm: 'Create a full copy of this quotation as a new draft?', info: 'Information', contact: 'Contact', createdBy: 'Responsible',
@@ -88,8 +88,8 @@ const en = {
     tabs: { company: 'Company', brand: 'Branding', theme: 'Theme', texts: 'Texts', audit: 'Audit log' },
   },
   brand: {
-    title: 'Website branding', sub: 'Edit the site name, tagline, logo and icon. This preview updates live before you save.',
-    websiteName: 'Website name', tagline: 'Tagline', logo: 'Logo', icon: 'Icon', upload: 'Upload', remove: 'Remove',
+    title: 'Website branding', sub: 'Edit the site name, browser tab title, tagline, logo and icon. This preview updates live before you save.',
+    websiteName: 'Website name', tabTitle: 'Browser tab title', tabTitleHint: 'The text shown next to the site icon in the browser tab. Leave empty to use the website name.', tagline: 'Tagline', logo: 'Logo', icon: 'Icon', upload: 'Upload', remove: 'Remove',
     logoHint: 'PNG, JPG or WEBP; shown in the app shell and pages.', iconHint: 'Used in the sidebar and as the browser tab icon.', preview: 'Live preview',
     saved: 'Brand settings saved', logoSaved: 'Logo updated', iconSaved: 'Icon updated', logoRemoved: 'Logo removed', iconRemoved: 'Icon removed',
   },
@@ -143,7 +143,7 @@ const en = {
     PRICE_CURRENCY_REQUIRED: 'Enter the price currency', COMPANY_MISMATCH: 'Quotations are issued from the company chosen in settings', CANNOT_DEACTIVATE_SELF: 'You cannot deactivate your own account',
     VALIDITY_BEFORE_QUOTATION_DATE: 'The validity date cannot be before the quotation date',
     CANNOT_CHANGE_OWN_ROLE: 'You cannot change your own role', WRONG_CURRENT_PASSWORD: 'The current password is wrong', PDF_ENGINE_UNAVAILABLE: 'PDF is not available on this server. Use Print instead.',
-    INVALID_FILE_TYPE: 'Only PNG, JPG or WEBP images are allowed', INTERNAL_ERROR: 'Something went wrong on the server', NETWORK: 'Cannot reach the server', QUOTATION_NOT_FOUND: 'Quotation not found', COMPANY_NOT_FOUND: 'Company not found', COMPANY_INACTIVE: 'This company is inactive', COMPANY_CANNOT_CHANGE: 'The issuing company of an existing quotation cannot be changed', CUSTOMER_NOT_FOUND: 'Customer not found', MATERIAL_NOT_FOUND: 'Material not found', ROLE_NOT_FOUND: 'Role not found', USER_NOT_FOUND: 'User not found', FILE_REQUIRED: 'Please choose a file', INVALID_PERCENTAGE: 'A percentage must be between 0 and 100', ITEM_NOT_IN_QUOTATION: 'This item does not belong to the quotation', FIELD_REQUIRED: 'This field cannot be cleared',
+    INVALID_FILE_TYPE: 'Only PNG, JPG or WEBP images are allowed', INTERNAL_ERROR: 'Something went wrong on the server', NETWORK: 'Cannot reach the server', QUOTATION_NOT_FOUND: 'Quotation not found', COMPANY_NOT_FOUND: 'Company not found', COMPANY_INACTIVE: 'This company is inactive', COMPANY_CANNOT_CHANGE: 'The issuing company can only be changed while the quotation is a draft', CUSTOMER_NOT_FOUND: 'Customer not found', MATERIAL_NOT_FOUND: 'Material not found', ROLE_NOT_FOUND: 'Role not found', USER_NOT_FOUND: 'User not found', FILE_REQUIRED: 'Please choose a file', INVALID_PERCENTAGE: 'A percentage must be between 0 and 100', ITEM_NOT_IN_QUOTATION: 'This item does not belong to the quotation', FIELD_REQUIRED: 'This field cannot be cleared',
   },
 };
 export default en;

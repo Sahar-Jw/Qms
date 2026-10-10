@@ -43,21 +43,6 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
   const siteName = brand.data?.websiteName || t('app.name');
   const siteTagline = brand.data?.tagline || t('app.tagline');
 
-  useEffect(() => {
-    const href = brand.data?.icon ? uploadUrl(brand.data.icon) : '';
-    document.title = siteName;
-    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-    if (!link && href) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-    if (link) {
-      if (href) link.href = href;
-      else link.remove();
-    }
-  }, [brand.data?.icon, siteName]);
-
   const nav = [
     { href: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { href: '/quotations', icon: FileText, label: t('nav.quotations') },
@@ -118,17 +103,20 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
         !open && 'max-lg:-translate-x-full max-lg:rtl:translate-x-full',
       )}>
         <div className="flex items-center gap-3 px-5 pb-4 pt-5">
-          {brand.data?.logo ? (
-            <img src={uploadUrl(brand.data.logo)} alt="" className="size-11 rounded-full bg-sand object-contain p-1" />
-          ) : brand.data?.icon ? (
-            <img src={uploadUrl(brand.data.icon)} alt="" className="size-11 rounded-full bg-sand object-cover" />
-          ) : (
-            <span className="grid size-11 place-items-center rounded-full bg-sand text-ink"><Receipt className="size-5" /></span>
-          )}
-          <div className="min-w-0 leading-tight">
-            <div className="truncate text-lg font-bold">{siteName}</div>
-            <div className="truncate text-[11px] text-stone">{siteTagline}</div>
-          </div>
+          {/* Signed in only (this is the app shell): the logo and site name go back to the dashboard. */}
+          <Link href="/dashboard" onClick={() => setOpen(false)} aria-label={siteName} className="flex min-w-0 items-center gap-3 rounded-2xl outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-clay">
+            {brand.data?.logo ? (
+              <img src={uploadUrl(brand.data.logo)} alt="" className="size-11 shrink-0 rounded-full bg-sand object-contain p-1" />
+            ) : brand.data?.icon ? (
+              <img src={uploadUrl(brand.data.icon)} alt="" className="size-11 shrink-0 rounded-full bg-sand object-cover" />
+            ) : (
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-sand text-ink"><Receipt className="size-5" /></span>
+            )}
+            <div className="min-w-0 leading-tight">
+              <div className="truncate text-lg font-bold">{siteName}</div>
+              <div className="truncate text-[11px] text-stone">{siteTagline}</div>
+            </div>
+          </Link>
           <button className="ms-auto grid size-8 place-items-center rounded-full hover:bg-cocoa lg:hidden" onClick={() => setOpen(false)}><X className="size-4" /></button>
         </div>
 

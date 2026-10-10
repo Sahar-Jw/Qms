@@ -14,7 +14,7 @@ import { toastError } from '@/lib/errors';
 import { useI18n } from '@/lib/i18n';
 import type { BrandSettings } from '@/lib/types';
 
-const empty: BrandSettings = { websiteName: 'Quotations', tagline: 'Prices, customers and materials in one place', logo: null, icon: null };
+const empty: BrandSettings = { websiteName: 'Quotations', tabTitle: '', tagline: 'Prices, customers and materials in one place', logo: null, icon: null };
 
 function assetUrl(value: string | null | undefined) {
   return value ? uploadUrl(value) : '';
@@ -31,6 +31,7 @@ export function BrandTab() {
   const form = draft ?? brand.data ?? empty;
   const changed = !!brand.data && (
     form.websiteName !== brand.data.websiteName ||
+    form.tabTitle !== brand.data.tabTitle ||
     form.tagline !== brand.data.tagline ||
     form.logo !== brand.data.logo ||
     form.icon !== brand.data.icon
@@ -88,6 +89,10 @@ export function BrandTab() {
 
           <Field label={t('brand.websiteName')}>
             <Input value={form.websiteName} onChange={(e) => setDraft({ ...form, websiteName: clampValue(e.target.value) || 'Quotations' })} />
+          </Field>
+
+          <Field label={t('brand.tabTitle')} hint={t('brand.tabTitleHint')}>
+            <Input value={form.tabTitle} maxLength={120} placeholder={form.websiteName} onChange={(e) => setDraft({ ...form, tabTitle: clampValue(e.target.value) })} />
           </Field>
 
           <Field label={t('brand.tagline')}>

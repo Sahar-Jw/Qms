@@ -1,0 +1,442 @@
+diff --git a/backend/src/materials/dto/material.dto.ts b/backend/src/materials/dto/material.dto.ts
+index 42363b8..d66acc7 100644
+--- a/backend/src/materials/dto/material.dto.ts
++++ b/backend/src/materials/dto/material.dto.ts
+@@ -27,9 +27,6 @@ export class CreateMaterialDto {
+   @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(100)
+   countryOfOrigin: string;
+ 
+-  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(150)
+-  catalogue: string;
+-
+   @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(100)
+   modelNumber: string;
+ 
+diff --git a/backend/src/materials/materials.controller.ts b/backend/src/materials/materials.controller.ts
+index 975da28..599b681 100644
+--- a/backend/src/materials/materials.controller.ts
++++ b/backend/src/materials/materials.controller.ts
+@@ -1,5 +1,11 @@
+-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+-import { ApiTags } from '@nestjs/swagger';
++import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
++import { FileInterceptor } from '@nestjs/platform-express';
++import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
++import { randomBytes } from 'crypto';
++import * as fs from 'fs';
++import { diskStorage } from 'multer';
++import * as path from 'path';
++import { uploadsRoot } from '../config/uploads';
+ import { AuthUser } from '../common/auth-user';
+ import { CurrentUser } from '../common/decorators/current-user.decorator';
+ import { MinRole } from '../common/decorators/min-role.decorator';
+@@ -8,6 +14,23 @@ import { RoleCode } from '../common/enums';
+ import { CreateMaterialDto, UpdateMaterialDto } from './dto/material.dto';
+ import { MaterialsService } from './materials.service';
+ 
++const ALLOWED: Record<string, string> = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp' };
++
++const imageUpload = FileInterceptor('file', {
++  storage: diskStorage({
++    destination: (_req, _file, cb) => {
++      const dir = path.join(uploadsRoot(), 'materials');
++      fs.mkdirSync(dir, { recursive: true });
++      cb(null, dir);
++    },
++    filename: (_req, file, cb) => cb(null, randomBytes(16).toString('hex') + ALLOWED[file.mimetype]),
++  }),
++  limits: { fileSize: 3 * 1024 * 1024 }, // 3 MB
++  // SVG is deliberately not allowed (script injection risk).
++  fileFilter: (_req, file, cb) =>
++    ALLOWED[file.mimetype] ? cb(null, true) : cb(new BadRequestException({ code: 'INVALID_FILE_TYPE', message: 'Only PNG, JPEG or WEBP images are allowed' }), false),
++});
++
+ @ApiTags('materials')
+ @Controller('materials')
+ export class MaterialsController {
+@@ -33,6 +56,19 @@ export class MaterialsController {
+     return this.materials.update(id, dto, me.id);
+   }
+ 
++  @Post(':id/image')
++  @ApiConsumes('multipart/form-data')
++  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
++  @UseInterceptors(imageUpload)
++  uploadImage(@Param('id', ParseIntPipe) id: number, @UploadedFile() file: Express.Multer.File, @CurrentUser() me: AuthUser) {
++    return this.materials.setImage(id, file, me.id);
++  }
++
++  @Delete(':id/image')
++  removeImage(@Param('id', ParseIntPipe) id: number, @CurrentUser() me: AuthUser) {
++    return this.materials.removeImage(id, me.id);
++  }
++
+   @Patch(':id/active')
+   @MinRole(RoleCode.MANAGER)
+   setActive(@Param('id', ParseIntPipe) id: number, @Body() dto: SetActiveDto, @CurrentUser() me: AuthUser) {
+diff --git a/backend/src/materials/materials.service.ts b/backend/src/materials/materials.service.ts
+index 83308f7..e4ac9d3 100644
+--- a/backend/src/materials/materials.service.ts
++++ b/backend/src/materials/materials.service.ts
+@@ -1,7 +1,10 @@
+ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+ import { InjectRepository } from '@nestjs/typeorm';
++import * as fs from 'fs';
++import * as path from 'path';
+ import { Repository } from 'typeorm';
+ import { StatusSearchPaginationDto, paginated } from '../common/dto/pagination.dto';
++import { uploadsRoot } from '../config/uploads';
+ import { CreateMaterialDto, UpdateMaterialDto } from './dto/material.dto';
+ import { Material } from './material.entity';
+ 
+@@ -13,7 +16,7 @@ export class MaterialsService {
+     const qb = this.repo.createQueryBuilder('m');
+     if (q.q) {
+       qb.andWhere(
+-        '(m.materialCode LIKE :s OR m.name LIKE :s OR m.source LIKE :s OR m.catalogue LIKE :s OR m.modelNumber LIKE :s OR m.catalogueNumber LIKE :s OR m.countryOfOrigin LIKE :s OR m.unit LIKE :s)',
++        '(m.materialCode LIKE :s OR m.name LIKE :s OR m.source LIKE :s OR m.modelNumber LIKE :s OR m.catalogueNumber LIKE :s OR m.countryOfOrigin LIKE :s OR m.unit LIKE :s)',
+         { s: `%${q.q}%` },
+       );
+     }
+@@ -39,6 +42,27 @@ export class MaterialsService {
+     return this.repo.save(m);
+   }
+ 
++  async setImage(id: number, file: Express.Multer.File | undefined, userId: number) {
++    if (!file) throw new BadRequestException({ code: 'FILE_REQUIRED', message: 'Image file is required (field name: file)' });
++    const m = await this.get(id);
++    const old = m.catalogue;
++    m.catalogue = `materials/${file.filename}`;
++    m.updatedById = userId;
++    const saved = await this.repo.save(m);
++    if (old && /^materials\//.test(old)) fs.promises.unlink(path.join(uploadsRoot(), old)).catch(() => undefined);
++    return saved;
++  }
++
++  async removeImage(id: number, userId: number) {
++    const m = await this.get(id);
++    const old = m.catalogue;
++    m.catalogue = null;
++    m.updatedById = userId;
++    const saved = await this.repo.save(m);
++    if (old && /^materials\//.test(old)) fs.promises.unlink(path.join(uploadsRoot(), old)).catch(() => undefined);
++    return saved;
++  }
++
+   async setActive(id: number, isActive: boolean, userId: number) {
+     const m = await this.get(id);
+     m.isActive = isActive;
+diff --git a/backend/src/quotations/quotation-view.ts b/backend/src/quotations/quotation-view.ts
+index a0ec01e..8b0642b 100644
+--- a/backend/src/quotations/quotation-view.ts
++++ b/backend/src/quotations/quotation-view.ts
+@@ -6,6 +6,7 @@ export interface ItemView {
+   materialId: number | null;
+   materialCode: string;
+   materialName: string | null;
++  materialImage: string | null;
+   unit: string | null;
+   sortOrder: number;
+   quantity: string;
+diff --git a/backend/src/quotations/quotations.service.ts b/backend/src/quotations/quotations.service.ts
+index 0c6d0ac..91a2170 100644
+--- a/backend/src/quotations/quotations.service.ts
++++ b/backend/src/quotations/quotations.service.ts
+@@ -292,7 +292,8 @@ export class QuotationsService {
+       if (!src) throw new NotFoundException({ code: 'QUOTATION_NOT_FOUND', message: 'Quotation not found' });
+       this.hideLockedFrom(user, src.status);
+ 
+-      const companyId = await this.resolveIssuingCompanyId(m, user.id);
++      // A copy stays under the SAME company as the original (not the user's current issuing company).
++      const companyId = src.companyId;
+       const customerId = dto.customerId ?? src.customerId;
+       await this.assertActive(m, Customer, customerId, 'CUSTOMER', 'Customer');
+       const resp = src.responsibleUserId ? await m.findOne(User, { where: { id: src.responsibleUserId } }) : null;
+@@ -380,7 +381,7 @@ export class QuotationsService {
+     await this.refreshExpiryStatuses();
+     const q = await this.repo.findOne({
+       where: { id },
+-      relations: { company: true, customer: true, responsibleUser: true, items: { amounts: true } },
++      relations: { company: true, customer: true, responsibleUser: true, items: { amounts: true, material: true } },
+     });
+     if (!q) throw new NotFoundException({ code: 'QUOTATION_NOT_FOUND', message: 'Quotation not found' });
+     this.hideLockedFrom(user, q.status);
+@@ -395,6 +396,7 @@ export class QuotationsService {
+         materialId: i.materialId,
+         materialCode: i.materialCode,
+         materialName: i.materialName,
++        materialImage: /^materials\/[\w.-]+$/.test(i.material?.catalogue ?? '') ? i.material!.catalogue : null,
+         unit: i.unit,
+         sortOrder: i.sortOrder,
+         quantity: i.quantity,
+diff --git a/frontend/src/app/(app)/materials/page.tsx b/frontend/src/app/(app)/materials/page.tsx
+index f4def18..55e4cfe 100644
+--- a/frontend/src/app/(app)/materials/page.tsx
++++ b/frontend/src/app/(app)/materials/page.tsx
+@@ -1,10 +1,11 @@
+ 'use client';
+ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+-import { Pencil, Plus, Power, Search } from 'lucide-react';
+-import { useEffect, useState } from 'react';
++import { ImagePlus, Pencil, Plus, Power, Search, Trash2 } from 'lucide-react';
++import { useEffect, useRef, useState } from 'react';
+ import { useForm } from 'react-hook-form';
+ import { toast } from 'sonner';
+ import { useConfirm } from '@/components/confirm';
++import { MaterialThumb } from '@/components/MaterialThumb';
+ import { ActiveBadge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader, Pagination, Select, td, th, tr } from '@/components/ui';
+ import { api } from '@/lib/api';
+ import { useMe } from '@/lib/auth';
+@@ -14,8 +15,8 @@ import { useI18n } from '@/lib/i18n';
+ import { fmt, trimDec } from '@/lib/money';
+ import { hasRole, type Material, type Paginated } from '@/lib/types';
+ 
+-type Form = { materialCode: string; name: string; source: string; stockQuantity: string; unitPrice: string; unit: string; currency: string; countryOfOrigin: string; catalogue: string; modelNumber: string; catalogueNumber: string };
+-const blank: Form = { materialCode: '', name: '', source: '', stockQuantity: '', unitPrice: '', unit: '', currency: '', countryOfOrigin: '', catalogue: '', modelNumber: '', catalogueNumber: '' };
++type Form = { materialCode: string; name: string; source: string; stockQuantity: string; unitPrice: string; unit: string; currency: string; countryOfOrigin: string; modelNumber: string; catalogueNumber: string };
++const blank: Form = { materialCode: '', name: '', source: '', stockQuantity: '', unitPrice: '', unit: '', currency: '', countryOfOrigin: '', modelNumber: '', catalogueNumber: '' };
+ const toForm = (m: Material): Form => {
+   const f = Object.fromEntries(Object.keys(blank).map((k) => [k, (m as unknown as Record<string, string | null>)[k] ?? ''])) as Form;
+   return { ...f, stockQuantity: trimDec(m.stockQuantity), unitPrice: trimDec(m.unitPrice) };
+@@ -26,14 +27,33 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
+   const { t, has } = useI18n();
+   const qc = useQueryClient();
+   const editing = material !== 'new';
++  const fileRef = useRef<HTMLInputElement>(null);
++  const [file, setFile] = useState<File | null>(null);
++  const [preview, setPreview] = useState<string | null>(null);
++  const [removeImg, setRemoveImg] = useState(false);
++  const current = editing && !removeImg ? material.catalogue ?? null : null;
++  useEffect(() => {
++    if (!file) { setPreview(null); return; }
++    const u = URL.createObjectURL(file);
++    setPreview(u);
++    return () => URL.revokeObjectURL(u);
++  }, [file]);
++  const pickFile = (f?: File) => {
++    if (!f) return;
++    if (!['image/png', 'image/jpeg', 'image/webp'].includes(f.type) || f.size > 3 * 1024 * 1024) { toast.error(t('materials.imageHint')); return; }
++    setFile(f); setRemoveImg(false);
++  };
+   const { register, handleSubmit, formState: { errors } } = useForm<Form>({ defaultValues: editing ? toForm(material) : blank });
+   const save = useMutation({
+-    mutationFn: (v: Form) => {
++    mutationFn: async (v: Form) => {
+       const body = cleanBody(v, editing);
+       if (body.currency) body.currency = String(body.currency).toUpperCase();
+       // numbers can't be null on the backend: leave them out when empty
+       for (const k of ['stockQuantity', 'unitPrice'] as const) if (body[k] === null) delete body[k];
+-      return editing ? api.patch(`/materials/${material.id}`, body) : api.post('/materials', body);
++      const saved = await (editing ? api.patch<Material>(`/materials/${material.id}`, body) : api.post<Material>('/materials', body));
++      if (file) await api.upload<Material>(`/materials/${saved.id}/image`, (() => { const fd = new FormData(); fd.append('file', file); return fd; })());
++      else if (editing && removeImg && material.catalogue) await api.delete(`/materials/${saved.id}/image`);
++      return saved;
+     },
+     onSuccess: () => { qc.invalidateQueries({ queryKey: ['materials'] }); qc.invalidateQueries({ queryKey: ['pick'] }); toast.success(t('common.saved')); onClose(); },
+     onError: (e) => toastError(e, t, has),
+@@ -44,6 +64,20 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
+     <Modal open wide title={editing ? t('materials.edit') : t('materials.new')} onClose={onClose}
+       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button loading={save.isPending} onClick={handleSubmit((v) => save.mutate(v))}>{t('common.save')}</Button></>}>
+       <form className="grid gap-4 sm:grid-cols-2 md:grid-cols-3" onSubmit={handleSubmit((v) => save.mutate(v))}>
++        <div className="flex items-center gap-4 rounded-2xl bg-sand/50 p-3 sm:col-span-2 md:col-span-3">
++          <MaterialThumb image={preview ? null : current} size="size-20" className={preview ? 'hidden' : ''} />
++          {preview && (
++            // eslint-disable-next-line @next/next/no-img-element
++            <img src={preview} alt="" className="size-20 shrink-0 rounded-xl border border-stone/60 bg-white object-contain p-0.5" />
++          )}
++          <div className="min-w-0 flex-1">
++            <div className="text-sm font-bold">{t('materials.image')}</div>
++            <div className="text-xs text-cocoa">{file ? file.name : t('materials.imageHint')}</div>
++          </div>
++          <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
++          <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}><ImagePlus className="size-4" />{file || current ? t('materials.changeImage') : t('materials.uploadImage')}</Button>
++          {(file || current) && <Button type="button" variant="ghost" size="sm" onClick={() => { setFile(null); setRemoveImg(true); }} aria-label={t('materials.removeImage')}><Trash2 className="size-4" /></Button>}
++        </div>
+         <Field label={t('materials.code')} required error={errors.materialCode?.message}><Input dir="ltr" maxLength={60} {...register('materialCode', req)} /></Field>
+         <Field label={t('common.name')} required error={errors.name?.message} className="sm:col-span-2 md:col-span-2"><Input maxLength={255} {...register('name', req)} /></Field>
+         <Field label={t('materials.unitPrice')} required error={errors.unitPrice?.message}><Input inputMode="decimal" dir="ltr" {...register('unitPrice', dec)} /></Field>
+@@ -52,7 +86,6 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
+         <Field label={t('materials.stock')} required error={errors.stockQuantity?.message}><Input inputMode="decimal" dir="ltr" {...register('stockQuantity', dec)} /></Field>
+         <Field label={t('materials.source')} required error={errors.source?.message}><Input maxLength={150} {...register('source', req)} /></Field>
+         <Field label={t('materials.origin')} required error={errors.countryOfOrigin?.message}><Input maxLength={100} {...register('countryOfOrigin', req)} /></Field>
+-        <Field label={t('materials.catalogue')} required error={errors.catalogue?.message}><Input maxLength={150} {...register('catalogue', req)} /></Field>
+         <Field label={t('materials.model')} required error={errors.modelNumber?.message}><Input dir="ltr" maxLength={100} {...register('modelNumber', req)} /></Field>
+         <Field label={t('materials.catalogueNo')} required error={errors.catalogueNumber?.message}><Input dir="ltr" maxLength={100} {...register('catalogueNumber', req)} /></Field>
+         <button type="submit" hidden />
+@@ -97,10 +130,11 @@ export default function MaterialsPage() {
+         {list.isLoading ? <Loading /> : !list.data?.data.length ? <Empty /> : (
+           <div className="overflow-x-auto">
+             <table className="w-full min-w-[760px]">
+-              <thead><tr><th className={th}>{t('materials.code')}</th><th className={th}>{t('common.name')}</th><th className={th}>{t('materials.unitPrice')}</th><th className={th}>{t('materials.stock')}</th><th className={th}>{t('materials.source')}</th><th className={th}>{t('common.status')}</th><th className={th} /></tr></thead>
++              <thead><tr><th className={th}>{t('materials.image')}</th><th className={th}>{t('materials.code')}</th><th className={th}>{t('common.name')}</th><th className={th}>{t('materials.unitPrice')}</th><th className={th}>{t('materials.stock')}</th><th className={th}>{t('materials.source')}</th><th className={th}>{t('common.status')}</th><th className={th} /></tr></thead>
+               <tbody>
+                 {list.data.data.map((m) => (
+                   <tr key={m.id} className={tr}>
++                    <td className={td}><MaterialThumb image={m.catalogue} size="size-12" /></td>
+                     <td className={`${td} font-bold`} dir="ltr">{m.materialCode}</td>
+                     <td className={td}>{m.name ?? ''}</td>
+                     <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(m.unitPrice)} <span className="text-xs text-cocoa">{m.currency}</span></td>
+diff --git a/frontend/src/app/(app)/quotations/view/page.tsx b/frontend/src/app/(app)/quotations/view/page.tsx
+index 5c9dc20..dada167 100644
+--- a/frontend/src/app/(app)/quotations/view/page.tsx
++++ b/frontend/src/app/(app)/quotations/view/page.tsx
+@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
+ import { Suspense, useState, type ReactNode } from 'react';
+ import { toast } from 'sonner';
+ import { useConfirm } from '@/components/confirm';
++import { MaterialThumb } from '@/components/MaterialThumb';
+ import { Ledger } from '@/components/Totals';
+ import { Button, Card, CardHeader, Empty, Loading, StatusBadge, td, th, tr } from '@/components/ui';
+ import { api } from '@/lib/api';
+@@ -175,13 +176,14 @@ function QuotationDetail() {
+             <div className="max-h-[32rem] overflow-auto">
+               <table className="w-full min-w-[860px]">
+                 <thead className="sticky top-0 z-10"><tr>
+-                  <th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('quotations.quantity')}</th>
++                  <th className={th}>{t('materials.image')}</th><th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('quotations.quantity')}</th>
+                   <th className={th}>{t('quotations.unitPrice')}</th><th className={th}>{t('quotations.value')}</th><th className={th}>{t('quotations.shipping')}</th>
+                   <th className={th}>{t('quotations.customs')}</th><th className={th}>{t('quotations.tax')}</th><th className={th}>{t('quotations.required')}</th>{canCost && <th className={th}>{t('quotations.totalCost')}</th>}
+                 </tr></thead>
+                 <tbody>
+                   {q.items.map((i) => (
+                     <tr key={i.id} className={tr}>
++                      <td className={td}><MaterialThumb image={i.materialImage} size="size-12" /></td>
+                       <td className={`${td} font-semibold`} dir="ltr">{i.materialCode}</td>
+                       <td className={td}>{i.materialName ?? ''}{i.notes && <div className="text-xs text-clay">{i.notes}</div>}</td>
+                       <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.quantity)} <span className="text-xs text-cocoa">{i.unit}</span></td>
+diff --git a/frontend/src/components/AsyncPick.tsx b/frontend/src/components/AsyncPick.tsx
+index d279f2d..8454dcb 100644
+--- a/frontend/src/components/AsyncPick.tsx
++++ b/frontend/src/components/AsyncPick.tsx
+@@ -1,7 +1,7 @@
+ 'use client';
+ import { useQuery } from '@tanstack/react-query';
+ import { Loader2, Search, X } from 'lucide-react';
+-import { useEffect, useRef, useState } from 'react';
++import { useEffect, useRef, useState, type ReactNode } from 'react';
+ import { cn } from '@/lib/cn';
+ import { useI18n } from '@/lib/i18n';
+ 
+@@ -19,12 +19,14 @@ interface Props<T extends { id: number }> {
+   cacheKey: string;
+   label: (v: T) => string;
+   sub?: (v: T) => string;
++  /** Optional picture shown in the dropdown rows and next to the selected value. */
++  thumb?: (v: T) => ReactNode;
+   placeholder?: string;
+   invalid?: boolean;
+ }
+ 
+ /** Search-as-you-type picker used for customers and materials (the lists can be long). */
+-export function AsyncPick<T extends { id: number }>({ value, onChange, fetcher, cacheKey, label, sub, placeholder, invalid }: Props<T>) {
++export function AsyncPick<T extends { id: number }>({ value, onChange, fetcher, cacheKey, label, sub, thumb, placeholder, invalid }: Props<T>) {
+   const { t } = useI18n();
+   const [open, setOpen] = useState(false);
+   const [text, setText] = useState('');
+@@ -65,9 +67,12 @@ export function AsyncPick<T extends { id: number }>({ value, onChange, fetcher,
+           ) : res.data?.length ? (
+             res.data.map((it) => (
+               <button type="button" key={it.id} onMouseDown={(e) => e.preventDefault()} onClick={() => pickItem(it)}
+-                className={cn('flex w-full flex-col rounded-xl px-3 py-2 text-start hover:bg-sand', value?.id === it.id && 'bg-sand')}>
+-                <span className="text-sm font-semibold">{label(it)}</span>
+-                {sub && <span className="text-xs text-cocoa">{sub(it)}</span>}
++                className={cn('flex w-full items-center gap-3 rounded-xl px-3 py-2 text-start hover:bg-sand', value?.id === it.id && 'bg-sand')}>
++                {thumb?.(it)}
++                <span className="flex min-w-0 flex-col">
++                  <span className="text-sm font-semibold">{label(it)}</span>
++                  {sub && <span className="text-xs text-cocoa">{sub(it)}</span>}
++                </span>
+               </button>
+             ))
+           ) : <div className="p-3 text-sm text-cocoa">{t('quotations.noResults')}</div>}
+diff --git a/frontend/src/components/MaterialThumb.tsx b/frontend/src/components/MaterialThumb.tsx
+new file mode 100644
+index 0000000..4b92cfd
+--- /dev/null
++++ b/frontend/src/components/MaterialThumb.tsx
+@@ -0,0 +1,13 @@
++'use client';
++import { ImageIcon } from 'lucide-react';
++import { cn } from '@/lib/cn';
++import { uploadUrl } from '@/lib/urls';
++
++/** Small product picture (falls back to a placeholder icon). */
++export function MaterialThumb({ image, size = 'size-10', className }: { image?: string | null; size?: string; className?: string }) {
++  // catalogue holds the picture path (materials/xxx.jpg); old free-text values are ignored
++  return image && /^materials\/[\w.-]+$/.test(image)
++    // eslint-disable-next-line @next/next/no-img-element
++    ? <img src={uploadUrl(image)} alt="" loading="lazy" className={cn(size, 'shrink-0 rounded-xl border border-stone/60 bg-white object-contain p-0.5', className)} />
++    : <span className={cn(size, 'grid shrink-0 place-items-center rounded-xl border border-stone/60 bg-sand/60 text-clay', className)}><ImageIcon className="size-1/2" /></span>;
++}
+diff --git a/frontend/src/components/QuotationForm.tsx b/frontend/src/components/QuotationForm.tsx
+index 21b1789..83e93d8 100644
+--- a/frontend/src/components/QuotationForm.tsx
++++ b/frontend/src/components/QuotationForm.tsx
+@@ -16,6 +16,7 @@ import { daysUntil } from '@/lib/dates';
+ import { toastError } from '@/lib/errors';
+ import { useI18n } from '@/lib/i18n';
+ import { aggregate, calcItem, fmt, trimDec } from '@/lib/money';
++import { MaterialThumb } from '@/components/MaterialThumb';
+ import { type Customer, type Material, type Paginated, type QuotationView } from '@/lib/types';
+ 
+ type PickCustomer = Pick<Customer, 'id' | 'companyName'> & Partial<Customer>;
+@@ -46,7 +47,7 @@ function fromView(q: QuotationView): FormValues {
+     paymentLocation: q.paymentLocation ?? '', deliveryMethod: q.deliveryMethod ?? '', customerPaymentMethod: q.customerPaymentMethod ?? '',
+     notes: q.notes ?? '',
+     items: q.items.map((i) => ({
+-      id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, name: i.materialName } : null,
++      id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, name: i.materialName, catalogue: i.materialImage ?? null } : null,
+       quantity: trimDec(i.quantity), unit: i.unit ?? '', unitPrice: trimDec(i.unitPrice), priceCurrency: i.priceCurrency,
+       shippingCost: trimDec(i.shippingCost), shippingCurrency: i.priceCurrency, customsCost: trimDec(i.customsCost), customsCurrency: i.priceCurrency,
+       unitCost: trimDec(i.unitCost), costCurrency: i.priceCurrency, commissionPercentage: trimDec(i.commissionPercentage), taxPercentage: trimDec(i.taxPercentage), notes: i.notes ?? '',
+@@ -203,11 +204,13 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
+                   <div key={f.id} className="rounded-2xl border border-stone/60 bg-sand/35 p-4">
+                     <div className="mb-3 flex items-start gap-3">
+                       <span className="mt-1 grid size-8 shrink-0 place-items-center rounded-full bg-ink text-xs font-bold text-sand">{i + 1}</span>
++                      <MaterialThumb image={items?.[i]?.material?.catalogue} size="size-10" className="mt-0" />
+                       <Field className="flex-1" error={e?.material?.message}>
+                         <Controller control={control} name={`items.${i}.material`} rules={{ required: t('quotations.pickMaterial') }}
+                           render={({ field }) => (
+                             <AsyncPick<PickMaterial> value={field.value} onChange={(m) => onMaterial(i, m as Material | null)} cacheKey="materials" invalid={!!e?.material}
+                               placeholder={t('quotations.materialPh')} label={(m) => `${m.materialCode} - ${m.name ?? ''}`}
++                              thumb={(m) => <MaterialThumb image={m.catalogue} size="size-10" />}
+                               sub={(m) => [m.unitPrice && `${fmt(m.unitPrice)} ${m.currency ?? ''}`, m.source].filter(Boolean).join(' / ')}
+                               fetcher={(q) => api.get<Paginated<Material>>('/materials', { q, limit: 20 }).then((r) => r.data)} />
+                           )} />
+diff --git a/frontend/src/lib/i18n/ar.ts b/frontend/src/lib/i18n/ar.ts
+index 2ccde96..6393e12 100644
+--- a/frontend/src/lib/i18n/ar.ts
++++ b/frontend/src/lib/i18n/ar.ts
+@@ -76,6 +76,7 @@ const ar: Shape<typeof en> = {
+   materials: {
+     title: 'المواد', new: 'مادة جديدة', edit: 'تعديل المادة', code: 'الرمز', nameAr: 'الاسم بالعربية', nameEn: 'الاسم بلغة أجنبية', source: 'المصدر',
+     stock: 'المخزون', unitPrice: 'سعر الوحدة', unit: 'الوحدة', currency: 'العملة', origin: 'بلد المنشأ', catalogue: 'الكتالوج', model: 'رقم الموديل',
++    image: 'صورة المنتج', uploadImage: 'اختيار صورة', changeImage: 'تغيير الصورة', removeImage: 'حذف الصورة', imageHint: 'PNG أو JPG أو WEBP حتى 3 ميغابايت', noImage: 'لا توجد صورة',
+     catalogueNo: 'رقم الكتالوج', searchPh: 'الرمز، الاسم، المصدر، الكتالوج…',
+   },
+   companies: {
+diff --git a/frontend/src/lib/i18n/en.ts b/frontend/src/lib/i18n/en.ts
+index 223de57..4c0acae 100644
+--- a/frontend/src/lib/i18n/en.ts
++++ b/frontend/src/lib/i18n/en.ts
+@@ -71,6 +71,7 @@ const en = {
+   materials: {
+     title: 'Materials', new: 'New material', edit: 'Edit material', code: 'Code', nameAr: 'Name (Arabic)', nameEn: 'Name (foreign language)', source: 'Source',
+     stock: 'Stock', unitPrice: 'Unit price', unit: 'Unit', currency: 'Currency', origin: 'Country of origin', catalogue: 'Catalogue', model: 'Model number',
++    image: 'Product picture', uploadImage: 'Choose picture', changeImage: 'Change picture', removeImage: 'Remove picture', imageHint: 'PNG, JPG or WEBP up to 3 MB', noImage: 'No picture',
+     catalogueNo: 'Catalogue number', searchPh: 'Code, name, source, catalogue…',
+   },
+   companies: {
+diff --git a/frontend/src/lib/types.ts b/frontend/src/lib/types.ts
+index 0d6d562..57b1c47 100644
+--- a/frontend/src/lib/types.ts
++++ b/frontend/src/lib/types.ts
+@@ -51,7 +51,7 @@ export interface Material {
+ export interface Amounts { currency: string; value: string; cost: string; shipping: string; customs: string; required: string }
+ 
+ export interface ItemView {
+-  id: number; materialId: number | null; materialCode: string; materialName: string | null;
++  id: number; materialId: number | null; materialCode: string; materialName: string | null; materialImage?: string | null;
+   unit: string | null; sortOrder: number; quantity: string; unitPrice: string; priceCurrency: string;
+   unitCost: string | null; costCurrency: string | null; shippingCost: string | null; shippingCurrency: string | null;
+   customsCost: string | null; customsCurrency: string | null; commissionPercentage: string | null; taxPercentage: string; notes: string | null;

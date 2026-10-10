@@ -18,6 +18,8 @@ export const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 export type BrandSettings = {
   websiteName: string;
+  /** Text next to the icon in the browser tab. Empty = use websiteName. */
+  tabTitle: string;
   tagline: string;
   logo: string | null;
   icon: string | null;
@@ -25,6 +27,7 @@ export type BrandSettings = {
 
 export const DEFAULT_BRAND: BrandSettings = {
   websiteName: 'Quotations',
+  tabTitle: '',
   tagline: 'Prices, customers and materials in one place',
   logo: null,
   icon: null,
@@ -46,6 +49,7 @@ export function normalizeBrand(raw: unknown): BrandSettings {
   const out: BrandSettings = { ...DEFAULT_BRAND };
   const websiteName = typeof src.websiteName === 'string' ? src.websiteName.trim() : '';
   const tagline = typeof src.tagline === 'string' ? src.tagline.trim() : '';
+  const tabTitle = typeof src.tabTitle === 'string' ? src.tabTitle.trim().slice(0, 120) : '';
   const normalizeAsset = (value: unknown, kind: 'logo' | 'icon') => {
     if (typeof value !== 'string') return null;
     const asset = value.trim();
@@ -55,6 +59,7 @@ export function normalizeBrand(raw: unknown): BrandSettings {
   };
   out.websiteName = websiteName || DEFAULT_BRAND.websiteName;
   out.tagline = tagline || DEFAULT_BRAND.tagline;
+  out.tabTitle = tabTitle;
   out.logo = normalizeAsset(src.logo, 'logo');
   out.icon = normalizeAsset(src.icon, 'icon');
   return out;
