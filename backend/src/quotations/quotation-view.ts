@@ -6,6 +6,7 @@ export interface ItemView {
   materialId: number | null;
   materialCode: string;
   materialName: string | null;
+  materialImage: string | null;
   unit: string | null;
   sortOrder: number;
   quantity: string;

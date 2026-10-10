@@ -16,6 +16,7 @@ import { daysUntil } from '@/lib/dates';
 import { toastError } from '@/lib/errors';
 import { useI18n } from '@/lib/i18n';
 import { aggregate, calcItem, fmt, trimDec } from '@/lib/money';
+import { MaterialThumb } from '@/components/MaterialThumb';
 import { type Customer, type Material, type Paginated, type PickCompany, type QuotationView } from '@/lib/types';
 
 type PickCustomer = Pick<Customer, 'id' | 'companyName'> & Partial<Customer>;
@@ -46,7 +47,7 @@ function fromView(q: QuotationView): FormValues {
     paymentLocation: q.paymentLocation ?? '', deliveryMethod: q.deliveryMethod ?? '', customerPaymentMethod: q.customerPaymentMethod ?? '',
     notes: q.notes ?? '',
     items: q.items.map((i) => ({
-      id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, name: i.materialName } : null,
+      id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, name: i.materialName, catalogue: i.materialImage ?? null } : null,
       quantity: trimDec(i.quantity), unit: i.unit ?? '', unitPrice: trimDec(i.unitPrice), priceCurrency: i.priceCurrency,
       shippingCost: trimDec(i.shippingCost), shippingCurrency: i.priceCurrency, customsCost: trimDec(i.customsCost), customsCurrency: i.priceCurrency,
       unitCost: trimDec(i.unitCost), costCurrency: i.priceCurrency, commissionPercentage: trimDec(i.commissionPercentage), taxPercentage: trimDec(i.taxPercentage), notes: i.notes ?? '',
@@ -214,11 +215,13 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                   <div key={f.id} className="rounded-2xl border border-stone/60 bg-sand/35 p-4">
                     <div className="mb-3 flex items-start gap-3">
                       <span className="mt-1 grid size-8 shrink-0 place-items-center rounded-full bg-ink text-xs font-bold text-sand">{i + 1}</span>
+                      <MaterialThumb image={items?.[i]?.material?.catalogue} size="size-10" className="mt-0" />
                       <Field className="flex-1" error={e?.material?.message}>
                         <Controller control={control} name={`items.${i}.material`} rules={{ required: t('quotations.pickMaterial') }}
                           render={({ field }) => (
                             <AsyncPick<PickMaterial> value={field.value} onChange={(m) => onMaterial(i, m as Material | null)} cacheKey="materials" invalid={!!e?.material}
                               placeholder={t('quotations.materialPh')} label={(m) => `${m.materialCode} - ${m.name ?? ''}`}
+                              thumb={(m) => <MaterialThumb image={m.catalogue} size="size-10" />}
                               sub={(m) => [m.unitPrice && `${fmt(m.unitPrice)} ${m.currency ?? ''}`, m.source].filter(Boolean).join(' / ')}
                               fetcher={(q) => api.get<Paginated<Material>>('/materials', { q, limit: 20 }).then((r) => r.data)} />
                           )} />

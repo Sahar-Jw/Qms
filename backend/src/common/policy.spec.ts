@@ -1,5 +1,5 @@
 import { RoleCode as R } from './enums';
-import { canEditQuotation, canManageAccount, canSeeLocked, isTopTier } from './policy';
+import { canAssignRole, canChangeRoleOf, canEditQuotation, canManageAccount, canSeeLocked, isTopTier } from './policy';
 
 const u = (id: number, role: R) => ({ id, role });
 
@@ -31,5 +31,24 @@ describe('policy', () => {
     expect(canManageAccount(u(1, R.TECHNICAL_MANAGER), { id: 3, role: R.MANAGER })).toBe(true);
     expect(canManageAccount(u(2, R.GENERAL_MANAGER), { id: 4, role: R.EMPLOYEE })).toBe(true);
     expect(canManageAccount(u(3, R.MANAGER), { id: 4, role: R.EMPLOYEE })).toBe(false);
+  });
+
+  it('only the technical manager can assign the technical_manager role', () => {
+    expect(canAssignRole(u(1, R.TECHNICAL_MANAGER), R.TECHNICAL_MANAGER)).toBe(true);
+    expect(canAssignRole(u(2, R.GENERAL_MANAGER), R.TECHNICAL_MANAGER)).toBe(false);
+    expect(canAssignRole(u(2, R.GENERAL_MANAGER), R.GENERAL_MANAGER)).toBe(true);
+    expect(canAssignRole(u(2, R.GENERAL_MANAGER), R.MANAGER)).toBe(true);
+    expect(canAssignRole(u(1, R.TECHNICAL_MANAGER), R.EMPLOYEE)).toBe(true);
+    expect(canAssignRole(u(3, R.MANAGER), R.EMPLOYEE)).toBe(false);
+  });
+
+  it('the technical manager can change the general manager role; nobody changes a technical manager role', () => {
+    expect(canChangeRoleOf(u(1, R.TECHNICAL_MANAGER), { id: 2, role: R.GENERAL_MANAGER })).toBe(true);
+    expect(canChangeRoleOf(u(2, R.GENERAL_MANAGER), { id: 1, role: R.TECHNICAL_MANAGER })).toBe(false);
+    expect(canChangeRoleOf(u(1, R.TECHNICAL_MANAGER), { id: 5, role: R.TECHNICAL_MANAGER })).toBe(false);
+    expect(canChangeRoleOf(u(2, R.GENERAL_MANAGER), { id: 6, role: R.GENERAL_MANAGER })).toBe(false);
+    expect(canChangeRoleOf(u(2, R.GENERAL_MANAGER), { id: 3, role: R.MANAGER })).toBe(true);
+    expect(canChangeRoleOf(u(1, R.TECHNICAL_MANAGER), { id: 1, role: R.TECHNICAL_MANAGER })).toBe(false);
+    expect(canChangeRoleOf(u(3, R.MANAGER), { id: 4, role: R.EMPLOYEE })).toBe(false);
   });
 });

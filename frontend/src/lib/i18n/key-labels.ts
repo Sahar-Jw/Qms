@@ -135,7 +135,7 @@ export const PART_LABELS: Record<string, Pair> = {
   MATERIAL_INACTIVE: ['المادة معطّلة', 'Material inactive'], DUPLICATE_ENTRY: ['سجل مكرر', 'Duplicate record'], CUSTOMER_NAME_REQUIRED: ['اسم العميل مطلوب', 'Customer name required'],
   MATERIAL_NAME_REQUIRED: ['اسم المادة مطلوب', 'Material name required'], PRICE_CURRENCY_REQUIRED: ['عملة السعر مطلوبة', 'Price currency required'], COMPANY_MISMATCH: ['عدم تطابق الشركة', 'Company mismatch'],
   VALIDITY_BEFORE_QUOTATION_DATE: ['تاريخ الصلاحية قبل تاريخ العرض', 'Validity date before quotation date'],
-  CANNOT_DEACTIVATE_SELF: ['لا يمكن تعطيل حسابك', 'Cannot deactivate yourself'], CANNOT_CHANGE_OWN_ROLE: ['لا يمكن تغيير دورك', 'Cannot change own role'], WRONG_CURRENT_PASSWORD: ['كلمة المرور الحالية خاطئة', 'Wrong current password'],
+  CANNOT_DEACTIVATE_SELF: ['لا يمكن تعطيل حسابك', 'Cannot deactivate yourself'], CANNOT_CHANGE_OWN_ROLE: ['لا يمكن تغيير دورك', 'Cannot change own role'], ROLE_NOT_ASSIGNABLE: ['دور غير قابل للمنح', 'Role not assignable'], WRONG_CURRENT_PASSWORD: ['كلمة المرور الحالية خاطئة', 'Wrong current password'],
   PDF_ENGINE_UNAVAILABLE: ['PDF غير متاح', 'PDF unavailable'], INVALID_FILE_TYPE: ['نوع ملف غير مسموح', 'File type not allowed'], INTERNAL_ERROR: ['خطأ في الخادم', 'Server error'],
   NETWORK: ['تعذر الاتصال بالخادم', 'Cannot reach the server'], QUOTATION_NOT_FOUND: ['العرض غير موجود', 'Quotation not found'],
 };

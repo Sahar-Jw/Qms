@@ -27,9 +27,6 @@ export class CreateMaterialDto {
   @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(100)
   countryOfOrigin: string;
 
-  @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(150)
-  catalogue: string;
-
   @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(100)
   modelNumber: string;
 

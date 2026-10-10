@@ -71,6 +71,7 @@ const en = {
   materials: {
     title: 'Materials', new: 'New material', edit: 'Edit material', code: 'Code', nameAr: 'Name (Arabic)', nameEn: 'Name (foreign language)', source: 'Source',
     stock: 'Stock', unitPrice: 'Unit price', unit: 'Unit', currency: 'Currency', origin: 'Country of origin', catalogue: 'Catalogue', model: 'Model number',
+    image: 'Product picture', uploadImage: 'Choose picture', changeImage: 'Change picture', removeImage: 'Remove picture', imageHint: 'PNG, JPG or WEBP up to 3 MB', noImage: 'No picture',
     catalogueNo: 'Catalogue number', searchPh: 'Code, name, source, catalogue…',
   },
   companies: {
@@ -142,7 +143,7 @@ const en = {
     CUSTOMER_NAME_REQUIRED: 'Enter the customer name in Arabic or in the foreign language', MATERIAL_NAME_REQUIRED: 'Enter the material name in Arabic or in the foreign language',
     PRICE_CURRENCY_REQUIRED: 'Enter the price currency', COMPANY_MISMATCH: 'Quotations are issued from the company chosen in settings', CANNOT_DEACTIVATE_SELF: 'You cannot deactivate your own account',
     VALIDITY_BEFORE_QUOTATION_DATE: 'The validity date cannot be before the quotation date',
-    CANNOT_CHANGE_OWN_ROLE: 'You cannot change your own role', WRONG_CURRENT_PASSWORD: 'The current password is wrong', PDF_ENGINE_UNAVAILABLE: 'PDF is not available on this server. Use Print instead.',
+    CANNOT_CHANGE_OWN_ROLE: 'You cannot change your own role', ROLE_NOT_ASSIGNABLE: 'Only the technical manager can assign the technical manager role', WRONG_CURRENT_PASSWORD: 'The current password is wrong', PDF_ENGINE_UNAVAILABLE: 'PDF is not available on this server. Use Print instead.',
     INVALID_FILE_TYPE: 'Only PNG, JPG or WEBP images are allowed', INTERNAL_ERROR: 'Something went wrong on the server', NETWORK: 'Cannot reach the server', QUOTATION_NOT_FOUND: 'Quotation not found', COMPANY_NOT_FOUND: 'Company not found', COMPANY_INACTIVE: 'This company is inactive', COMPANY_CANNOT_CHANGE: 'The issuing company can only be changed while the quotation is a draft', CUSTOMER_NOT_FOUND: 'Customer not found', MATERIAL_NOT_FOUND: 'Material not found', ROLE_NOT_FOUND: 'Role not found', USER_NOT_FOUND: 'User not found', FILE_REQUIRED: 'Please choose a file', INVALID_PERCENTAGE: 'A percentage must be between 0 and 100', ITEM_NOT_IN_QUOTATION: 'This item does not belong to the quotation', FIELD_REQUIRED: 'This field cannot be cleared',
   },
 };

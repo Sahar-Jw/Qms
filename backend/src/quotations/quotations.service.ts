@@ -295,7 +295,8 @@ export class QuotationsService {
       if (!src) throw new NotFoundException({ code: 'QUOTATION_NOT_FOUND', message: 'Quotation not found' });
       this.hideLockedFrom(user, src.status);
 
-      const companyId = await this.resolveIssuingCompanyId(m, user.id);
+      // A copy stays under the SAME company as the original (not the user's current issuing company).
+      const companyId = src.companyId;
       const customerId = dto.customerId ?? src.customerId;
       await this.assertActive(m, Customer, customerId, 'CUSTOMER', 'Customer');
       const resp = src.responsibleUserId ? await m.findOne(User, { where: { id: src.responsibleUserId } }) : null;
@@ -383,7 +384,7 @@ export class QuotationsService {
     await this.refreshExpiryStatuses();
     const q = await this.repo.findOne({
       where: { id },
-      relations: { company: true, customer: true, responsibleUser: true, items: { amounts: true } },
+      relations: { company: true, customer: true, responsibleUser: true, items: { amounts: true, material: true } },
     });
     if (!q) throw new NotFoundException({ code: 'QUOTATION_NOT_FOUND', message: 'Quotation not found' });
     this.hideLockedFrom(user, q.status);
@@ -398,6 +399,7 @@ export class QuotationsService {
         materialId: i.materialId,
         materialCode: i.materialCode,
         materialName: i.materialName,
+        materialImage: /^materials\/[\w.-]+$/.test(i.material?.catalogue ?? '') ? i.material!.catalogue : null,
         unit: i.unit,
         sortOrder: i.sortOrder,
         quantity: i.quantity,

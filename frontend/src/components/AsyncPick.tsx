@@ -1,7 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Search, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
 
@@ -19,12 +19,14 @@ interface Props<T extends { id: number }> {
   cacheKey: string;
   label: (v: T) => string;
   sub?: (v: T) => string;
+  /** Optional picture shown in the dropdown rows and next to the selected value. */
+  thumb?: (v: T) => ReactNode;
   placeholder?: string;
   invalid?: boolean;
 }
 
 /** Search-as-you-type picker used for customers and materials (the lists can be long). */
-export function AsyncPick<T extends { id: number }>({ value, onChange, fetcher, cacheKey, label, sub, placeholder, invalid }: Props<T>) {
+export function AsyncPick<T extends { id: number }>({ value, onChange, fetcher, cacheKey, label, sub, thumb, placeholder, invalid }: Props<T>) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
@@ -65,9 +67,12 @@ export function AsyncPick<T extends { id: number }>({ value, onChange, fetcher, 
           ) : res.data?.length ? (
             res.data.map((it) => (
               <button type="button" key={it.id} onMouseDown={(e) => e.preventDefault()} onClick={() => pickItem(it)}
-                className={cn('flex w-full flex-col rounded-xl px-3 py-2 text-start hover:bg-sand', value?.id === it.id && 'bg-sand')}>
-                <span className="text-sm font-semibold">{label(it)}</span>
-                {sub && <span className="text-xs text-cocoa">{sub(it)}</span>}
+                className={cn('flex w-full items-center gap-3 rounded-xl px-3 py-2 text-start hover:bg-sand', value?.id === it.id && 'bg-sand')}>
+                {thumb?.(it)}
+                <span className="flex min-w-0 flex-col">
+                  <span className="text-sm font-semibold">{label(it)}</span>
+                  {sub && <span className="text-xs text-cocoa">{sub(it)}</span>}
+                </span>
               </button>
             ))
           ) : <div className="p-3 text-sm text-cocoa">{t('quotations.noResults')}</div>}

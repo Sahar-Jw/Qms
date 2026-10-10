@@ -4,7 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { Repository } from 'typeorm';
 import { Paginated, paginated } from '../common/dto/pagination.dto';
 import { RoleCode } from '../common/enums';
-import { canManageAccount, isTopTier } from '../common/policy';
+import { canAssignRole, canChangeRoleOf, canManageAccount, isTopTier } from '../common/policy';
 import { RolesService } from '../roles/roles.service';
 import { AuthUser } from '../common/auth-user';
 import { ForbiddenException } from '@nestjs/common';
@@ -111,7 +111,8 @@ export class UsersService {
 
   /**
    * Technical and general managers can manage every manager / employee account, but not each other
-   * (nobody can "cancel" another top-tier account). Handing out any role to a manager/employee is allowed.
+   * (nobody can "cancel" another top-tier account). Role rules: only the technical manager can hand out the
+   * technical_manager role, and only the technical manager can change the general manager's role.
    */
   private assertCanManage(target: User, actor: AuthUser) {
     if (!isTopTier(actor.role)) {
@@ -125,10 +126,24 @@ export class UsersService {
   async update(id: number, dto: UpdateUserDto, actor: AuthUser) {
     const u = await this.findById(id);
     if (!u) throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'User not found' });
-    this.assertCanManage(u, actor);
-    if (dto.roleCode && dto.roleCode !== u.role.code) {
+    const roleChange = !!dto.roleCode && dto.roleCode !== u.role.code;
+    const profileChange = dto.fullName !== undefined || dto.phone !== undefined;
+    if (!isTopTier(actor.role)) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'You do not have permission to perform this action' });
+    }
+    // Name / phone of another top-tier account stays protected; a role change follows its own rules below.
+    if ((profileChange || !roleChange) && !canManageAccount(actor, { id: u.id, role: u.role.code as RoleCode })) {
+      throw new ForbiddenException({ code: 'PROTECTED_ACCOUNT', message: 'Technical and general manager accounts cannot be changed by each other' });
+    }
+    if (roleChange) {
       if (u.id === actor.id) throw new BadRequestException({ code: 'CANNOT_CHANGE_OWN_ROLE', message: 'You cannot change your own role' });
-      const role = await this.roles.findByCode(dto.roleCode);
+      if (!canAssignRole(actor, dto.roleCode!)) {
+        throw new ForbiddenException({ code: 'ROLE_NOT_ASSIGNABLE', message: 'Only the technical manager can assign the technical manager role' });
+      }
+      if (!canChangeRoleOf(actor, { id: u.id, role: u.role.code as RoleCode })) {
+        throw new ForbiddenException({ code: 'PROTECTED_ACCOUNT', message: 'Technical and general manager accounts cannot be changed by each other' });
+      }
+      const role = await this.roles.findByCode(dto.roleCode!);
       if (!role) throw new BadRequestException({ code: 'ROLE_NOT_FOUND', message: 'Role not found' });
       u.role = role;
     }

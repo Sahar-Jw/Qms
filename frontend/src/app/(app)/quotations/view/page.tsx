@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/confirm';
+import { MaterialThumb } from '@/components/MaterialThumb';
 import { Ledger } from '@/components/Totals';
 import { Button, Card, CardHeader, Empty, Loading, StatusBadge, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -175,13 +176,14 @@ function QuotationDetail() {
             <div className="max-h-[32rem] overflow-auto">
               <table className="w-full min-w-[860px]">
                 <thead className="sticky top-0 z-10"><tr>
-                  <th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('quotations.quantity')}</th>
+                  <th className={th}>{t('materials.image')}</th><th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('quotations.quantity')}</th>
                   <th className={th}>{t('quotations.unitPrice')}</th><th className={th}>{t('quotations.value')}</th><th className={th}>{t('quotations.shipping')}</th>
                   <th className={th}>{t('quotations.customs')}</th><th className={th}>{t('quotations.tax')}</th><th className={th}>{t('quotations.required')}</th>{canCost && <th className={th}>{t('quotations.totalCost')}</th>}
                 </tr></thead>
                 <tbody>
                   {q.items.map((i) => (
                     <tr key={i.id} className={tr}>
+                      <td className={td}><MaterialThumb image={i.materialImage} size="size-12" /></td>
                       <td className={`${td} font-semibold`} dir="ltr">{i.materialCode}</td>
                       <td className={td}>{i.materialName ?? ''}{i.notes && <div className="text-xs text-clay">{i.notes}</div>}</td>
                       <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.quantity)} <span className="text-xs text-cocoa">{i.unit}</span></td>

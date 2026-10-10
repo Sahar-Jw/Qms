@@ -69,6 +69,8 @@ export default function UsersPage() {
                   const self = u.id === me.id;
                   const protectedRow = isTopTier(u.role); // technical / general managers cannot be changed by each other
                   const locked = self || protectedRow;
+                  // role: the technical manager may also change a general manager's role; a technical manager's role is never changed
+                  const roleLocked = self || (protectedRow && !(me.role === 'technical_manager' && u.role === 'general_manager'));
                   return (
                     <tr key={u.id} className={tr}>
                       <td className={td}>
@@ -79,9 +81,9 @@ export default function UsersPage() {
                       </td>
                       <td className={td} dir="ltr">{u.phone ?? '—'}</td>
                       <td className={td}>
-                        <Select value={u.role} disabled={locked || setRole.isPending} wrapperClassName="w-44" className="h-9"
-                          onChange={(e) => setRole.mutate({ u, roleCode: e.target.value as RoleCode })} title={self ? t('users.cannotSelf') : protectedRow ? t('users.protected') : undefined}>
-                          {(roles.includes(u.role) ? roles : [u.role, ...roles]).map((r) => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
+                        <Select value={u.role} disabled={roleLocked || setRole.isPending} wrapperClassName="w-44" className="h-9"
+                          onChange={(e) => setRole.mutate({ u, roleCode: e.target.value as RoleCode })} title={self ? t('users.cannotSelf') : roleLocked ? t('users.protected') : undefined}>
+                          {(roles.includes(u.role) ? roles : [u.role, ...roles]).map((r) => <option key={r} value={r} disabled={r === 'technical_manager' && me.role !== 'technical_manager' && u.role !== r}>{t(`roles.${r}`)}</option>)}
                         </Select>
                       </td>
                       <td className={`${td} tabular-nums`} dir="ltr">{u.lastLoginAt ? u.lastLoginAt.slice(0, 16).replace('T', ' ') : t('common.never')}</td>

@@ -52,7 +52,7 @@ export interface Material {
 export interface Amounts { currency: string; value: string; cost: string; shipping: string; customs: string; required: string }
 
 export interface ItemView {
-  id: number; materialId: number | null; materialCode: string; materialName: string | null;
+  id: number; materialId: number | null; materialCode: string; materialName: string | null; materialImage?: string | null;
   unit: string | null; sortOrder: number; quantity: string; unitPrice: string; priceCurrency: string;
   unitCost: string | null; costCurrency: string | null; shippingCost: string | null; shippingCurrency: string | null;
   customsCost: string | null; customsCurrency: string | null; commissionPercentage: string | null; taxPercentage: string; notes: string | null;
