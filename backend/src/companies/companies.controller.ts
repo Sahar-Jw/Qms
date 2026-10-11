@@ -47,25 +47,25 @@ export class CompaniesController {
   }
 
   @Post()
-  @MinRole(RoleCode.GENERAL_MANAGER)
+  @MinRole(RoleCode.MANAGER)
   create(@Body() dto: CreateCompanyDto, @CurrentUser() me: AuthUser) {
     return this.companies.create(dto, me.id);
   }
 
   @Patch(':id')
-  @MinRole(RoleCode.GENERAL_MANAGER)
+  @MinRole(RoleCode.MANAGER)
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCompanyDto, @CurrentUser() me: AuthUser) {
     return this.companies.update(id, dto, me.id);
   }
 
   @Patch(':id/active')
-  @MinRole(RoleCode.GENERAL_MANAGER)
+  @MinRole(RoleCode.MANAGER)
   setActive(@Param('id', ParseIntPipe) id: number, @Body() dto: SetActiveDto, @CurrentUser() me: AuthUser) {
     return this.companies.setActive(id, dto.isActive, me.id);
   }
 
   @Post(':id/logo')
-  @MinRole(RoleCode.GENERAL_MANAGER)
+  @MinRole(RoleCode.MANAGER)
   @ApiConsumes('multipart/form-data')
   @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
   @UseInterceptors(logoUpload)

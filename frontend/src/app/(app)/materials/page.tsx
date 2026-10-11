@@ -1,15 +1,17 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImagePlus, Pencil, Plus, Power, Search, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/confirm';
 import { MaterialThumb } from '@/components/MaterialThumb';
+import { ProgressBar } from '@/components/ProgressBar';
 import { ActiveBadge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader, Pagination, Select, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/auth';
 import { toastError } from '@/lib/errors';
+import { fmtSize, optimizeImage } from '@/lib/image';
 import { cleanBody, useDebounced } from '@/lib/hooks';
 import { useI18n } from '@/lib/i18n';
 import { fmt, trimDec } from '@/lib/money';
@@ -31,6 +33,10 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [removeImg, setRemoveImg] = useState(false);
+  const [origSize, setOrigSize] = useState<number | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const [pct, setPct] = useState(0);
+  const [phase, setPhase] = useState<'saving' | 'uploading'>('saving');
   const current = editing && !removeImg ? material.catalogue ?? null : null;
   useEffect(() => {
     if (!file) { setPreview(null); return; }
@@ -38,10 +44,14 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
     setPreview(u);
     return () => URL.revokeObjectURL(u);
   }, [file]);
-  const pickFile = (f?: File) => {
+  const pickFile = async (f?: File) => {
     if (!f) return;
-    if (!['image/png', 'image/jpeg', 'image/webp'].includes(f.type) || f.size > 3 * 1024 * 1024) { toast.error(t('materials.imageHint')); return; }
-    setFile(f); setRemoveImg(false);
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(f.type) || f.size > 8 * 1024 * 1024) { toast.error(t('materials.imageHint')); return; }
+    setPreparing(true);
+    try {
+      const small = await optimizeImage(f); // same width x height, just lighter
+      setFile(small); setOrigSize(f.size); setRemoveImg(false);
+    } finally { setPreparing(false); }
   };
   const { register, handleSubmit, formState: { errors } } = useForm<Form>({ defaultValues: editing ? toForm(material) : blank });
   const save = useMutation({
@@ -50,32 +60,50 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
       if (body.currency) body.currency = String(body.currency).toUpperCase();
       // numbers can't be null on the backend: leave them out when empty
       for (const k of ['stockQuantity', 'unitPrice'] as const) if (body[k] === null) delete body[k];
+      setPhase('saving'); setPct(4);
       const saved = await (editing ? api.patch<Material>(`/materials/${material.id}`, body) : api.post<Material>('/materials', body));
-      if (file) await api.upload<Material>(`/materials/${saved.id}/image`, (() => { const fd = new FormData(); fd.append('file', file); return fd; })());
-      else if (editing && removeImg && material.catalogue) await api.delete(`/materials/${saved.id}/image`);
-      return saved;
+      setPct(10);
+      let uploadFailed = false;
+      if (file) {
+        setPhase('uploading');
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+          await api.uploadWithProgress<Material>(`/materials/${saved.id}/image`, fd, (fr) => setPct(10 + Math.round(fr * 90)));
+        } catch (e) {
+          // the material itself is already saved: keep it, tell the user, and let them retry the picture from Edit
+          uploadFailed = true;
+          toastError(e, t, has);
+        }
+      } else if (editing && removeImg && material.catalogue) await api.delete(`/materials/${saved.id}/image`);
+      setPct(100);
+      return { saved, uploadFailed };
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['materials'] }); qc.invalidateQueries({ queryKey: ['pick'] }); toast.success(t('common.saved')); onClose(); },
+    onSuccess: ({ uploadFailed }) => { qc.invalidateQueries({ queryKey: ['materials'] }); qc.invalidateQueries({ queryKey: ['pick'] }); if (!uploadFailed) toast.success(t('common.saved')); onClose(); },
     onError: (e) => toastError(e, t, has),
   });
   const req = { required: t('common.required'), validate: (v: string) => v.trim() !== '' || t('common.required') };
   const dec = { required: t('common.required'), validate: (v: string) => DEC.test(v.trim()) || t('common.invalid') };
   return (
     <Modal open wide title={editing ? t('materials.edit') : t('materials.new')} onClose={onClose}
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button loading={save.isPending} onClick={handleSubmit((v) => save.mutate(v))}>{t('common.save')}</Button></>}>
+      footer={<>
+        {save.isPending && <div className="me-auto min-w-52 flex-1"><ProgressBar value={pct} label={t(phase === 'uploading' ? 'materials.uploadingImage' : 'materials.savingDetails')} /></div>}
+        <Button variant="ghost" disabled={save.isPending} onClick={onClose}>{t('common.cancel')}</Button>
+        <Button loading={save.isPending} disabled={preparing} onClick={handleSubmit((v) => save.mutate(v))}>{t('common.save')}</Button>
+      </>}>
       <form className="grid gap-4 sm:grid-cols-2 md:grid-cols-3" onSubmit={handleSubmit((v) => save.mutate(v))}>
         <div className="flex items-center gap-4 rounded-2xl bg-sand/50 p-3 sm:col-span-2 md:col-span-3">
-          <MaterialThumb image={preview ? null : current} size="size-20" className={preview ? 'hidden' : ''} />
+          <MaterialThumb image={preview ? null : current} size="size-24" className={preview ? 'hidden' : ''} zoom />
           {preview && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={preview} alt="" className="size-20 shrink-0 rounded-xl border border-stone/60 bg-white object-contain p-0.5" />
+            <img src={preview} alt="" className="size-24 shrink-0 rounded-xl border border-stone/60 bg-white object-contain p-0.5" />
           )}
           <div className="min-w-0 flex-1">
             <div className="text-sm font-bold">{t('materials.image')}</div>
-            <div className="text-xs text-cocoa">{file ? file.name : t('materials.imageHint')}</div>
+            <div className="text-xs text-cocoa">{preparing ? t('materials.optimizing') : file ? `${file.name} · ${origSize && origSize > file.size ? `${fmtSize(origSize)} → ${fmtSize(file.size)}` : fmtSize(file.size)}` : t('materials.imageHint')}</div>
           </div>
-          <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
-          <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}><ImagePlus className="size-4" />{file || current ? t('materials.changeImage') : t('materials.uploadImage')}</Button>
+          <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { void pickFile(e.target.files?.[0]); e.target.value = ''; }} />
+          <Button type="button" variant="outline" size="sm" loading={preparing} onClick={() => fileRef.current?.click()}><ImagePlus className="size-4" />{file || current ? t('materials.changeImage') : t('materials.uploadImage')}</Button>
           {(file || current) && <Button type="button" variant="ghost" size="sm" onClick={() => { setFile(null); setRemoveImg(true); }} aria-label={t('materials.removeImage')}><Trash2 className="size-4" /></Button>}
         </div>
         <Field label={t('materials.code')} required error={errors.materialCode?.message}><Input dir="ltr" maxLength={60} {...register('materialCode', req)} /></Field>
@@ -94,6 +122,43 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
   );
 }
 
+function MaterialDetails({ material: x, onClose, onEdit }: { material: Material; onClose: () => void; onEdit: () => void }) {
+  const { t } = useI18n();
+  const rows: [string, ReactNode][] = [
+    [t('materials.code'), <span key="c" className="font-bold" dir="ltr">{x.materialCode}</span>],
+    [t('common.name'), x.name || '—'],
+    [t('materials.unitPrice'), <span key="p" className="tabular-nums" dir="ltr">{fmt(x.unitPrice)} {x.currency}</span>],
+    [t('materials.stock'), <span key="s" className="tabular-nums" dir="ltr">{fmt(x.stockQuantity, 3)} {x.unit}</span>],
+    [t('materials.unit'), x.unit || '—'],
+    [t('materials.source'), x.source || '—'],
+    [t('materials.origin'), x.countryOfOrigin || '—'],
+    [t('materials.model'), <span key="m" dir="ltr">{x.modelNumber || '—'}</span>],
+    [t('materials.catalogueNo'), <span key="n" dir="ltr">{x.catalogueNumber || '—'}</span>],
+    [t('common.status'), <ActiveBadge key="a" active={x.isActive} />],
+  ];
+  return (
+    <Modal open wide title={<>{t('materials.details')}: <span dir="auto">{x.name ?? x.materialCode}</span></>} onClose={onClose}
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.close')}</Button><Button onClick={onEdit}><Pencil className="size-4" />{t('common.edit')}</Button></>}>
+      <div className="grid gap-5 md:grid-cols-[16rem_minmax(0,1fr)]">
+        <div>
+          <div className="grid h-64 place-items-center rounded-2xl bg-sand/50 p-2">
+            <MaterialThumb image={x.catalogue} size="h-full w-full" className="border-0 bg-transparent" zoom />
+          </div>
+          {x.catalogue && <p className="mt-2 text-center text-xs text-cocoa">{t('materials.clickToZoom')}</p>}
+        </div>
+        <dl className="grid content-start gap-x-6 gap-y-3 sm:grid-cols-2">
+          {rows.map(([k, v]) => (
+            <div key={k} className="min-w-0 border-b border-stone/40 pb-2">
+              <dt className="text-xs font-semibold text-cocoa">{k}</dt>
+              <dd className="mt-0.5 break-words text-sm">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </Modal>
+  );
+}
+
 export default function MaterialsPage() {
   const { t, pick, has } = useI18n();
   const me = useMe().data!;
@@ -103,6 +168,7 @@ export default function MaterialsPage() {
   const [status, setStatus] = useState<'active' | 'inactive' | 'all'>('active');
   const [page, setPage] = useState(1);
   const [edit, setEdit] = useState<Material | 'new' | null>(null);
+  const [view, setView] = useState<Material | null>(null);
   const dq = useDebounced(q);
   useEffect(() => setPage(1), [dq, status]);
   const list = useQuery({ queryKey: ['materials', dq, status, page], queryFn: () => api.get<Paginated<Material>>('/materials', { q: dq, status, page, limit: 15 }), placeholderData: (p) => p });
@@ -133,8 +199,10 @@ export default function MaterialsPage() {
               <thead><tr><th className={th}>{t('materials.image')}</th><th className={th}>{t('materials.code')}</th><th className={th}>{t('common.name')}</th><th className={th}>{t('materials.unitPrice')}</th><th className={th}>{t('materials.stock')}</th><th className={th}>{t('materials.source')}</th><th className={th}>{t('common.status')}</th><th className={th} /></tr></thead>
               <tbody>
                 {list.data.data.map((m) => (
-                  <tr key={m.id} className={tr}>
-                    <td className={td}><MaterialThumb image={m.catalogue} size="size-12" /></td>
+                  <tr key={m.id} className={`${tr} cursor-pointer`} tabIndex={0}
+                    onClick={(e) => { if (!(e.target as HTMLElement).closest('a,button')) setView(m); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) setView(m); }}>
+                    <td className={td}><MaterialThumb image={m.catalogue} size="size-20" zoom /></td>
                     <td className={`${td} font-bold`} dir="ltr">{m.materialCode}</td>
                     <td className={td}>{m.name ?? ''}</td>
                     <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(m.unitPrice)} <span className="text-xs text-cocoa">{m.currency}</span></td>
@@ -153,6 +221,7 @@ export default function MaterialsPage() {
         )}
         {list.data && <Pagination page={list.data.page} limit={list.data.limit} total={list.data.total} onPage={setPage} />}
       </Card>
+      {view && <MaterialDetails material={view} onClose={() => setView(null)} onEdit={() => { setEdit(view); setView(null); }} />}
       {edit && <MaterialModal material={edit} onClose={() => setEdit(null)} />}
     </>
   );

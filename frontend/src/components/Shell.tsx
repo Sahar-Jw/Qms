@@ -9,6 +9,7 @@ import { Avatar } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useBrandSettings, useSettings } from '@/lib/auth';
 import { cn } from '@/lib/cn';
+import { useSiteBrand } from '@/lib/brand';
 import { useI18n } from '@/lib/i18n';
 import { hasRole, type User } from '@/lib/types';
 
@@ -40,16 +41,18 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
   const settings = useSettings();
   const brand = useBrandSettings();
   const company = settings.data?.issuingCompany;
-  const siteName = brand.data?.websiteName || t('app.name');
-  const siteTagline = brand.data?.tagline || t('app.tagline');
+  const { name: siteName, tagline: siteTagline } = useSiteBrand();
 
   const nav = [
     { href: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { href: '/quotations', icon: FileText, label: t('nav.quotations') },
     { href: '/customers', icon: Users, label: t('nav.customers') },
     { href: '/materials', icon: Package, label: t('nav.materials') },
+    ...(hasRole(user.role, 'manager')
+      ? [{ href: '/companies', icon: Building2, label: t('nav.companies') }]
+      : []),
     ...(hasRole(user.role, 'general_manager')
-      ? [{ href: '/companies', icon: Building2, label: t('nav.companies') }, { href: '/users', icon: UserCog, label: t('nav.users') }]
+      ? [{ href: '/users', icon: UserCog, label: t('nav.users') }]
       : []),
     { href: '/profile', icon: UserCircle, label: t('nav.profile') },
     { href: '/settings', icon: SettingsIcon, label: t('nav.settings') },

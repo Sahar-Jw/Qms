@@ -5,12 +5,13 @@ import type { ReactNode } from 'react';
 import { LangToggle } from '@/components/Shell';
 import { PILL_ORDER, PillStack } from '@/components/ui';
 import { useBrandSettings } from '@/lib/auth';
+import { useSiteBrand } from '@/lib/brand';
 import { useI18n } from '@/lib/i18n';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   const brand = useBrandSettings();
-  const siteName = brand.data?.websiteName || t('app.name');
+  const { name: siteName } = useSiteBrand();
   return (
     <div className="grid min-h-screen lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
       <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-b from-sand via-clay to-cocoa p-12 lg:flex">

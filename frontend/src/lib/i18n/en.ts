@@ -71,7 +71,8 @@ const en = {
   materials: {
     title: 'Materials', new: 'New material', edit: 'Edit material', code: 'Code', nameAr: 'Name (Arabic)', nameEn: 'Name (foreign language)', source: 'Source',
     stock: 'Stock', unitPrice: 'Unit price', unit: 'Unit', currency: 'Currency', origin: 'Country of origin', catalogue: 'Catalogue', model: 'Model number',
-    image: 'Product picture', uploadImage: 'Choose picture', changeImage: 'Change picture', removeImage: 'Remove picture', imageHint: 'PNG, JPG or WEBP up to 3 MB', noImage: 'No picture',
+    image: 'Product picture', uploadImage: 'Choose picture', changeImage: 'Change picture', removeImage: 'Remove picture', imageHint: 'PNG, JPG or WEBP up to 8 MB. Big files are made lighter without changing their size.', noImage: 'No picture',
+    details: 'Material details', savingDetails: 'Saving details…', uploadingImage: 'Uploading picture…', optimizing: 'Preparing picture…', clickToZoom: 'Click the picture to enlarge it',
     catalogueNo: 'Catalogue number', searchPh: 'Code, name, source, catalogue…',
   },
   companies: {

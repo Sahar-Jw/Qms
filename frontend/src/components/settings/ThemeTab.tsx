@@ -8,6 +8,7 @@ import { Button, Card, CardHeader, Input, Loading, STATUS_STYLE } from '@/compon
 import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { toastError } from '@/lib/errors';
+import { useSiteBrand } from '@/lib/brand';
 import { useI18n } from '@/lib/i18n';
 import { applyTheme, DEFAULT_THEME, isHex, readability, THEME_KEYS, themeVars, useTheme, type ThemeColors, type ThemeKey } from '@/lib/theme';
 import type { QStatus } from '@/lib/types';
@@ -120,13 +121,14 @@ export function ThemeTab() {
  */
 function Preview({ colors }: { colors: ThemeColors }) {
   const { t } = useI18n();
+  const site = useSiteBrand();
   const badge = (s: QStatus) => <span key={s} className={cn('inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold', STATUS_STYLE[s].badge)}>{t(`status.${s}`)}</span>;
   return (
     <div data-testid="theme-preview" style={themeVars(colors)} aria-hidden className="pointer-events-none flex h-72 select-none overflow-hidden rounded-2xl border border-stone bg-sand text-ink shadow-lift">
       <div className="flex w-[34%] shrink-0 flex-col gap-1.5 bg-ink p-3 text-sand">
         <div className="mb-2 flex items-center gap-2">
           <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sand text-ink"><Receipt className="size-3.5" /></span>
-          <span className="truncate text-xs font-bold">{t('app.name')}</span>
+          <span className="truncate text-xs font-bold">{site.name}</span>
         </div>
         <span className="flex h-7 items-center truncate rounded-full bg-sand px-3 text-[11px] font-semibold text-ink">{t('nav.dashboard')}</span>
         <span className="flex h-7 items-center truncate rounded-full px-3 text-[11px] font-semibold text-sand/85">{t('nav.quotations')}</span>
@@ -138,7 +140,7 @@ function Preview({ colors }: { colors: ThemeColors }) {
       <div className="flex min-w-0 flex-1 flex-col gap-2.5 p-3">
         <div className="leading-tight">
           <div className="truncate text-sm font-bold text-ink">{t('nav.quotations')}</div>
-          <div className="truncate text-[11px] text-cocoa">{t('app.tagline')}</div>
+          <div className="truncate text-[11px] text-cocoa">{site.tagline}</div>
         </div>
         <div className="rounded-xl border border-stone/60 bg-white/90 p-2.5 shadow-lift">
           <div className="mb-2 flex flex-wrap gap-1">{(['draft', 'expired', 'locked', 'invoiced'] as QStatus[]).map(badge)}</div>

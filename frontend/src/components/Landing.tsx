@@ -6,6 +6,7 @@ import { LoginForm, RegisterForm } from '@/components/AuthForms';
 import { LangToggle } from '@/components/Shell';
 import { Button, PILL_ORDER, PillStack } from '@/components/ui';
 import { useBrandSettings, useMe } from '@/lib/auth';
+import { useSiteBrand } from '@/lib/brand';
 import { useI18n } from '@/lib/i18n';
 import { uploadUrl } from '@/lib/urls';
 
@@ -74,7 +75,7 @@ export function Landing({ initial }: { initial: Panel }) {
   const router = useRouter();
   const me = useMe();
   const brand = useBrandSettings(); // public endpoint: works before sign-in
-  const siteName = brand.data?.websiteName || t('app.name');
+  const { name: siteName } = useSiteBrand();
   const [panel, setPanel] = useState<Panel>(initial);
 
   // Already signed in (valid session cookie): skip the landing page.

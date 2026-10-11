@@ -5,7 +5,7 @@ import { Toaster } from 'sonner';
 import { ConfirmProvider } from '@/components/confirm';
 import { GlobalLoader } from '@/components/ui';
 import { ApiError } from '@/lib/api';
-import { useBrandSettings } from '@/lib/auth';
+import { useBrandCache, useSiteBrand } from '@/lib/brand';
 import { useI18n } from '@/lib/i18n';
 import { useApplyTheme } from '@/lib/theme';
 import { uploadUrl } from '@/lib/urls';
@@ -15,15 +15,21 @@ import { uploadUrl } from '@/lib/urls';
  * signing in: the saved colours, and the site name / icon in the browser tab. Both endpoints are public.
  */
 function SiteSync() {
-  const { t } = useI18n();
-  const brand = useBrandSettings();
+  const { brand, tabTitle } = useSiteBrand();
+  useBrandCache();
   useApplyTheme();
 
-  // Tab text: its own setting (Settings > Branding), else the site name, else the built-in app name.
-  const tabTitle = brand.data?.tabTitle || brand.data?.websiteName || t('app.name');
-  const icon = brand.data?.icon;
+  // Tab text: its own setting (Settings > Branding), else the site name. Identical in every language.
+  const icon = brand?.icon;
 
-  useEffect(() => { document.title = tabTitle; }, [tabTitle]);
+  useEffect(() => {
+    if (!tabTitle) return;
+    document.title = tabTitle;
+    // Next re-applies the page's built-in (Arabic) title on navigation: put the saved one back whenever that happens.
+    const mo = new MutationObserver(() => { if (document.title !== tabTitle) document.title = tabTitle; });
+    mo.observe(document.head, { childList: true, characterData: true, subtree: true });
+    return () => mo.disconnect();
+  }, [tabTitle]);
 
   useEffect(() => {
     const href = icon ? uploadUrl(icon) : '';

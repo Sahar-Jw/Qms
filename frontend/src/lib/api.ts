@@ -40,6 +40,28 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   return data as T;
 }
 
+/** Like api.upload but reports progress (0..1) while the file is being sent. */
+function uploadWithProgress<T>(url: string, form: FormData, onProgress: (fraction: number) => void): Promise<T> {
+  const done = trackRequest('POST');
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', apiUrl(url));
+    xhr.withCredentials = FETCH_CREDENTIALS === 'include';
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total); };
+    xhr.onerror = () => { done(); reject(new TypeError('Network error')); };
+    xhr.onabort = xhr.onerror;
+    xhr.onload = () => {
+      done();
+      let data: any = null;
+      try { data = xhr.responseText ? JSON.parse(xhr.responseText) : null; } catch { /* non-JSON */ }
+      if (xhr.status >= 200 && xhr.status < 300) { onProgress(1); resolve(data as T); return; }
+      const { statusCode, code, message, details, ...extra } = data ?? {};
+      reject(new ApiError(xhr.status, code ?? `HTTP_${xhr.status}`, message ?? xhr.statusText, details, extra));
+    };
+    xhr.send(form);
+  });
+}
+
 export const api = {
   get: <T>(url: string, params?: Params) => request<T>('GET', url + qs(params)),
   post: <T>(url: string, body?: unknown) => request<T>('POST', url, body ?? {}),
@@ -47,4 +69,5 @@ export const api = {
   put: <T>(url: string, body?: unknown) => request<T>('PUT', url, body ?? {}),
   delete: <T>(url: string) => request<T>('DELETE', url),
   upload: <T>(url: string, form: FormData) => request<T>('POST', url, form),
+  uploadWithProgress,
 };

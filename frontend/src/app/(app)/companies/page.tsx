@@ -77,7 +77,7 @@ export default function CompaniesPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const confirm = useConfirm();
-  const allowed = hasRole(me.role, 'general_manager');
+  const allowed = hasRole(me.role, 'manager');
   const [edit, setEdit] = useState<Company | 'new' | null>(null);
   useEffect(() => { if (!allowed) router.replace('/dashboard'); }, [allowed, router]);
   const list = useQuery({ queryKey: ['companies'], enabled: allowed, queryFn: () => api.get<Paginated<Company>>('/companies', { status: 'all', limit: 100 }) });

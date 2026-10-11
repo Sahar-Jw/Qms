@@ -2,7 +2,7 @@
 export enum RoleCode {
   TECHNICAL_MANAGER = 'technical_manager', // المدير التقني: technical / system permissions, seeded, activates the first general manager
   GENERAL_MANAGER = 'general_manager', // المدير العام: users (activate/deactivate/edit/roles), companies, settings, everything operational
-  MANAGER = 'manager', // المدير: operational, NOT tied to a company/branch
+  MANAGER = 'manager', // المدير: operational, including company management, NOT tied to a company/branch
   EMPLOYEE = 'employee', // الموظف: NOT tied to a company/branch
 }
 

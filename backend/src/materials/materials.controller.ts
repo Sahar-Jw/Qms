@@ -25,7 +25,7 @@ const imageUpload = FileInterceptor('file', {
     },
     filename: (_req, file, cb) => cb(null, randomBytes(16).toString('hex') + ALLOWED[file.mimetype]),
   }),
-  limits: { fileSize: 3 * 1024 * 1024 }, // 3 MB
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8 MB (the browser already shrinks big pictures before sending)
   // SVG is deliberately not allowed (script injection risk).
   fileFilter: (_req, file, cb) =>
     ALLOWED[file.mimetype] ? cb(null, true) : cb(new BadRequestException({ code: 'INVALID_FILE_TYPE', message: 'Only PNG, JPEG or WEBP images are allowed' }), false),

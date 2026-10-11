@@ -76,7 +76,8 @@ const ar: Shape<typeof en> = {
   materials: {
     title: 'المواد', new: 'مادة جديدة', edit: 'تعديل المادة', code: 'الرمز', nameAr: 'الاسم بالعربية', nameEn: 'الاسم بلغة أجنبية', source: 'المصدر',
     stock: 'المخزون', unitPrice: 'سعر الوحدة', unit: 'الوحدة', currency: 'العملة', origin: 'بلد المنشأ', catalogue: 'الكتالوج', model: 'رقم الموديل',
-    image: 'صورة المنتج', uploadImage: 'اختيار صورة', changeImage: 'تغيير الصورة', removeImage: 'حذف الصورة', imageHint: 'PNG أو JPG أو WEBP حتى 3 ميغابايت', noImage: 'لا توجد صورة',
+    image: 'صورة المنتج', uploadImage: 'اختيار صورة', changeImage: 'تغيير الصورة', removeImage: 'حذف الصورة', imageHint: 'PNG أو JPG أو WEBP حتى 8 ميغابايت. تُخفَّف الملفات الكبيرة دون تغيير أبعادها.', noImage: 'لا توجد صورة',
+    details: 'تفاصيل المادة', savingDetails: 'جارٍ حفظ البيانات…', uploadingImage: 'جارٍ رفع الصورة…', optimizing: 'جارٍ تجهيز الصورة…', clickToZoom: 'اضغط على الصورة لتكبيرها',
     catalogueNo: 'رقم الكتالوج', searchPh: 'الرمز، الاسم، المصدر، الكتالوج…',
   },
   companies: {

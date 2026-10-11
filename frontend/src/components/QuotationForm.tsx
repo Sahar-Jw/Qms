@@ -215,13 +215,13 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                   <div key={f.id} className="rounded-2xl border border-stone/60 bg-sand/35 p-4">
                     <div className="mb-3 flex items-start gap-3">
                       <span className="mt-1 grid size-8 shrink-0 place-items-center rounded-full bg-ink text-xs font-bold text-sand">{i + 1}</span>
-                      <MaterialThumb image={items?.[i]?.material?.catalogue} size="size-10" className="mt-0" />
+                      <MaterialThumb image={items?.[i]?.material?.catalogue} size="size-14" zoom />
                       <Field className="flex-1" error={e?.material?.message}>
                         <Controller control={control} name={`items.${i}.material`} rules={{ required: t('quotations.pickMaterial') }}
                           render={({ field }) => (
                             <AsyncPick<PickMaterial> value={field.value} onChange={(m) => onMaterial(i, m as Material | null)} cacheKey="materials" invalid={!!e?.material}
                               placeholder={t('quotations.materialPh')} label={(m) => `${m.materialCode} - ${m.name ?? ''}`}
-                              thumb={(m) => <MaterialThumb image={m.catalogue} size="size-10" />}
+                              thumb={(m) => <MaterialThumb image={m.catalogue} size="size-14" />}
                               sub={(m) => [m.unitPrice && `${fmt(m.unitPrice)} ${m.currency ?? ''}`, m.source].filter(Boolean).join(' / ')}
                               fetcher={(q) => api.get<Paginated<Material>>('/materials', { q, limit: 20 }).then((r) => r.data)} />
                           )} />
