@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/confirm';
-import { ActiveBadge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader } from '@/components/ui';
+import { ActiveBadge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader, Textarea } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/auth';
 import { toastError } from '@/lib/errors';
@@ -15,8 +15,8 @@ import { cleanBody } from '@/lib/hooks';
 import { useI18n } from '@/lib/i18n';
 import { hasRole, type Company, type Paginated } from '@/lib/types';
 
-type Form = { name: string; address: string; phone: string; email: string; website: string };
-const blank: Form = { name: '', address: '', phone: '', email: '', website: '' };
+type Form = { name: string; address: string; phone: string; email: string; website: string; header: string; footer: string };
+const blank: Form = { name: '', address: '', phone: '', email: '', website: '', header: '', footer: '' };
 
 function Logo({ company, size = 'size-14' }: { company: Pick<Company, 'logo' | 'name'>; size?: string }) {
   const { pick } = useI18n();
@@ -34,7 +34,7 @@ function CompanyModal({ company, onClose }: { company: Company | 'new'; onClose:
   const file = useRef<HTMLInputElement>(null);
   const [current, setCurrent] = useState<Company | null>(editing ? company : null);
   const { register, handleSubmit, formState: { errors } } = useForm<Form>({
-    defaultValues: editing ? { name: company.name, address: company.address ?? '', phone: company.phone ?? '', email: company.email ?? '', website: company.website ?? '' } : blank,
+    defaultValues: editing ? { name: company.name, address: company.address ?? '', phone: company.phone ?? '', email: company.email ?? '', website: company.website ?? '', header: company.header ?? '', footer: company.footer ?? '' } : blank,
   });
   const done = () => { qc.invalidateQueries({ queryKey: ['companies'] }); qc.invalidateQueries({ queryKey: ['settings'] }); };
   const save = useMutation({
@@ -65,6 +65,12 @@ function CompanyModal({ company, onClose }: { company: Company | 'new'; onClose:
         <Field label={t('common.phone')} required error={errors.phone?.message}><Input dir="ltr" maxLength={60} {...register('phone', reqText)} /></Field>
         <Field label={t('common.email')} required error={errors.email?.message}><Input type="email" dir="ltr" maxLength={150} {...register('email', reqText)} /></Field>
         <Field label={t('common.website')} className="sm:col-span-2"><Input dir="ltr" {...register('website')} /></Field>
+        <div className="sm:col-span-2">
+          <div className="text-sm font-bold">{t('companies.printTitle')}</div>
+          <div className="text-xs text-cocoa">{t('companies.printHint')}</div>
+        </div>
+        <Field label={t('companies.header')}><Textarea dir="auto" rows={3} maxLength={1000} {...register('header')} /></Field>
+        <Field label={t('companies.footer')}><Textarea dir="auto" rows={3} maxLength={1000} {...register('footer')} /></Field>
         <button type="submit" hidden />
       </form>
     </Modal>

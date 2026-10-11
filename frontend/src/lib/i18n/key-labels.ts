@@ -99,7 +99,9 @@ export const PART_LABELS: Record<string, Pair> = {
   companyName: ['اسم الشركة', 'Company name'], nameAr: ['الاسم بالعربية', 'Arabic name'], nameEn: ['الاسم بالإنجليزية', 'English name'], addPhone: ['زر إضافة هاتف', 'Add phone button'],
   contactPerson: ['شخص الاتصال', 'Contact person'], contactPhone: ['هاتف جهة الاتصال', 'Contact phone'], nature: ['طبيعة العمل', 'Business nature'], nameHint: ['تلميح الاسم', 'Name hint'], source: ['المصدر', 'Source'],
   stock: ['المخزون', 'Stock'], origin: ['بلد المنشأ', 'Country of origin'], catalogue: ['الكتالوج', 'Catalogue'], model: ['الموديل', 'Model'], catalogueNo: ['رقم الكتالوج', 'Catalogue number'],
-  addressAr: ['العنوان بالعربية', 'Arabic address'], addressEn: ['العنوان بالإنجليزية', 'English address'], uploadLogo: ['زر رفع الشعار', 'Upload logo button'], logoHint: ['تلميح الشعار', 'Logo hint'],
+  addressAr: ['العنوان بالعربية', 'Arabic address'], addressEn: ['العنوان بالإنجليزية', 'English address'],
+  printTitle: ['عنوان قسم الترويسة والتذييل', 'Print header/footer title'], printHint: ['تلميح الترويسة والتذييل', 'Print header/footer hint'],
+  header: ['الترويسة', 'Header'], footer: ['التذييل', 'Footer'], uploadLogo: ['زر رفع الشعار', 'Upload logo button'], logoHint: ['تلميح الشعار', 'Logo hint'],
   saveFirst: ['رسالة احفظ أولاً', 'Save first message'],
   // users / settings
   pending: ['بانتظار التفعيل', 'Awaiting activation'], changeRole: ['تغيير الدور', 'Change role'], cannotSelf: ['رسالة لا يمكن تعديل حسابك', 'Cannot change own account message'],

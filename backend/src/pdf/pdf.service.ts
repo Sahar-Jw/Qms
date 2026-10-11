@@ -82,6 +82,9 @@ export class PdfService implements OnModuleDestroy {
     const logo = this.logoDataUri(co.logo);
     const coName = co.name ?? '';
     const coAddr = co.address ?? '';
+    // Letterhead of the company: the same in every language (empty -> nothing is printed).
+    const coHeader = (co.header ?? '').trim();
+    const coFooter = (co.footer ?? '').trim();
 
     const terms: [string, string | null | undefined][] = [
       [t.validity, q.validity],
@@ -161,6 +164,8 @@ body { font-family: 'Cairo', Tahoma, Arial, sans-serif; font-size: 11px; color: 
 .head .co { flex: 1; }
 .head .co .nm { font-size: 18px; font-weight: 700; color: #1f3a5f; }
 .head .co .sub { color: #444; font-size: 10px; }
+.cohead { text-align: center; color: #333; font-size: 10.5px; margin: -4px 0 10px; }
+.cofoot { text-align: center; color: #444; font-size: 10px; border-top: 1px solid #c9d1dc; margin-top: 16px; padding-top: 6px; page-break-inside: avoid; }
 .title { text-align: center; font-size: 20px; font-weight: 700; margin: 6px 0 10px; }
 .meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .box { border: 1px solid #c9d1dc; border-radius: 4px; padding: 6px 10px; flex: 1; }
@@ -193,6 +198,7 @@ ${opts.autoPrint ? '' : `<div class="bar"><button onclick="window.print()">${thi
     <div class="sub">${contact}</div>
   </div>
 </div>
+${coHeader ? `<div class="cohead"><bdi dir="auto">${this.multiline(coHeader)}</bdi></div>` : ''}
 <div class="title">${this.esc(t.title)}</div>
 <div class="meta">
   <div class="box">
@@ -219,6 +225,7 @@ ${termsHtml ? `<div class="terms">${termsHtml}</div>` : ''}
   <thead><tr><th>${t.currency}</th><th>${t.value}</th><th>${t.shipping}</th><th>${t.customs}</th><th>${t.required}</th>${opts.includeCost ? `<th>${t.cost}</th>` : ''}</tr></thead>
   <tbody>${totalsRows}</tbody>
 </table>
+${coFooter ? `<div class="cofoot"><bdi dir="auto">${this.multiline(coFooter)}</bdi></div>` : ''}
 ${opts.autoPrint ? '<script>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)})</script>' : ''}
 </body>
 </html>`;
@@ -312,6 +319,11 @@ ${opts.autoPrint ? '<script>window.addEventListener("load",function(){setTimeout
 
   private esc(s: string): string {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  /** Escaped text with its line breaks kept (the header / footer a manager typed in the company form). */
+  private multiline(s: string): string {
+    return this.esc(s).replace(/\r?\n/g, '<br>');
   }
 
   private numberFormatter(_lang: Lang) {

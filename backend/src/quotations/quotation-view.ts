@@ -32,6 +32,7 @@ export interface QuotationView {
   company: {
     id: number; name: string; logo: string | null;
     address: string | null; phone: string | null; email: string | null; website: string | null;
+    header: string | null; footer: string | null;
   };
   customer: {
     id: number; companyName: string | null;

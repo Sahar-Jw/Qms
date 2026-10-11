@@ -26,6 +26,14 @@ export class Company extends AuditBase {
   @Column({ type: 'varchar', length: 150, nullable: true })
   website: string | null;
 
+  /** Letterhead text printed at the top of the company's quotations, the same in Arabic and English files. Plain text, line breaks kept. */
+  @Column({ type: 'text', nullable: true })
+  header: string | null;
+
+  /** Footer text printed at the bottom of the company's quotations, the same in Arabic and English files. */
+  @Column({ type: 'text', nullable: true })
+  footer: string | null;
+
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 }

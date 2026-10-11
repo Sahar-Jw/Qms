@@ -25,7 +25,7 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
 
     const total = doc.documentElement.scrollHeight;
     // y positions where a page may break: bottoms of table rows / blocks
-    const breaks = [...doc.querySelectorAll('tr, .term, .box, section')]
+    const breaks = [...doc.querySelectorAll('tr, .term, .box, .cofoot, section')]
       .map((el) => Math.round(el.getBoundingClientRect().bottom + doc.defaultView!.scrollY))
       .sort((a, b) => a - b);
 

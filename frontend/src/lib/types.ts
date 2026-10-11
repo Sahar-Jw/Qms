@@ -19,6 +19,7 @@ export interface User {
 export interface Company {
   id: number; name: string; logo: string | null;
   address: string | null; phone: string | null; email: string | null; website: string | null;
+  header: string | null; footer: string | null;
   isActive: boolean;
 }
 export interface PickCompany { id: number; name: string; logo: string | null }

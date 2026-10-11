@@ -429,6 +429,7 @@ export class QuotationsService {
       company: {
         id: co.id, name: co.name, logo: co.logo,
         address: co.address, phone: co.phone, email: co.email, website: co.website,
+        header: co.header, footer: co.footer,
       },
       customer: {
         id: cu.id, companyName: cu.companyName,
