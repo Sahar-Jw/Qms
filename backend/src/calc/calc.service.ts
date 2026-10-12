@@ -3,7 +3,7 @@ import Decimal from 'decimal.js';
 import { CurrencyAmounts, ItemCalcInput, ItemCalcResult } from './calc.types';
 
 /**
- * The ONLY place money math happens (SRS section 13):
+ * The ONLY place money math happens :
  *   value    = quantity x unit price                (in the price currency)
  *   cost     = quantity x unit cost                 (kept apart from "required")
  *   required = value + customs + shipping           (per currency)

@@ -1,54 +1,75 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { PdfService } from './pdf.service';
 
-describe('printed quotation: company header and footer', () => {
+// a real 1x1 PNG
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+
+describe('printed quotation: company header and footer images', () => {
   const svc = new PdfService({ get: () => undefined } as any, { map: async () => ({}) } as any);
+  let dir: string;
+  const prevDir = process.env.UPLOADS_DIR;
+
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qms-uploads-'));
+    fs.mkdirSync(path.join(dir, 'letterheads'));
+    fs.writeFileSync(path.join(dir, 'letterheads', 'head.png'), PNG);
+    fs.writeFileSync(path.join(dir, 'letterheads', 'foot.png'), PNG);
+    process.env.UPLOADS_DIR = dir;
+  });
+  afterAll(() => {
+    if (prevDir === undefined) delete process.env.UPLOADS_DIR; else process.env.UPLOADS_DIR = prevDir;
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
 
   const quotation = (company: Record<string, unknown> = {}) =>
     ({
       id: 1, quotationNumber: 'Q-1', quotationDate: '2026-10-11', status: 'draft',
-      company: { id: 1, name: 'Acme', logo: null, address: 'Damascus', phone: '1', email: 'a@b.c', website: null, header: null, footer: null, ...company },
+      company: { id: 1, name: 'Acme', logo: null, address: 'Damascus', phone: '1', email: 'a@b.c', website: null, headerImage: null, footerImage: null, ...company },
       customer: { id: 1, companyName: 'Client', managerName: null, phone: [], email: null, country: null },
       responsibleUser: null, customerPaymentMethod: null, bankName: null, validity: null, deliveryTime: null,
       paymentMethod: null, paymentLocation: null, deliveryMethod: null, notes: null, items: [], totals: [],
     }) as any;
 
-  const co = { header: 'Acme Letterhead\nالسطر الثاني', footer: 'Acme Footer <b>x</b>' };
+  const withImages = { headerImage: 'letterheads/head.png', footerImage: 'letterheads/foot.png' };
+  const tag = (html: string, cls: string) => html.match(new RegExp(`<img class="${cls}"[^>]*>`))?.[0];
 
-  it.each(['ar', 'en'] as const)('prints the same header and footer on the %s file', async (lang) => {
-    const html = await svc.renderHtml(quotation(co), { lang, includeCost: false });
-    expect(html).toContain('<div class="cohead"><bdi dir="auto">Acme Letterhead<br>السطر الثاني</bdi></div>');
-    expect(html).toContain('<div class="cofoot"><bdi dir="auto">Acme Footer &lt;b&gt;x&lt;/b&gt;</bdi></div>');
+  it.each(['ar', 'en'] as const)('prints the header and footer images in the %s file', async (lang) => {
+    const html = await svc.renderHtml(quotation(withImages), { lang, includeCost: false });
+    expect(tag(html, 'cohead')).toMatch(/src="data:image\/png;base64,/);
+    expect(tag(html, 'cofoot')).toMatch(/src="data:image\/png;base64,/);
   });
 
-  it('the two languages differ only in the quotation words, not in the header / footer blocks', async () => {
-    const block = (html: string, cls: string) => html.match(new RegExp(`<div class="${cls}">[\\s\\S]*?</div>`))![0];
-    const ar = await svc.renderHtml(quotation(co), { lang: 'ar', includeCost: false });
-    const en = await svc.renderHtml(quotation(co), { lang: 'en', includeCost: false });
-    expect(block(ar, 'cohead')).toBe(block(en, 'cohead'));
-    expect(block(ar, 'cofoot')).toBe(block(en, 'cofoot'));
+  it('the header and footer are identical in both languages; only the quotation words change', async () => {
+    const ar = await svc.renderHtml(quotation(withImages), { lang: 'ar', includeCost: false });
+    const en = await svc.renderHtml(quotation(withImages), { lang: 'en', includeCost: false });
+    expect(tag(ar, 'cohead')).toBe(tag(en, 'cohead'));
+    expect(tag(ar, 'cofoot')).toBe(tag(en, 'cofoot'));
     expect(ar).toContain('عرض سعر');
     expect(en).toContain('Quotation');
   });
 
-  it('escapes whatever was typed (no HTML injection into the print page)', async () => {
-    const html = await svc.renderHtml(quotation(co), { lang: 'en', includeCost: false });
-    expect(html).not.toContain('<b>x</b>');
-  });
-
-  it('header sits above the title and footer after the totals', async () => {
-    const html = await svc.renderHtml(quotation(co), { lang: 'en', includeCost: false });
+  it('header image sits above the title; footer image after the totals', async () => {
+    const html = await svc.renderHtml(quotation(withImages), { lang: 'en', includeCost: false });
     expect(html.indexOf('class="cohead"')).toBeLessThan(html.indexOf('class="title"'));
     expect(html.indexOf('class="cofoot"')).toBeGreaterThan(html.indexOf('class="totals"'));
   });
 
-  it('prints nothing extra when the company has no header / footer', async () => {
-    for (const lang of ['ar', 'en'] as const) {
-      const html = await svc.renderHtml(quotation(), { lang, includeCost: false });
-      expect(html).not.toContain('class="cohead"');
-      expect(html).not.toContain('class="cofoot"');
-    }
-    const blank = await svc.renderHtml(quotation({ header: '   ', footer: '\n' }), { lang: 'en', includeCost: false });
-    expect(blank).not.toContain('class="cohead"');
-    expect(blank).not.toContain('class="cofoot"');
+  it('a header image replaces the text letterhead (logo / name / address); without one the text letterhead stays', async () => {
+    const withHead = await svc.renderHtml(quotation(withImages), { lang: 'en', includeCost: false });
+    expect(withHead).not.toContain('<div class="head">');
+    const without = await svc.renderHtml(quotation(), { lang: 'en', includeCost: false });
+    expect(without).toContain('<div class="head">');
+    expect(without).toContain('Damascus');
+    expect(tag(without, 'cohead')).toBeUndefined();
+    expect(tag(without, 'cofoot')).toBeUndefined();
+  });
+
+  it('a missing image file is skipped instead of breaking the print', async () => {
+    const html = await svc.renderHtml(quotation({ headerImage: 'letterheads/gone.png', footerImage: 'letterheads/gone2.png' }), { lang: 'en', includeCost: false });
+    expect(tag(html, 'cohead')).toBeUndefined();
+    expect(tag(html, 'cofoot')).toBeUndefined();
+    expect(html).toContain('<div class="head">');
   });
 });

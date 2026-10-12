@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
- * Companies get a print header and footer (the same in Arabic and English files).
- * They are printed on the quotation's print page and PDF.
+ * Companies get a header image and a footer image (the same in Arabic and English files).
+ * They are printed at the top and bottom of the quotation's print page and PDF.
  *
  * Safe to run on a database where the SQL script (backend/sql/2026-10-11-company-header-footer.sql) was already run by hand:
  * each column is added only if it does not exist yet.
@@ -10,7 +10,9 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class CompanyHeaderFooter1791900000000 implements MigrationInterface {
   name = 'CompanyHeaderFooter1791900000000';
 
-  private readonly columns = ['header', 'footer'];
+  private readonly columns = ['header_image', 'footer_image'];
+  /** Columns of an earlier text-based version of this change. Never used by the app now; removed if a database has them. */
+  private readonly oldTextColumns = ['header', 'footer'];
 
   private async hasColumn(queryRunner: QueryRunner, column: string): Promise<boolean> {
     const rows: unknown[] = await queryRunner.query(
@@ -21,8 +23,11 @@ export class CompanyHeaderFooter1791900000000 implements MigrationInterface {
   }
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    for (const c of this.oldTextColumns) {
+      if (await this.hasColumn(queryRunner, c)) await queryRunner.query(`ALTER TABLE \`companies\` DROP COLUMN \`${c}\``);
+    }
     for (const c of this.columns) {
-      if (!(await this.hasColumn(queryRunner, c))) await queryRunner.query(`ALTER TABLE \`companies\` ADD \`${c}\` text NULL`);
+      if (!(await this.hasColumn(queryRunner, c))) await queryRunner.query(`ALTER TABLE \`companies\` ADD \`${c}\` varchar(255) NULL`);
     }
   }
 

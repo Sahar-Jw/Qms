@@ -1,13 +1,13 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { uploadUrl } from '@/lib/urls';
-import { Building2, ImagePlus, Mail, Pencil, Phone, Plus, Power } from 'lucide-react';
+import { Building2, ImagePlus, Mail, Pencil, Phone, Plus, Power, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/confirm';
-import { ActiveBadge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader, Textarea } from '@/components/ui';
+import { ActiveBadge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/auth';
 import { toastError } from '@/lib/errors';
@@ -15,8 +15,8 @@ import { cleanBody } from '@/lib/hooks';
 import { useI18n } from '@/lib/i18n';
 import { hasRole, type Company, type Paginated } from '@/lib/types';
 
-type Form = { name: string; address: string; phone: string; email: string; website: string; header: string; footer: string };
-const blank: Form = { name: '', address: '', phone: '', email: '', website: '', header: '', footer: '' };
+type Form = { name: string; address: string; phone: string; email: string; website: string };
+const blank: Form = { name: '', address: '', phone: '', email: '', website: '' };
 
 function Logo({ company, size = 'size-14' }: { company: Pick<Company, 'logo' | 'name'>; size?: string }) {
   const { pick } = useI18n();
@@ -32,9 +32,11 @@ function CompanyModal({ company, onClose }: { company: Company | 'new'; onClose:
   const editing = company !== 'new';
   const reqText = { required: t('common.required'), validate: (v: string) => v.trim() !== '' || t('common.required') };
   const file = useRef<HTMLInputElement>(null);
+  const headerFile = useRef<HTMLInputElement>(null);
+  const footerFile = useRef<HTMLInputElement>(null);
   const [current, setCurrent] = useState<Company | null>(editing ? company : null);
   const { register, handleSubmit, formState: { errors } } = useForm<Form>({
-    defaultValues: editing ? { name: company.name, address: company.address ?? '', phone: company.phone ?? '', email: company.email ?? '', website: company.website ?? '', header: company.header ?? '', footer: company.footer ?? '' } : blank,
+    defaultValues: editing ? { name: company.name, address: company.address ?? '', phone: company.phone ?? '', email: company.email ?? '', website: company.website ?? '' } : blank,
   });
   const done = () => { qc.invalidateQueries({ queryKey: ['companies'] }); qc.invalidateQueries({ queryKey: ['settings'] }); };
   const save = useMutation({
@@ -44,6 +46,16 @@ function CompanyModal({ company, onClose }: { company: Company | 'new'; onClose:
   });
   const upload = useMutation({
     mutationFn: (f: File) => { const fd = new FormData(); fd.append('file', f); return api.upload<Company>(`/companies/${current!.id}/logo`, fd); },
+    onSuccess: (c) => { setCurrent(c); done(); toast.success(t('common.saved')); },
+    onError: (e) => toastError(e, t, has),
+  });
+  const uploadImage = useMutation({
+    mutationFn: ({ kind, f }: { kind: 'header' | 'footer'; f: File }) => { const fd = new FormData(); fd.append('file', f); return api.upload<Company>(`/companies/${current!.id}/${kind}-image`, fd); },
+    onSuccess: (c) => { setCurrent(c); done(); toast.success(t('common.saved')); },
+    onError: (e) => toastError(e, t, has),
+  });
+  const removeImage = useMutation({
+    mutationFn: (kind: 'header' | 'footer') => api.delete<Company>(`/companies/${current!.id}/${kind}-image`),
     onSuccess: (c) => { setCurrent(c); done(); toast.success(t('common.saved')); },
     onError: (e) => toastError(e, t, has),
   });
@@ -69,8 +81,27 @@ function CompanyModal({ company, onClose }: { company: Company | 'new'; onClose:
           <div className="text-sm font-bold">{t('companies.printTitle')}</div>
           <div className="text-xs text-cocoa">{t('companies.printHint')}</div>
         </div>
-        <Field label={t('companies.header')}><Textarea dir="auto" rows={3} maxLength={1000} {...register('header')} /></Field>
-        <Field label={t('companies.footer')}><Textarea dir="auto" rows={3} maxLength={1000} {...register('footer')} /></Field>
+        {(['header', 'footer'] as const).map((kind) => {
+          const file = kind === 'header' ? current?.headerImage : current?.footerImage;
+          return (
+            <div key={kind} className="rounded-2xl bg-sand/50 p-3 sm:col-span-2">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <div className="min-w-0 flex-1 text-sm font-bold">{t(`companies.${kind}Image`)}</div>
+                <input ref={kind === 'header' ? headerFile : footerFile} type="file" accept="image/png,image/jpeg,image/webp" hidden
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage.mutate({ kind, f }); e.target.value = ''; }} />
+                <Button variant="outline" size="sm" disabled={!current} loading={uploadImage.isPending && uploadImage.variables?.kind === kind}
+                  onClick={() => (kind === 'header' ? headerFile : footerFile).current?.click()}>
+                  <ImagePlus className="size-4" />{file ? t('companies.replaceImage') : t('companies.uploadImage')}
+                </Button>
+                {file && <Button variant="ghost" size="sm" loading={removeImage.isPending && removeImage.variables === kind} onClick={() => removeImage.mutate(kind)}><Trash2 className="size-4" />{t('companies.removeImage')}</Button>}
+              </div>
+              {file
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={uploadUrl(file)} alt="" className="max-h-28 w-full rounded-xl border border-stone/60 bg-white object-contain" />
+                : <div className="grid h-16 place-items-center rounded-xl border border-dashed border-stone/70 text-xs text-cocoa">{current ? t('companies.noImage') : t('companies.saveFirst')}</div>}
+            </div>
+          );
+        })}
         <button type="submit" hidden />
       </form>
     </Modal>

@@ -8,7 +8,6 @@ import { CompaniesService } from './companies.service';
 
 const BODY = {
   name: 'Acme', address: 'Damascus', phone: '+963 11 000', email: 'info@acme.test', website: 'acme.test',
-  header: 'ترويسة Header', footer: 'تذييل Footer',
 };
 
 describe('companies: who can add, edit and switch companies', () => {
@@ -21,6 +20,8 @@ describe('companies: who can add, edit and switch companies', () => {
     update: jest.fn().mockResolvedValue({ id: 1 }),
     setActive: jest.fn().mockResolvedValue({ id: 1 }),
     setLogo: jest.fn().mockResolvedValue({ id: 1 }),
+    setLetterheadImage: jest.fn().mockResolvedValue({ id: 1 }),
+    removeLetterheadImage: jest.fn().mockResolvedValue({ id: 1 }),
   };
 
   beforeAll(async () => {
@@ -55,16 +56,14 @@ describe('companies: who can add, edit and switch companies', () => {
   it.each(ALLOWED)('%s can add a company', async (role) => {
     expect((await call('POST', '/companies', role, BODY)).status).toBe(201);
     expect(service.create).toHaveBeenCalledTimes(1);
-    expect(service.create.mock.calls[0][0]).toMatchObject({ header: 'ترويسة Header', footer: 'تذييل Footer' });
   });
 
-  it.each(ALLOWED)('%s can edit a company, including its print header and footer', async (role) => {
-    expect((await call('PATCH', '/companies/1', role, { name: 'New', header: 'Letterhead', footer: 'تذييل جديد' })).status).toBe(200);
+  it.each(ALLOWED)('%s can edit a company', async (role) => {
+    expect((await call('PATCH', '/companies/1', role, { name: 'New', address: 'Aleppo' })).status).toBe(200);
     expect(service.update).toHaveBeenCalledTimes(1);
   });
 
-  it.each(ALLOWED)('%s can clear a header (null) and deactivate / activate a company', async (role) => {
-    expect((await call('PATCH', '/companies/1', role, { header: null, footer: null })).status).toBe(200);
+  it.each(ALLOWED)('%s can deactivate / activate a company', async (role) => {
     expect((await call('PATCH', '/companies/1/active', role, { isActive: false })).status).toBe(200);
     expect((await call('PATCH', '/companies/1/active', role, { isActive: true })).status).toBe(200);
     expect(service.setActive).toHaveBeenCalledTimes(2);
@@ -76,6 +75,16 @@ describe('companies: who can add, edit and switch companies', () => {
     const res = await fetch(`${base}/api/companies/1/logo`, { method: 'POST', headers: { 'x-role': role }, body: fd });
     expect(res.status).toBe(201); // the (mocked) service is reached; it is the service that asks for the file
     expect(service.setLogo).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(ALLOWED.flatMap((r) => [[r, 'header'], [r, 'footer']] as const))('%s can upload and remove the %s image', async (role, kind) => {
+    const fd = new FormData();
+    fd.append('note', 'no file on purpose');
+    const up = await fetch(`${base}/api/companies/1/${kind}-image`, { method: 'POST', headers: { 'x-role': role }, body: fd });
+    expect(up.status).toBe(201);
+    expect(service.setLetterheadImage).toHaveBeenCalledWith(1, kind, undefined, 7);
+    expect((await call('DELETE', `/companies/1/${kind}-image`, role)).status).toBe(200);
+    expect(service.removeLetterheadImage).toHaveBeenCalledWith(1, kind, 7);
   });
 
   it('employee can read companies but cannot add, edit, switch or upload', async () => {
@@ -90,10 +99,13 @@ describe('companies: who can add, edit and switch companies', () => {
     expect(service.update).not.toHaveBeenCalled();
     expect(service.setActive).not.toHaveBeenCalled();
     expect(service.setLogo).not.toHaveBeenCalled();
-  });
-
-  it('header / footer longer than 1000 characters are refused', async () => {
-    expect((await call('PATCH', '/companies/1', RoleCode.MANAGER, { header: 'x'.repeat(1001) })).status).toBe(400);
-    expect(service.update).not.toHaveBeenCalled();
+    for (const kind of ['header', 'footer']) {
+      const f = new FormData();
+      f.append('note', 'x');
+      expect((await fetch(`${base}/api/companies/1/${kind}-image`, { method: 'POST', headers: { 'x-role': RoleCode.EMPLOYEE }, body: f })).status).toBe(403);
+      expect((await call('DELETE', `/companies/1/${kind}-image`, RoleCode.EMPLOYEE)).status).toBe(403);
+    }
+    expect(service.setLetterheadImage).not.toHaveBeenCalled();
+    expect(service.removeLetterheadImage).not.toHaveBeenCalled();
   });
 });

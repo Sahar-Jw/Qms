@@ -44,6 +44,30 @@ export class CompaniesService {
     return this.repo.save(c);
   }
 
+  /** Header / footer image of the printed quotation: the new file replaces (and deletes) the old one. */
+  async setLetterheadImage(id: number, kind: 'header' | 'footer', file: Express.Multer.File | undefined, userId: number) {
+    if (!file) throw new BadRequestException({ code: 'FILE_REQUIRED', message: 'Image file is required (field name: file)' });
+    const c = await this.get(id);
+    const field = kind === 'header' ? 'headerImage' : 'footerImage';
+    const old = c[field];
+    c[field] = `letterheads/${file.filename}`;
+    c.updatedById = userId;
+    await this.repo.save(c);
+    if (old) fs.promises.unlink(path.join(uploadsRoot(), old)).catch(() => undefined);
+    return c;
+  }
+
+  async removeLetterheadImage(id: number, kind: 'header' | 'footer', userId: number) {
+    const c = await this.get(id);
+    const field = kind === 'header' ? 'headerImage' : 'footerImage';
+    const old = c[field];
+    c[field] = null;
+    c.updatedById = userId;
+    await this.repo.save(c);
+    if (old) fs.promises.unlink(path.join(uploadsRoot(), old)).catch(() => undefined);
+    return c;
+  }
+
   async setLogo(id: number, file: Express.Multer.File | undefined, userId: number) {
     if (!file) throw new BadRequestException({ code: 'FILE_REQUIRED', message: 'Logo file is required (field name: file)' });
     const c = await this.get(id);

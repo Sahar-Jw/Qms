@@ -78,8 +78,8 @@ const en = {
   companies: {
     title: 'Companies', new: 'New company', edit: 'Edit company', nameAr: 'Name (Arabic)', nameEn: 'Name (English)', addressAr: 'Address (Arabic)',
     addressEn: 'Address (English)', logo: 'Logo', uploadLogo: 'Upload logo', logoHint: 'PNG, JPG or WEBP up to 1 MB', saveFirst: 'Save the company first, then upload its logo',
-    printTitle: 'Print header and footer', printHint: 'Shown with the same content on the Arabic and the English quotation when printed or downloaded as PDF. Leave empty if not needed.',
-    header: 'Header', footer: 'Footer',
+    printTitle: 'Print header and footer (images)', printHint: 'Two images shown the same way on the Arabic and the English quotation when printed or downloaded as PDF. Best as a full page-width image. PNG, JPG or WEBP up to 3 MB. A header image replaces the logo and company name at the top of the file.',
+    headerImage: 'Header', footerImage: 'Footer', uploadImage: 'Upload image', replaceImage: 'Replace image', removeImage: 'Remove image', noImage: 'No image',
   },
   users: {
     title: 'Users', pending: 'Awaiting activation', changeRole: 'Change role', cannotSelf: 'You cannot change your own account',

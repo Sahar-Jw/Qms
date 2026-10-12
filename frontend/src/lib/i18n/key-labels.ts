@@ -101,7 +101,8 @@ export const PART_LABELS: Record<string, Pair> = {
   stock: ['المخزون', 'Stock'], origin: ['بلد المنشأ', 'Country of origin'], catalogue: ['الكتالوج', 'Catalogue'], model: ['الموديل', 'Model'], catalogueNo: ['رقم الكتالوج', 'Catalogue number'],
   addressAr: ['العنوان بالعربية', 'Arabic address'], addressEn: ['العنوان بالإنجليزية', 'English address'],
   printTitle: ['عنوان قسم الترويسة والتذييل', 'Print header/footer title'], printHint: ['تلميح الترويسة والتذييل', 'Print header/footer hint'],
-  header: ['الترويسة', 'Header'], footer: ['التذييل', 'Footer'], uploadLogo: ['زر رفع الشعار', 'Upload logo button'], logoHint: ['تلميح الشعار', 'Logo hint'],
+  headerImage: ['صورة الترويسة', 'Header image'], footerImage: ['صورة التذييل', 'Footer image'], uploadImage: ['زر رفع صورة', 'Upload image button'],
+  replaceImage: ['زر استبدال الصورة', 'Replace image button'], removeImage: ['زر حذف الصورة', 'Remove image button'], noImage: ['لا توجد صورة', 'No image'], uploadLogo: ['زر رفع الشعار', 'Upload logo button'], logoHint: ['تلميح الشعار', 'Logo hint'],
   saveFirst: ['رسالة احفظ أولاً', 'Save first message'],
   // users / settings
   pending: ['بانتظار التفعيل', 'Awaiting activation'], changeRole: ['تغيير الدور', 'Change role'], cannotSelf: ['رسالة لا يمكن تعديل حسابك', 'Cannot change own account message'],

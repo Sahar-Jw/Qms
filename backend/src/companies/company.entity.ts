@@ -26,13 +26,13 @@ export class Company extends AuditBase {
   @Column({ type: 'varchar', length: 150, nullable: true })
   website: string | null;
 
-  /** Letterhead text printed at the top of the company's quotations, the same in Arabic and English files. Plain text, line breaks kept. */
-  @Column({ type: 'text', nullable: true })
-  header: string | null;
+  /** Header image printed at the top of the company's quotations (same in Arabic and English files). Relative path under UPLOADS_DIR, e.g. letterheads/abc123.png */
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  headerImage: string | null;
 
-  /** Footer text printed at the bottom of the company's quotations, the same in Arabic and English files. */
-  @Column({ type: 'text', nullable: true })
-  footer: string | null;
+  /** Footer image printed at the bottom of the company's quotations (same in Arabic and English files). */
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  footerImage: string | null;
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;

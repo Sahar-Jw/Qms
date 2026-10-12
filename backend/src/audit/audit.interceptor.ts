@@ -23,6 +23,8 @@ const SUB_ACTION: Record<string, string> = {
   'reset-password': 'reset_password',
   avatar: 'update', // POST uploads, DELETE removes: both are an update of the profile
   logo: 'update',
+  'header-image': 'update', // POST uploads, DELETE removes
+  'footer-image': 'update',
   profile: 'update',
   active: 'update',
 };

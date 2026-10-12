@@ -17,13 +17,6 @@ export class CreateCompanyDto {
 
   @IsOptional() @TrimOptional() @IsString() @MaxLength(150)
   website?: string;
-
-  // Print letterhead: the same on the printed / downloaded quotation in every language. Both optional.
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(1000)
-  header?: string;
-
-  @IsOptional() @TrimOptional() @IsString() @MaxLength(1000)
-  footer?: string;
 }
 
 export class UpdateCompanyDto extends PartialType(CreateCompanyDto) {}
