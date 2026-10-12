@@ -6,8 +6,12 @@
 const CONTENT_W = 718; // 190mm @96dpi (A4 minus 10mm side margins)
 const PAGE_H = 1024; // 271mm @ the same scale (A4 minus 12mm top / 14mm bottom)
 
-export async function htmlToPdfBlob(html: string): Promise<Blob> {
-  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
+export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = []): Promise<Blob> {
+  const [{ default: html2canvas }, { jsPDF }, { PDFDocument }] = await Promise.all([
+    import('html2canvas'),
+    import('jspdf'),
+    import('pdf-lib'),
+  ]);
 
   const clean = html.replace(/<div class="bar">[\s\S]*?<\/div>/, '').replace(/<script[\s\S]*?<\/script>/g, '');
   const iframe = document.createElement('iframe');
@@ -19,6 +23,8 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
     const doc = iframe.contentDocument!;
     await doc.fonts.ready;
     await Promise.all([...doc.images].map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; }))));
+    const pdfUrls = catalogPdfUrls;
+    doc.querySelectorAll('.catalog-page iframe').forEach((pdfFrame) => pdfFrame.remove());
     doc.body.style.margin = '0';
     doc.body.style.width = `${CONTENT_W}px`;
     iframe.style.height = `${doc.documentElement.scrollHeight}px`;
@@ -57,7 +63,18 @@ export async function htmlToPdfBlob(html: string): Promise<Blob> {
       pdf.setTextColor(102);
       pdf.text(`${p} / ${pages}`, 105, 290, { align: 'center' });
     }
-    return pdf.output('blob');
+    const output = await PDFDocument.load(await pdf.output('arraybuffer'));
+    for (const url of pdfUrls) {
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error(`Could not download catalog PDF (${response.status})`);
+      const attachment = await PDFDocument.load(await response.arrayBuffer());
+      const pages = await output.copyPages(attachment, attachment.getPageIndices());
+      pages.forEach((page) => output.addPage(page));
+    }
+    const mergedBytes = await output.save();
+    const blobBytes = new Uint8Array(mergedBytes.byteLength);
+    blobBytes.set(mergedBytes);
+    return new Blob([blobBytes.buffer], { type: 'application/pdf' });
   } finally {
     iframe.remove();
   }

@@ -98,10 +98,14 @@ export const PART_LABELS: Record<string, Pair> = {
   // customers / materials / companies
   companyName: ['اسم الشركة', 'Company name'], nameAr: ['الاسم بالعربية', 'Arabic name'], nameEn: ['الاسم بالإنجليزية', 'English name'], addPhone: ['زر إضافة هاتف', 'Add phone button'],
   contactPerson: ['شخص الاتصال', 'Contact person'], contactPhone: ['هاتف جهة الاتصال', 'Contact phone'], nature: ['طبيعة العمل', 'Business nature'], nameHint: ['تلميح الاسم', 'Name hint'], source: ['المصدر', 'Source'],
-  stock: ['المخزون', 'Stock'], origin: ['بلد المنشأ', 'Country of origin'], catalogue: ['الكتالوج', 'Catalogue'], model: ['الموديل', 'Model'], catalogueNo: ['رقم الكتالوج', 'Catalogue number'],
+  stock: ['المخزون', 'Stock'], origin: ['بلد المنشأ', 'Country of origin'], img: ['صورة المنتج', 'Product picture'],
+  catalogFiles: ['ملفات الكتالوج', 'Catalog files'], catalogHint: ['تلميح ملفات الكتالوج', 'Catalog files hint'], addCatalogFiles: ['زر إضافة ملفات الكتالوج', 'Add catalog files button'],
+  removeCatalogFile: ['زر حذف ملف الكتالوج', 'Remove catalog file button'], catalogLimit: ['رسالة حد ملفات الكتالوج', 'Catalog file limit message'], uploadingCatalog: ['رسالة رفع ملفات الكتالوج', 'Catalog upload message'],
+  model: ['الموديل', 'Model'], catalogueNo: ['رقم الكتالوج', 'Catalogue number'],
   addressAr: ['العنوان بالعربية', 'Arabic address'], addressEn: ['العنوان بالإنجليزية', 'English address'],
   printTitle: ['عنوان قسم الترويسة والتذييل', 'Print header/footer title'], printHint: ['تلميح الترويسة والتذييل', 'Print header/footer hint'],
   headerImage: ['صورة الترويسة', 'Header image'], footerImage: ['صورة التذييل', 'Footer image'], uploadImage: ['زر رفع صورة', 'Upload image button'],
+  taxEnabled: ['خيار تفعيل الضريبة', 'Enable tax option'], taxPercentage: ['نسبة الضريبة', 'Tax percentage'], taxHint: ['تلميح إعداد الضريبة', 'Tax settings hint'],
   replaceImage: ['زر استبدال الصورة', 'Replace image button'], removeImage: ['زر حذف الصورة', 'Remove image button'], noImage: ['لا توجد صورة', 'No image'], uploadLogo: ['زر رفع الشعار', 'Upload logo button'], logoHint: ['تلميح الشعار', 'Logo hint'],
   saveFirst: ['رسالة احفظ أولاً', 'Save first message'],
   // users / settings

@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { PDFDocument } from 'pdf-lib';
 import { PdfService } from './pdf.service';
 
 // a real 1x1 PNG
@@ -14,8 +15,11 @@ describe('printed quotation: company header and footer images', () => {
   beforeAll(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qms-uploads-'));
     fs.mkdirSync(path.join(dir, 'letterheads'));
+    fs.mkdirSync(path.join(dir, 'materials'));
     fs.writeFileSync(path.join(dir, 'letterheads', 'head.png'), PNG);
     fs.writeFileSync(path.join(dir, 'letterheads', 'foot.png'), PNG);
+    fs.writeFileSync(path.join(dir, 'materials', `catalog-${'a'.repeat(32)}.png`), PNG);
+    fs.writeFileSync(path.join(dir, 'materials', `catalog-${'b'.repeat(32)}.pdf`), '%PDF-1.4 test');
     process.env.UPLOADS_DIR = dir;
   });
   afterAll(() => {
@@ -23,13 +27,13 @@ describe('printed quotation: company header and footer images', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
-  const quotation = (company: Record<string, unknown> = {}) =>
+  const quotation = (company: Record<string, unknown> = {}, items: unknown[] = []) =>
     ({
       id: 1, quotationNumber: 'Q-1', quotationDate: '2026-10-11', status: 'draft',
       company: { id: 1, name: 'Acme', logo: null, address: 'Damascus', phone: '1', email: 'a@b.c', website: null, headerImage: null, footerImage: null, ...company },
       customer: { id: 1, companyName: 'Client', managerName: null, phone: [], email: null, country: null },
       responsibleUser: null, customerPaymentMethod: null, bankName: null, validity: null, deliveryTime: null,
-      paymentMethod: null, paymentLocation: null, deliveryMethod: null, notes: null, items: [], totals: [],
+      paymentMethod: null, paymentLocation: null, deliveryMethod: null, notes: null, items, totals: [],
     }) as any;
 
   const withImages = { headerImage: 'letterheads/head.png', footerImage: 'letterheads/foot.png' };
@@ -71,5 +75,59 @@ describe('printed quotation: company header and footer images', () => {
     expect(tag(html, 'cohead')).toBeUndefined();
     expect(tag(html, 'cofoot')).toBeUndefined();
     expect(html).toContain('<div class="head">');
+  });
+
+  it('includes material catalog images and PDFs in the print-ready appendix', async () => {
+    const html = await svc.renderHtml(quotation({}, [{
+      materialCode: 'M-1',
+      materialName: 'Pump',
+      catalogFiles: [
+        { id: 'a'.repeat(32), name: 'photo.png', path: `materials/catalog-${'a'.repeat(32)}.png`, mimeType: 'image/png' },
+        { id: 'b'.repeat(32), name: 'datasheet.pdf', path: `materials/catalog-${'b'.repeat(32)}.pdf`, mimeType: 'application/pdf' },
+      ],
+      amounts: [],
+    }]), { lang: 'en', includeCost: false });
+
+    expect(html).toContain('data:image/png;base64,');
+    expect(html).toContain('src="/uploads/materials/catalog-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.pdf"');
+    expect(html).toContain('M-1 - Pump');
+  });
+
+  it('sanitizes converted Word content before printing', async () => {
+    const html = (svc as any).sanitizeDocxHtml(
+      '<p>Specs</p><a href="javascript:alert(1)">Link</a><script>alert(2)</script><img src="data:image/png;base64,AAAA" onerror="alert(3)">',
+    );
+    expect(html).toContain('<p>Specs</p>');
+    expect(html).toContain('data:image/png;base64,AAAA');
+    expect(html).not.toMatch(/javascript:|<script|onerror=/);
+  });
+
+  it('merges PDF catalog files as pages after the quotation', async () => {
+    const quotationPdf = await PDFDocument.create();
+    quotationPdf.addPage();
+    const quotationBytes = Buffer.from(await quotationPdf.save());
+    const attachmentPdf = await PDFDocument.create();
+    attachmentPdf.addPage();
+    fs.writeFileSync(path.join(dir, 'materials', `catalog-${'e'.repeat(32)}.pdf`), Buffer.from(await attachmentPdf.save()));
+    const page = {
+      setContent: jest.fn(),
+      evaluate: jest.fn(async () => undefined),
+      pdf: jest.fn(async () => quotationBytes),
+      close: jest.fn(async () => undefined),
+    };
+    (svc as any).getBrowser = async () => ({ newPage: async () => page });
+    const output = await svc.renderPdf(quotation({}, [{
+      materialCode: 'M-1',
+      materialName: 'Pump',
+      catalogFiles: [{
+        id: 'e'.repeat(32),
+        name: 'datasheet.pdf',
+        path: `materials/catalog-${'e'.repeat(32)}.pdf`,
+        mimeType: 'application/pdf',
+      }],
+      amounts: [],
+    }]), { lang: 'en', includeCost: false });
+
+    expect((await PDFDocument.load(output)).getPageCount()).toBe(3);
   });
 });

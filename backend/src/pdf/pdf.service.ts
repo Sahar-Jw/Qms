@@ -1,10 +1,13 @@
-import { Injectable, Logger, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as mammoth from 'mammoth';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PDFDocument } from 'pdf-lib';
 import { CurrencyAmounts } from '../calc/calc.types';
 import { Lang } from '../common/enums';
 import { uploadsRoot } from '../config/uploads';
+import { MaterialCatalogFile } from '../materials/material.entity';
 import { ItemView, QuotationView } from '../quotations/quotation-view';
 import { TranslationsService } from '../translations/translations.service';
 
@@ -12,6 +15,7 @@ export interface PrintOptions {
   lang: Lang;
   includeCost: boolean;
   autoPrint?: boolean;
+  includeCatalog?: boolean;
 }
 
 const T = {
@@ -59,6 +63,84 @@ export class PdfService implements OnModuleDestroy {
     return out as Record<keyof (typeof T)['ar'], string>;
   }
 
+  private catalogFiles(q: QuotationView): { file: MaterialCatalogFile; material: string }[] {
+    const seen = new Set<string>();
+    const files: { file: MaterialCatalogFile; material: string }[] = [];
+    for (const item of q.items) {
+      for (const file of item.catalogFiles ?? []) {
+        if (seen.has(file.id)) continue;
+        seen.add(file.id);
+        files.push({ file, material: `${item.materialCode}${item.materialName ? ` - ${item.materialName}` : ''}` });
+      }
+    }
+    return files;
+  }
+
+  private async readCatalogFile(file: MaterialCatalogFile): Promise<Buffer> {
+    if (!/^materials\/catalog-[a-f0-9]{32}\.(png|jpg|webp|pdf|docx)$/.test(file.path)) {
+      throw new InternalServerErrorException({ code: 'INVALID_CATALOG_FILE', message: 'A catalog file has an invalid stored path' });
+    }
+    try {
+      return await fs.promises.readFile(path.join(uploadsRoot(), file.path));
+    } catch (error) {
+      this.logger.error(`Could not read quotation catalog file ${file.path}: ${(error as Error).message}`);
+      throw new InternalServerErrorException({ code: 'CATALOG_FILE_UNAVAILABLE', message: 'A catalog file could not be loaded for printing' });
+    }
+  }
+
+  private catalogHeadingHtml(file: MaterialCatalogFile, material: string): string {
+    return `<h1>${this.esc(material)}</h1><p>${this.esc(file.name)}</p>`;
+  }
+
+  private async catalogContentHtml(file: MaterialCatalogFile, bytes: Buffer): Promise<string> {
+    if (file.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      const result = await mammoth.convertToHtml({ buffer: bytes }, {
+        convertImage: mammoth.images.imgElement(async (image) => ({
+          src: `data:${image.contentType};base64,${await image.read('base64')}`,
+        })),
+      });
+      return this.sanitizeDocxHtml(result.value);
+    }
+    const mime = file.mimeType;
+    return `<img src="data:${mime};base64,${bytes.toString('base64')}" alt="">`;
+  }
+
+  private sanitizeDocxHtml(html: string): string {
+    return html
+      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
+      .replace(/<\/?a\b[^>]*>/gi, '')
+      .replace(/<(\/?)(p|h[1-6]|table|thead|tbody|tr|td|th|br|strong|em|b|i|u|ul|ol|li)\b[^>]*>/gi, '<$1$2>')
+      .replace(/<img\b([^>]*)>/gi, (_tag, attrs: string) => {
+        const src = attrs.match(/\bsrc=["'](data:image\/(?:png|jpe?g|gif|webp);base64,[a-z0-9+/=]+)["']/i)?.[1];
+        return src ? `<img src="${src}" alt="">` : '';
+      });
+  }
+
+  private async catalogDocumentHtml(file: MaterialCatalogFile, material: string, bytes: Buffer): Promise<string> {
+    const content = await this.catalogContentHtml(file, bytes);
+    return `<!doctype html><html><head><meta charset="utf-8"><style>
+@page{size:A4;margin:12mm 10mm 14mm}body{font-family:Arial,sans-serif;color:#1f3a5f;line-height:1.5}
+h1{font-size:18px}img{display:block;max-width:100%;max-height:255mm;margin:10px auto;object-fit:contain}
+.catalog-document{color:#111;overflow-wrap:anywhere}table{border-collapse:collapse;max-width:100%}td,th{border:1px solid #999;padding:4px}
+</style></head><body>${this.catalogHeadingHtml(file, material)}<div class="catalog-document">${content}</div></body></html>`;
+  }
+
+  private async catalogAppendix(q: QuotationView): Promise<string> {
+    const entries: string[] = [];
+    for (const { file, material } of this.catalogFiles(q)) {
+      const title = `<h2>${this.esc(material)}</h2><p>${this.esc(file.name)}</p>`;
+      if (file.mimeType === 'application/pdf') {
+        await this.readCatalogFile(file);
+        entries.push(`<section class="catalog-page">${title}<iframe title="${this.esc(file.name)}" src="/uploads/${file.path}"><a href="/uploads/${file.path}">${this.esc(file.name)}</a></iframe></section>`);
+      } else {
+        const bytes = await this.readCatalogFile(file);
+        const content = await this.catalogContentHtml(file, bytes);
+        entries.push(`<section class="catalog-page">${title}<div class="catalog-document">${content}</div></section>`);
+      }
+    }
+    return entries.join('');
+  }
+
   // ------------------------------------------------------------------ public API
 
   /** Self-contained print-ready HTML (fonts + logo inlined). Works everywhere - open it and use the browser's "Save as PDF". */
@@ -85,6 +167,7 @@ export class PdfService implements OnModuleDestroy {
     // Header / footer images of the company: the same in every language (none -> nothing is printed).
     const headerImg = this.logoDataUri(co.headerImage);
     const footerImg = this.logoDataUri(co.footerImage);
+    const catalogHtml = opts.includeCatalog === false ? '' : await this.catalogAppendix(q);
 
     const terms: [string, string | null | undefined][] = [
       [t.validity, q.validity],
@@ -166,6 +249,11 @@ body { font-family: 'Cairo', Tahoma, Arial, sans-serif; font-size: 11px; color: 
 .head .co .sub { color: #444; font-size: 10px; }
 img.cohead { display: block; width: 100%; max-height: 45mm; object-fit: contain; margin: 0 0 10px; }
 img.cofoot { display: block; width: 100%; max-height: 35mm; object-fit: contain; margin-top: 16px; page-break-inside: avoid; }
+.catalog-page { break-before: page; page-break-before: always; }
+.catalog-page img { display: block; max-width: 100%; max-height: 255mm; margin: 10px auto; object-fit: contain; }
+.catalog-page iframe { display: block; width: 100%; height: 265mm; border: 0; }
+.catalog-page h2 { font-size: 15px; color: #1f3a5f; }
+.catalog-document { overflow-wrap: anywhere; }
 .title { text-align: center; font-size: 20px; font-weight: 700; margin: 6px 0 10px; }
 .meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .box { border: 1px solid #c9d1dc; border-radius: 4px; padding: 6px 10px; flex: 1; }
@@ -227,13 +315,14 @@ ${termsHtml ? `<div class="terms">${termsHtml}</div>` : ''}
   <tbody>${totalsRows}</tbody>
 </table>
 ${footerImg ? `<img class="cofoot" src="${footerImg}" alt="">` : ''}
+${catalogHtml}
 ${opts.autoPrint ? '<script>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)})</script>' : ''}
 </body>
 </html>`;
   }
 
   async renderPdf(q: QuotationView, opts: PrintOptions): Promise<Buffer> {
-    const html = await this.renderHtml(q, { ...opts, autoPrint: false });
+    const html = await this.renderHtml(q, { ...opts, autoPrint: false, includeCatalog: false });
     let browser;
     try {
       browser = await this.getBrowser();
@@ -264,7 +353,34 @@ ${opts.autoPrint ? '<script>window.addEventListener("load",function(){setTimeout
         footerTemplate: '<div style="font-size:8px;width:100%;text-align:center;color:#666"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
         margin: { top: '12mm', bottom: '14mm', left: '10mm', right: '10mm' },
       });
-      return Buffer.from(pdf);
+      const output = await PDFDocument.load(pdf);
+      const pageIndices = (document: PDFDocument) => document.getPageIndices();
+      for (const { file, material } of this.catalogFiles(q)) {
+        const bytes = await this.readCatalogFile(file);
+        let attachmentPdf: Uint8Array;
+        if (file.mimeType === 'application/pdf') {
+          const source = await PDFDocument.load(bytes);
+          await page.setContent(this.catalogHeadingHtml(file, material), { waitUntil: 'load' });
+          attachmentPdf = Buffer.from(await page.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true }));
+          const cover = await PDFDocument.load(attachmentPdf);
+          const coverPages = await output.copyPages(cover, pageIndices(cover));
+          coverPages.forEach((p) => output.addPage(p));
+          const sourcePages = await output.copyPages(source, pageIndices(source));
+          sourcePages.forEach((p) => output.addPage(p));
+        } else {
+          await page.setContent(await this.catalogDocumentHtml(file, material, bytes), { waitUntil: 'load' });
+          attachmentPdf = Buffer.from(await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            preferCSSPageSize: true,
+            margin: { top: '12mm', bottom: '14mm', left: '10mm', right: '10mm' },
+          }));
+          const source = await PDFDocument.load(attachmentPdf);
+          const pages = await output.copyPages(source, pageIndices(source));
+          pages.forEach((p) => output.addPage(p));
+        }
+      }
+      return Buffer.from(await output.save());
     } finally {
       await page.close().catch(() => undefined);
     }

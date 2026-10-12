@@ -1,5 +1,5 @@
 import { PartialType } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { TrimOptional } from '../../common/decorators/validators';
 
 export class CreateCompanyDto {
@@ -17,6 +17,12 @@ export class CreateCompanyDto {
 
   @IsOptional() @TrimOptional() @IsString() @MaxLength(150)
   website?: string;
+
+  @IsOptional() @IsBoolean()
+  taxEnabled?: boolean;
+
+  @IsOptional() @Matches(/^(?:100(?:\.0{1,4})?|(?:\d{1,2})(?:\.\d{1,4})?)$/)
+  taxPercentage?: string;
 }
 
 export class UpdateCompanyDto extends PartialType(CreateCompanyDto) {}

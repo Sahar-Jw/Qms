@@ -67,10 +67,10 @@ export class SettingsService {
     return { colors: { ...DEFAULT_THEME } };
   }
 
-  /** Active companies a user can pick in the settings (name + logo only). */
+  /** Active companies a user can pick as the quotation issuer. */
   async pickList() {
     const rows = await this.companies.find({ where: { isActive: true }, order: { name: 'ASC' } });
-    return rows.map((c) => ({ id: c.id, name: c.name, logo: c.logo }));
+    return rows.map((c) => ({ id: c.id, name: c.name, logo: c.logo, taxEnabled: c.taxEnabled, taxPercentage: c.taxPercentage }));
   }
 
   async get(userId: number) {
@@ -86,7 +86,7 @@ export class SettingsService {
     }
     return {
       issuingCompany: company
-        ? { id: company.id, name: company.name, logo: company.logo, isActive: company.isActive }
+        ? { id: company.id, name: company.name, logo: company.logo, isActive: company.isActive, taxEnabled: company.taxEnabled, taxPercentage: company.taxPercentage }
         : null,
       issuingCompanyIsAutomatic: auto,
     };

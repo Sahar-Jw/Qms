@@ -97,7 +97,11 @@ function QuotationDetail() {
           const r = await fetch(apiUrl(`/quotations/${q!.id}/print?lang=${lang}${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
           if (!r.ok) throw new Error(r.statusText);
           const { htmlToPdfBlob } = await import('@/lib/client-pdf');
-          const url = URL.createObjectURL(await htmlToPdfBlob(await r.text()));
+          const catalogPdfs = q!.items.flatMap((item) => item.catalogFiles ?? [])
+            .filter((file) => file.mimeType === 'application/pdf')
+            .filter((file, index, files) => files.findIndex((other) => other.id === file.id) === index)
+            .map((file) => uploadUrl(file.path));
+          const url = URL.createObjectURL(await htmlToPdfBlob(await r.text(), catalogPdfs));
           const a = document.createElement('a');
           a.href = url; a.download = `${q!.quotationNumber}-${lang}.pdf`; a.click();
           setTimeout(() => URL.revokeObjectURL(url), 10_000);
@@ -178,7 +182,7 @@ function QuotationDetail() {
                 <thead className="sticky top-0 z-10"><tr>
                   <th className={th}>{t('materials.image')}</th><th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('quotations.quantity')}</th>
                   <th className={th}>{t('quotations.unitPrice')}</th><th className={th}>{t('quotations.value')}</th><th className={th}>{t('quotations.shipping')}</th>
-                  <th className={th}>{t('quotations.customs')}</th><th className={th}>{t('quotations.tax')}</th><th className={th}>{t('quotations.required')}</th>{canCost && <th className={th}>{t('quotations.totalCost')}</th>}
+                  <th className={th}>{t('quotations.customs')}</th>{co.taxEnabled && <th className={th}>{t('quotations.tax')}</th>}<th className={th}>{t('quotations.required')}</th>{canCost && <th className={th}>{t('quotations.totalCost')}</th>}
                 </tr></thead>
                 <tbody>
                   {q.items.map((i) => (
@@ -191,7 +195,7 @@ function QuotationDetail() {
                       <td className={td}><Money amounts={i.amounts} field="value" /></td>
                       <td className={td}><Money amounts={i.amounts} field="shipping" /></td>
                       <td className={td}><Money amounts={i.amounts} field="customs" /></td>
-                      <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.taxPercentage)}%</td>
+                      {co.taxEnabled && <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.taxPercentage)}%</td>}
                       <td className={`${td} font-bold`}><Money amounts={i.amounts} field="required" /></td>
                       {canCost && <td className={`${td} text-cocoa`}><Money amounts={i.amounts} field="cost" /></td>}
                     </tr>

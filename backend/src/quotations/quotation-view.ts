@@ -1,5 +1,6 @@
 import { CurrencyAmounts } from '../calc/calc.types';
 import { QuotationStatus } from '../common/enums';
+import { MaterialCatalogFile } from '../materials/material.entity';
 
 export interface ItemView {
   id: number;
@@ -7,6 +8,7 @@ export interface ItemView {
   materialCode: string;
   materialName: string | null;
   materialImage: string | null;
+  catalogFiles: MaterialCatalogFile[];
   unit: string | null;
   sortOrder: number;
   quantity: string;
@@ -33,6 +35,7 @@ export interface QuotationView {
     id: number; name: string; logo: string | null;
     address: string | null; phone: string | null; email: string | null; website: string | null;
     headerImage: string | null; footerImage: string | null;
+    taxEnabled: boolean; taxPercentage: string | null;
   };
   customer: {
     id: number; companyName: string | null;

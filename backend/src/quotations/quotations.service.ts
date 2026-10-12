@@ -131,7 +131,7 @@ export class QuotationsService {
    * existing lines missing from the payload are deleted. Amounts are recalculated per currency.
    * Material snapshots (code / names) are kept for unchanged lines so history never changes.
    */
-  private async syncItems(m: EntityManager, quotationId: number, incoming: QuotationItemDto[], user: AuthUser) {
+  private async syncItems(m: EntityManager, quotationId: number, incoming: QuotationItemDto[], user: AuthUser, companyTax: string) {
     const canCost = this.canEditCost(user);
     const existing = await m.find(QuotationItem, { where: { quotationId } });
     const existingMap = new Map(existing.map((i) => [i.id, i]));
@@ -196,8 +196,7 @@ export class QuotationsService {
 
       this.assertPercent(inc.commissionPercentage, 'commissionPercentage');
       item.commissionPercentage = inc.commissionPercentage ?? null;
-      this.assertPercent(inc.taxPercentage, 'taxPercentage');
-      item.taxPercentage = inc.taxPercentage;
+      item.taxPercentage = companyTax;
       item.notes = inc.notes ?? null;
 
       const saved = await m.save(QuotationItem, item);
@@ -215,6 +214,7 @@ export class QuotationsService {
       if (dto.companyId !== undefined && dto.companyId !== companyId) {
         throw new BadRequestException({ code: 'COMPANY_MISMATCH', message: 'Quotations are issued from the company chosen in the settings' });
       }
+      const issuingCompany = await m.findOneByOrFail(Company, { id: companyId });
       await this.assertActive(m, Customer, dto.customerId, 'CUSTOMER', 'Customer');
       const quotationDate = dto.quotationDate ?? new Date().toISOString().slice(0, 10);
       this.assertValidityDate(quotationDate, dto.validity);
@@ -233,7 +233,7 @@ export class QuotationsService {
         updatedById: user.id,
       });
       const saved = await m.save(Quotation, q);
-      await this.syncItems(m, saved.id, items, user);
+      await this.syncItems(m, saved.id, items, user, issuingCompany.taxEnabled ? issuingCompany.taxPercentage ?? '0' : '0');
       return saved.id;
     });
     return this.findOne(id, user);
@@ -266,18 +266,24 @@ export class QuotationsService {
       }
 
       // The issuing company may be changed only while the quotation is still a draft.
-      if (header.companyId !== undefined && header.companyId !== q.companyId) {
+      const companyChanged = header.companyId !== undefined && header.companyId !== q.companyId;
+      if (companyChanged) {
         if (q.status !== QuotationStatus.DRAFT) {
           throw new BadRequestException({ code: 'COMPANY_CANNOT_CHANGE', message: 'The issuing company can only be changed while the quotation is a draft' });
         }
-        await this.assertActive(m, Company, header.companyId, 'ISSUING_COMPANY', 'Issuing company');
+        await this.assertActive(m, Company, q.companyId, 'ISSUING_COMPANY', 'Issuing company');
       }
       for (const [k, v] of Object.entries(header)) {
         if (v !== undefined) (q as any)[k] = v;
       }
       q.updatedById = user.id;
       await m.save(Quotation, q);
-      if (items) await this.syncItems(m, id, items, user);
+      if (items || companyChanged) {
+        const company = await m.findOneByOrFail(Company, { id: q.companyId });
+        const tax = company.taxEnabled ? company.taxPercentage ?? '0' : '0';
+        if (items) await this.syncItems(m, id, items, user, tax);
+        else await m.update(QuotationItem, { quotationId: id }, { taxPercentage: tax });
+      }
     });
     return this.findOne(id, user);
   }
@@ -297,6 +303,7 @@ export class QuotationsService {
 
       // A copy stays under the SAME company as the original (not the user's current issuing company).
       const companyId = src.companyId;
+      const company = await m.findOneByOrFail(Company, { id: companyId });
       const customerId = dto.customerId ?? src.customerId;
       await this.assertActive(m, Customer, customerId, 'CUSTOMER', 'Customer');
       const resp = src.responsibleUserId ? await m.findOne(User, { where: { id: src.responsibleUserId } }) : null;
@@ -325,7 +332,11 @@ export class QuotationsService {
       for (const it of items) {
         const { id: _id, quotationId: _q, ...rest } = it as QuotationItem & { amounts?: unknown };
         delete (rest as { amounts?: unknown }).amounts;
-        const clone = await m.save(QuotationItem, m.create(QuotationItem, { ...rest, quotationId: saved.id }));
+        const clone = await m.save(QuotationItem, m.create(QuotationItem, {
+          ...rest,
+          taxPercentage: company.taxEnabled ? company.taxPercentage ?? '0' : '0',
+          quotationId: saved.id,
+        }));
         const { amounts } = this.calc.calcItem(clone);
         await m.insert(QuotationItemAmount, amounts.map((a) => ({ itemId: clone.id, ...a })));
       }
@@ -399,7 +410,12 @@ export class QuotationsService {
         materialId: i.materialId,
         materialCode: i.materialCode,
         materialName: i.materialName,
-        materialImage: /^materials\/[\w.-]+$/.test(i.material?.catalogue ?? '') ? i.material!.catalogue : null,
+        materialImage: /^materials\/[\w.-]+$/.test(i.material?.img ?? '') ? i.material!.img : null,
+        catalogFiles: (i.material?.catalog ?? []).filter((file) =>
+          /^[a-f0-9]{32}$/.test(file.id) &&
+          /^materials\/catalog-[a-f0-9]{32}\.(png|jpg|webp|pdf|docx)$/.test(file.path) &&
+          ['image/png', 'image/jpeg', 'image/webp', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.mimeType),
+        ),
         unit: i.unit,
         sortOrder: i.sortOrder,
         quantity: i.quantity,
@@ -430,6 +446,7 @@ export class QuotationsService {
         id: co.id, name: co.name, logo: co.logo,
         address: co.address, phone: co.phone, email: co.email, website: co.website,
         headerImage: co.headerImage, footerImage: co.footerImage,
+        taxEnabled: co.taxEnabled, taxPercentage: co.taxPercentage,
       },
       customer: {
         id: cu.id, companyName: cu.companyName,

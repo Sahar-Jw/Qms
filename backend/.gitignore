@@ -19,6 +19,7 @@ Thumbs.db
 *.sql
 *.sql.gz
 !src/database/migrations/**/*.sql
+!sql/2026-10-12-material-catalog-company-tax.sql
 
 # Local seed scripts and data
 src/database/seed*.ts

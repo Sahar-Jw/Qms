@@ -17,8 +17,10 @@ Sign in with the seeded technical manager (`SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASS
 
 ## How it talks to the backend
 
-The browser only calls this Next.js server. `next.config.ts` rewrites `/api/*` and `/uploads/*` to `API_URL`, so the httpOnly auth cookie is same-origin: no CORS and no cookie headaches.
-**`API_URL` is read when you run `npm run build`** (rewrites are baked into the build), so set it before building for production.
+In development, `next.config.ts` rewrites `/api/*` and `/uploads/*` to `API_URL`.
+The cPanel production build is a static export; the browser calls the backend directly
+at `NEXT_PUBLIC_API_URL`, which is baked into the build. The backend must allow the
+frontend origin in `FRONTEND_URLS` and use HTTPS so the auth cookie works.
 
 ## Screens
 
@@ -49,11 +51,17 @@ Palette from your image, plus white and black: `ink #291C0E`, `cocoa #6E473B`, `
 ## Production
 
 ```bash
-set API_URL=https://api.yourdomain.com   (or put it in .env.production)
-npm ci && npm run build && npm start
+set NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+npm ci && npm run build
 ```
 
-cPanel "Setup Node.js App": application startup file `server.js`, run `npm ci` and `npm run build` first. The Next.js server and the NestJS API are two separate Node apps. The browser must reach this app over HTTPS and the backend should have `COOKIE_SECURE=true`.
+The production build writes a static site to `out/`. Upload the **contents** of
+that folder (including `.htaccess`) to the frontend domain's document root in cPanel.
+No Node.js app is needed for the frontend. The NestJS API is a separate cPanel
+Node.js app; its setup is documented in `backend/README.md`. Choose Node.js 20.9 or
+newer for builds and the API. PDF downloads fall back to browser-side rendering on
+shared hosting where Chromium is unavailable; catalog PDF files are merged into the
+download in the browser.
 
 ## Structure
 

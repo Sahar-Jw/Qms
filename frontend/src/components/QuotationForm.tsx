@@ -4,7 +4,7 @@ import { quotationHref, uploadUrl } from '@/lib/urls';
 import { AlertTriangle, Building2, Plus, Save, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { AsyncPick } from '@/components/AsyncPick';
@@ -47,7 +47,7 @@ function fromView(q: QuotationView): FormValues {
     paymentLocation: q.paymentLocation ?? '', deliveryMethod: q.deliveryMethod ?? '', customerPaymentMethod: q.customerPaymentMethod ?? '',
     notes: q.notes ?? '',
     items: q.items.map((i) => ({
-      id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, name: i.materialName, catalogue: i.materialImage ?? null } : null,
+      id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, name: i.materialName, img: i.materialImage ?? null } : null,
       quantity: trimDec(i.quantity), unit: i.unit ?? '', unitPrice: trimDec(i.unitPrice), priceCurrency: i.priceCurrency,
       shippingCost: trimDec(i.shippingCost), shippingCurrency: i.priceCurrency, customsCost: trimDec(i.customsCost), customsCurrency: i.priceCurrency,
       unitCost: trimDec(i.unitCost), costCurrency: i.priceCurrency, commissionPercentage: trimDec(i.commissionPercentage), taxPercentage: trimDec(i.taxPercentage), notes: i.notes ?? '',
@@ -70,7 +70,10 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   const companyOptions: PickCompany[] = useMemo(() => {
     const list = companies.data ?? [];
     // keep the current company selectable even if it has since been deactivated
-    return list.some((c) => c.id === initial?.company.id) || !initial ? list : [{ id: initial.company.id, name: initial.company.name, logo: initial.company.logo }, ...list];
+    return list.some((c) => c.id === initial?.company.id) || !initial ? list : [{
+      id: initial.company.id, name: initial.company.name, logo: initial.company.logo,
+      taxEnabled: initial.company.taxEnabled, taxPercentage: initial.company.taxPercentage,
+    }, ...list];
   }, [companies.data, initial]);
   const company: PickCompany | null | undefined = editing
     ? (canPickCompany ? companyOptions.find((c) => c.id === pickedCompanyId) ?? initial!.company : initial!.company)
@@ -83,6 +86,10 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const items = useWatch({ control, name: 'items' });
+  const companyTax = company?.taxEnabled ? company.taxPercentage ?? '0' : '0';
+  useEffect(() => {
+    items?.forEach((_item, index) => setValue(`items.${index}.taxPercentage`, trimDec(companyTax)));
+  }, [companyTax, fields.length, items?.length, setValue]);
   const customer = useWatch({ control, name: 'customer' });
   const quotationDate = useWatch({ control, name: 'quotationDate' });
   const validity = useWatch({ control, name: 'validity' });
@@ -215,13 +222,13 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                   <div key={f.id} className="rounded-2xl border border-stone/60 bg-sand/35 p-4">
                     <div className="mb-3 flex items-start gap-3">
                       <span className="mt-1 grid size-8 shrink-0 place-items-center rounded-full bg-ink text-xs font-bold text-sand">{i + 1}</span>
-                      <MaterialThumb image={items?.[i]?.material?.catalogue} size="size-14" zoom />
+                      <MaterialThumb image={items?.[i]?.material?.img} size="size-14" zoom />
                       <Field className="flex-1" error={e?.material?.message}>
                         <Controller control={control} name={`items.${i}.material`} rules={{ required: t('quotations.pickMaterial') }}
                           render={({ field }) => (
                             <AsyncPick<PickMaterial> value={field.value} onChange={(m) => onMaterial(i, m as Material | null)} cacheKey="materials" invalid={!!e?.material}
                               placeholder={t('quotations.materialPh')} label={(m) => `${m.materialCode} - ${m.name ?? ''}`}
-                              thumb={(m) => <MaterialThumb image={m.catalogue} size="size-14" />}
+                              thumb={(m) => <MaterialThumb image={m.img} size="size-14" />}
                               sub={(m) => [m.unitPrice && `${fmt(m.unitPrice)} ${m.currency ?? ''}`, m.source].filter(Boolean).join(' / ')}
                               fetcher={(q) => api.get<Paginated<Material>>('/materials', { q, limit: 20 }).then((r) => r.data)} />
                           )} />
@@ -242,12 +249,12 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                       <Field label={t('quotations.customs')} required error={e?.customsCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.customsCost`, decRule(true))} /></Field>
                       {canCost && <Field label={t('quotations.cost')} required error={e?.unitCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.unitCost`, decRule(true))} /></Field>}
                       <Field label={t('quotations.commission')} required error={e?.commissionPercentage?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.commissionPercentage`, decRule(true))} /></Field>
-                      <Field label={t('quotations.tax')} required error={e?.taxPercentage?.message}>
-                        <Input inputMode="decimal" dir="ltr" placeholder="0" {...register(`items.${i}.taxPercentage`, {
+                      {company?.taxEnabled && <Field label={t('quotations.tax')} required error={e?.taxPercentage?.message}>
+                        <Input inputMode="decimal" dir="ltr" readOnly {...register(`items.${i}.taxPercentage`, {
                           ...req,
                           validate: (v) => (DEC.test(String(v).trim()) && Number(v) <= 100) || t('err.INVALID_PERCENTAGE'),
                         })} />
-                      </Field>
+                      </Field>}
 
                       <Field label={t('quotations.itemNotes')} className={canCost ? 'col-span-2 md:col-span-3' : 'col-span-2 md:col-span-4'}><Input {...register(`items.${i}.notes`)} /></Field>
                       {canCost && (

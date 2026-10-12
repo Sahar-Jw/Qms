@@ -46,6 +46,7 @@ src/
 | Companies | `GET companies[/:id]` | any |
 | | `POST companies` · `PATCH companies/:id` · `PATCH companies/:id/active` · `POST companies/:id/logo` (png/jpg/webp ≤1 MB, field `file`) | general manager+ |
 | Customers / Materials | `GET` (list `?q=&status=active\|inactive\|all&page=&limit=`) · `GET :id` · `POST` · `PATCH :id` | any |
+| | `POST materials/:id/image` (field `file`) · `DELETE materials/:id/image` · `POST materials/:id/catalog` (field `files`, up to 10 PNG/JPG/WEBP/PDF/DOCX files, 10 MB each) · `DELETE materials/:id/catalog/:fileId` | any |
 | | `PATCH :id/active` | manager+ |
 | Settings | `GET settings/companies` (active companies to pick from: id, names, logo) · `GET settings` · `PATCH settings` `{ issuingCompanyId }` — the company ALL of this user's new quotations are issued from | any user |
 | | `GET settings/theme` → `{ colors: { ink, cocoa, clay, stone, sand } }` (the site-wide palette, same for everyone) | any user |
@@ -88,11 +89,35 @@ The ready-made frontend is the separate `qms-frontend` project. It proxies `/api
 
 ## Production / cPanel
 
-1. `PUPPETEER_SKIP_DOWNLOAD=true npm ci` → `npm run build` (or build locally and upload `dist/`).
-2. `.env`: `NODE_ENV=production`, `DB_SYNC=false`, `DB_MIGRATIONS_RUN=true` (creates tables at startup), strong `JWT_SECRET`, `COOKIE_SECURE=true`, `FRONTEND_URLS=https://…`, `COOKIE_DOMAIN=.yourdomain` if web and api are on sibling subdomains.
-3. cPanel → *Setup Node.js App*: startup file `dist/main.js`; run once `npm run seed:prod`.
-4. Chromium usually can't run on shared hosting → `/pdf` returns `503 PDF_ENGINE_UNAVAILABLE`; use `/print` (browser "Save as PDF"), or set `PUPPETEER_EXECUTABLE_PATH` if the host provides Chrome.
-5. Back up the database and the `uploads/` folder.
+Use Node.js **20.9 or newer** for the frontend build and the API (NestJS 11 and
+Next.js 16 both require a modern Node runtime). The frontend is a static export;
+follow the frontend README to upload `frontend/out/` to the web document root.
+
+1. In `backend/`, run `npm ci` and `npm run build` using the cPanel Node.js 20+
+   environment, or build locally with Node.js 20+ and upload `backend/dist/` and
+   `backend/node_modules/` installed with `npm ci --omit=dev`.
+2. Create the MySQL/MariaDB database and set the cPanel Node app environment:
+   `NODE_ENV=production`, `DB_SYNC=false`, `DB_MIGRATIONS_RUN=true`, a strong
+   `JWT_SECRET`, `COOKIE_SECURE=true`, and `FRONTEND_URLS=https://your-domain.com`
+   (include both `www` and non-`www` origins if both are used). Set
+   `COOKIE_DOMAIN=.your-domain.com` only when the frontend and API use sibling
+   subdomains. Ensure the cPanel account's database user has migration permissions.
+3. Set `UPLOADS_DIR` to a writable, persistent absolute directory for the Node app.
+   Keep it outside folders replaced on deployment, and back up the directory: it
+   stores logos, material pictures, catalog documents, and other uploaded files.
+4. cPanel → **Setup Node.js App**: select Node.js 20+, point the application root
+   at the backend folder, set the startup file to `dist/main.js`, install
+   dependencies, and restart the app. Run `npm run seed:prod` once for the initial
+   roles/admin account setup.
+5. The shared-hosting app does not need Chromium. If it is unavailable, the
+   quotation page builds PDF downloads in the user's browser and merges attached
+   catalog PDFs there; DOCX files and images are rendered into the printable
+   appendix. `/print` remains available as the browser-print alternative. On a VPS
+   with Chrome installed, set `PUPPETEER_EXECUTABLE_PATH` to enable server-side PDF.
+6. Run `npm run migration:run` (or set `DB_MIGRATIONS_RUN=true` for startup) to add
+   the material `img` / `catalog` and company tax columns. Do not also manually run
+   the SQL unless the migration has already been recorded. MariaDB must support
+   JSON columns. Back up the database and `UPLOADS_DIR` before deploying.
 
 ## Notes
 

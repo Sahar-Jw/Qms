@@ -140,7 +140,8 @@ async function saveFixture(manager: EntityManager) {
     Object.assign(material, {
       materialCode: spec.code, name: spec.name, source: spec.source, stockQuantity: spec.stock,
       unitPrice: spec.price, unit: spec.unit, currency: spec.currency, countryOfOrigin: spec.origin,
-      catalogue: spec.catalogue, modelNumber: spec.model, catalogueNumber: null, isActive: spec.active,
+      img: /^materials\/[\w.-]+$/.test(spec.catalogue ?? '') ? spec.catalogue : null,
+      modelNumber: spec.model, catalogueNumber: null, isActive: spec.active,
       createdById: technicalManager.id, updatedById: technicalManager.id,
     });
     materials.set(spec.code, await materialRepo.save(material));

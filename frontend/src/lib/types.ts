@@ -20,9 +20,10 @@ export interface Company {
   id: number; name: string; logo: string | null;
   address: string | null; phone: string | null; email: string | null; website: string | null;
   headerImage: string | null; footerImage: string | null;
+  taxEnabled: boolean; taxPercentage: string | null;
   isActive: boolean;
 }
-export interface PickCompany { id: number; name: string; logo: string | null }
+export interface PickCompany { id: number; name: string; logo: string | null; taxEnabled: boolean; taxPercentage: string | null }
 export interface Settings { issuingCompany: (PickCompany & { isActive: boolean }) | null; issuingCompanyIsAutomatic: boolean }
 
 export interface BrandSettings {
@@ -47,13 +48,15 @@ export interface Customer {
 export interface Material {
   id: number; materialCode: string; name: string | null; source: string | null;
   stockQuantity: string; unitPrice: string; unit: string | null; currency: string | null; countryOfOrigin: string | null;
-  catalogue: string | null; modelNumber: string | null; catalogueNumber: string | null; isActive: boolean;
+  img: string | null; catalog: { id: string; name: string; path: string; mimeType: string }[] | null;
+  modelNumber: string | null; catalogueNumber: string | null; isActive: boolean;
 }
 
 export interface Amounts { currency: string; value: string; cost: string; shipping: string; customs: string; required: string }
 
 export interface ItemView {
   id: number; materialId: number | null; materialCode: string; materialName: string | null; materialImage?: string | null;
+  catalogFiles: { id: string; name: string; path: string; mimeType: string }[];
   unit: string | null; sortOrder: number; quantity: string; unitPrice: string; priceCurrency: string;
   unitCost: string | null; costCurrency: string | null; shippingCost: string | null; shippingCurrency: string | null;
   customsCost: string | null; customsCurrency: string | null; commissionPercentage: string | null; taxPercentage: string; notes: string | null;

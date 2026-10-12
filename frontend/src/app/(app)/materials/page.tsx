@@ -1,6 +1,7 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ImagePlus, Pencil, Plus, Power, Search, Trash2 } from 'lucide-react';
+import { uploadUrl } from '@/lib/urls';
+import { FilePlus2, FileText, ImagePlus, Pencil, Plus, Power, Search, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -30,14 +31,17 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
   const qc = useQueryClient();
   const editing = material !== 'new';
   const fileRef = useRef<HTMLInputElement>(null);
+  const catalogRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [catalogFiles, setCatalogFiles] = useState(editing ? material.catalog ?? [] : []);
+  const [catalogSelection, setCatalogSelection] = useState<File[]>([]);
   const [preview, setPreview] = useState<string | null>(null);
   const [removeImg, setRemoveImg] = useState(false);
   const [origSize, setOrigSize] = useState<number | null>(null);
   const [preparing, setPreparing] = useState(false);
   const [pct, setPct] = useState(0);
-  const [phase, setPhase] = useState<'saving' | 'uploading'>('saving');
-  const current = editing && !removeImg ? material.catalogue ?? null : null;
+  const [phase, setPhase] = useState<'saving' | 'uploadingImage' | 'uploadingCatalog'>('saving');
+  const current = editing && !removeImg ? material.img ?? null : null;
   useEffect(() => {
     if (!file) { setPreview(null); return; }
     const u = URL.createObjectURL(file);
@@ -65,29 +69,62 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
       setPct(10);
       let uploadFailed = false;
       if (file) {
-        setPhase('uploading');
+        setPhase('uploadingImage');
         const fd = new FormData();
         fd.append('file', file);
         try {
-          await api.uploadWithProgress<Material>(`/materials/${saved.id}/image`, fd, (fr) => setPct(10 + Math.round(fr * 90)));
+          await api.uploadWithProgress<Material>(`/materials/${saved.id}/image`, fd, (fr) => setPct(10 + Math.round(fr * 35)));
+          setFile(null);
         } catch (e) {
           // the material itself is already saved: keep it, tell the user, and let them retry the picture from Edit
           uploadFailed = true;
           toastError(e, t, has);
         }
-      } else if (editing && removeImg && material.catalogue) await api.delete(`/materials/${saved.id}/image`);
+      } else if (editing && removeImg && material.img) await api.delete(`/materials/${saved.id}/image`);
+      if (catalogSelection.length) {
+        setPhase('uploadingCatalog');
+        const fd = new FormData();
+        catalogSelection.forEach((catalogFile) => fd.append('files', catalogFile));
+        try {
+          const uploaded = await api.uploadWithProgress<Material>(`/materials/${saved.id}/catalog`, fd, (fr) => setPct(45 + Math.round(fr * 55)));
+          setCatalogFiles(uploaded.catalog ?? []);
+          setCatalogSelection([]);
+        } catch (e) {
+          uploadFailed = true;
+          toastError(e, t, has);
+        }
+      }
       setPct(100);
-      return { saved, uploadFailed };
+      return { saved, uploadFailed, created: !editing };
     },
-    onSuccess: ({ uploadFailed }) => { qc.invalidateQueries({ queryKey: ['materials'] }); qc.invalidateQueries({ queryKey: ['pick'] }); if (!uploadFailed) toast.success(t('common.saved')); onClose(); },
+    onSuccess: ({ uploadFailed, created }) => {
+      qc.invalidateQueries({ queryKey: ['materials'] });
+      qc.invalidateQueries({ queryKey: ['pick'] });
+      if (!uploadFailed) toast.success(t('common.saved'));
+      if (!uploadFailed || created) onClose();
+    },
     onError: (e) => toastError(e, t, has),
   });
   const req = { required: t('common.required'), validate: (v: string) => v.trim() !== '' || t('common.required') };
   const dec = { required: t('common.required'), validate: (v: string) => DEC.test(v.trim()) || t('common.invalid') };
+  const pickCatalog = (files: File[]) => {
+    if (catalogFiles.length + catalogSelection.length + files.length > 10) {
+      toast.error(t('materials.catalogLimit'));
+      return;
+    }
+    const accepted = files.every((f) =>
+      f.size <= 10 * 1024 * 1024 && ['image/png', 'image/jpeg', 'image/webp', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(f.type),
+    );
+    if (!accepted) {
+      toast.error(t('materials.catalogHint'));
+      return;
+    }
+    setCatalogSelection((currentSelection) => [...currentSelection, ...files]);
+  };
   return (
     <Modal open wide title={editing ? t('materials.edit') : t('materials.new')} onClose={onClose}
       footer={<>
-        {save.isPending && <div className="me-auto min-w-52 flex-1"><ProgressBar value={pct} label={t(phase === 'uploading' ? 'materials.uploadingImage' : 'materials.savingDetails')} /></div>}
+        {save.isPending && <div className="me-auto min-w-52 flex-1"><ProgressBar value={pct} label={t(phase === 'saving' ? 'materials.savingDetails' : phase === 'uploadingImage' ? 'materials.uploadingImage' : 'materials.uploadingCatalog')} /></div>}
         <Button variant="ghost" disabled={save.isPending} onClick={onClose}>{t('common.cancel')}</Button>
         <Button loading={save.isPending} disabled={preparing} onClick={handleSubmit((v) => save.mutate(v))}>{t('common.save')}</Button>
       </>}>
@@ -105,6 +142,40 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
           <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { void pickFile(e.target.files?.[0]); e.target.value = ''; }} />
           <Button type="button" variant="outline" size="sm" loading={preparing} onClick={() => fileRef.current?.click()}><ImagePlus className="size-4" />{file || current ? t('materials.changeImage') : t('materials.uploadImage')}</Button>
           {(file || current) && <Button type="button" variant="ghost" size="sm" onClick={() => { setFile(null); setRemoveImg(true); }} aria-label={t('materials.removeImage')}><Trash2 className="size-4" /></Button>}
+        </div>
+        <div className="rounded-2xl bg-sand/50 p-3 sm:col-span-2 md:col-span-3">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold">{t('materials.catalogFiles')}</div>
+              <div className="text-xs text-cocoa">{t('materials.catalogHint')}</div>
+            </div>
+            <input ref={catalogRef} type="file" accept="image/png,image/jpeg,image/webp,application/pdf,.docx" multiple hidden
+              onChange={(e) => { pickCatalog(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
+            <Button type="button" variant="outline" size="sm" disabled={catalogFiles.length + catalogSelection.length >= 10}
+              onClick={() => catalogRef.current?.click()}>
+              <FilePlus2 className="size-4" />{t('materials.addCatalogFiles')}
+            </Button>
+          </div>
+          {!!catalogSelection.length && <p className="mb-2 text-xs text-cocoa">{catalogSelection.map((f) => f.name).join(', ')}</p>}
+          <div className="space-y-1.5">
+            {catalogFiles.map((catalogFile) => (
+              <div key={catalogFile.id} className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm">
+                <a className="min-w-0 flex-1 truncate underline" href={uploadUrl(catalogFile.path)} target="_blank" rel="noreferrer">{catalogFile.name}</a>
+                <Button type="button" variant="ghost" size="sm" disabled={save.isPending} aria-label={t('materials.removeCatalogFile')}
+                  onClick={async () => {
+                    if (editing) {
+                      try {
+                        const updated = await api.delete<Material>(`/materials/${material.id}/catalog/${catalogFile.id}`);
+                        setCatalogFiles(updated.catalog ?? []);
+                        qc.invalidateQueries({ queryKey: ['materials'] });
+                      } catch (error) { toastError(error, t, has); }
+                    } else setCatalogFiles((currentFiles) => currentFiles.filter((item) => item.id !== catalogFile.id));
+                  }}>
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
         <Field label={t('materials.code')} required error={errors.materialCode?.message}><Input dir="ltr" maxLength={60} {...register('materialCode', req)} /></Field>
         <Field label={t('common.name')} required error={errors.name?.message} className="sm:col-span-2 md:col-span-2"><Input maxLength={255} {...register('name', req)} /></Field>
@@ -134,6 +205,13 @@ function MaterialDetails({ material: x, onClose, onEdit }: { material: Material;
     [t('materials.origin'), x.countryOfOrigin || '—'],
     [t('materials.model'), <span key="m" dir="ltr">{x.modelNumber || '—'}</span>],
     [t('materials.catalogueNo'), <span key="n" dir="ltr">{x.catalogueNumber || '—'}</span>],
+    [t('materials.catalogFiles'), x.catalog?.length
+      ? <ul key="catalog" className="space-y-1">{x.catalog.map((file) =>
+        <li key={file.id}><a href={uploadUrl(file.path)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline">
+          <FileText className="size-3.5 shrink-0" />{file.name}
+        </a></li>,
+      )}</ul>
+      : '—'],
     [t('common.status'), <ActiveBadge key="a" active={x.isActive} />],
   ];
   return (
@@ -142,9 +220,9 @@ function MaterialDetails({ material: x, onClose, onEdit }: { material: Material;
       <div className="grid gap-5 md:grid-cols-[16rem_minmax(0,1fr)]">
         <div>
           <div className="grid h-64 place-items-center rounded-2xl bg-sand/50 p-2">
-            <MaterialThumb image={x.catalogue} size="h-full w-full" className="border-0 bg-transparent" zoom />
+            <MaterialThumb image={x.img} size="h-full w-full" className="border-0 bg-transparent" zoom />
           </div>
-          {x.catalogue && <p className="mt-2 text-center text-xs text-cocoa">{t('materials.clickToZoom')}</p>}
+          {x.img && <p className="mt-2 text-center text-xs text-cocoa">{t('materials.clickToZoom')}</p>}
         </div>
         <dl className="grid content-start gap-x-6 gap-y-3 sm:grid-cols-2">
           {rows.map(([k, v]) => (
@@ -202,7 +280,7 @@ export default function MaterialsPage() {
                   <tr key={m.id} className={`${tr} cursor-pointer`} tabIndex={0}
                     onClick={(e) => { if (!(e.target as HTMLElement).closest('a,button')) setView(m); }}
                     onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) setView(m); }}>
-                    <td className={td}><MaterialThumb image={m.catalogue} size="size-20" zoom /></td>
+                    <td className={td}><MaterialThumb image={m.img} size="size-20" zoom /></td>
                     <td className={`${td} font-bold`} dir="ltr">{m.materialCode}</td>
                     <td className={td}>{m.name ?? ''}</td>
                     <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(m.unitPrice)} <span className="text-xs text-cocoa">{m.currency}</span></td>

@@ -5,7 +5,7 @@ import { ImageLightbox } from '@/components/ImageLightbox';
 import { cn } from '@/lib/cn';
 import { uploadUrl } from '@/lib/urls';
 
-/** catalogue holds the picture path (materials/xxx.jpg); old free-text values are ignored. */
+/** img holds the picture path (materials/xxx.jpg); catalog documents are managed separately. */
 export const isMaterialImage = (v?: string | null): v is string => !!v && /^materials\/[\w.-]+$/.test(v);
 
 /** Product picture (falls back to a placeholder icon). With `zoom`, clicking it opens the picture alone in a large view. */

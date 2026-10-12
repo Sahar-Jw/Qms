@@ -1,6 +1,13 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { AuditBase } from '../common/entities/audit-base';
 
+export interface MaterialCatalogFile {
+  id: string;
+  name: string;
+  path: string;
+  mimeType: string;
+}
+
 @Entity('materials')
 export class Material extends AuditBase {
   @PrimaryGeneratedColumn()
@@ -32,7 +39,10 @@ export class Material extends AuditBase {
   countryOfOrigin: string | null;
 
   @Column({ type: 'varchar', length: 150, nullable: true })
-  catalogue: string | null;
+  img: string | null;
+
+  @Column({ type: 'json', nullable: true })
+  catalog: MaterialCatalogFile[] | null;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   modelNumber: string | null;

@@ -72,13 +72,16 @@ const en = {
     title: 'Materials', new: 'New material', edit: 'Edit material', code: 'Code', nameAr: 'Name (Arabic)', nameEn: 'Name (foreign language)', source: 'Source',
     stock: 'Stock', unitPrice: 'Unit price', unit: 'Unit', currency: 'Currency', origin: 'Country of origin', catalogue: 'Catalogue', model: 'Model number',
     image: 'Product picture', uploadImage: 'Choose picture', changeImage: 'Change picture', removeImage: 'Remove picture', imageHint: 'PNG, JPG or WEBP up to 8 MB. Big files are made lighter without changing their size.', noImage: 'No picture',
-    details: 'Material details', savingDetails: 'Saving details…', uploadingImage: 'Uploading picture…', optimizing: 'Preparing picture…', clickToZoom: 'Click the picture to enlarge it',
+    details: 'Material details', savingDetails: 'Saving details…', uploadingImage: 'Uploading files…', optimizing: 'Preparing picture…', clickToZoom: 'Click the picture to enlarge it',
+    catalogFiles: 'Catalog files', catalogHint: 'PNG, JPG, WEBP, PDF or DOCX; up to 10 files total and 10 MB per file.', addCatalogFiles: 'Add files',
+    removeCatalogFile: 'Remove catalog file', catalogLimit: 'A material can have at most 10 catalog files.', uploadingCatalog: 'Uploading catalog files…',
     catalogueNo: 'Catalogue number', searchPh: 'Code, name, source, catalogue…',
   },
   companies: {
     title: 'Companies', new: 'New company', edit: 'Edit company', nameAr: 'Name (Arabic)', nameEn: 'Name (English)', addressAr: 'Address (Arabic)',
     addressEn: 'Address (English)', logo: 'Logo', uploadLogo: 'Upload logo', logoHint: 'PNG, JPG or WEBP up to 1 MB', saveFirst: 'Save the company first, then upload its logo',
     printTitle: 'Print header and footer (images)', printHint: 'Two images shown the same way on the Arabic and the English quotation when printed or downloaded as PDF. Best as a full page-width image. PNG, JPG or WEBP up to 3 MB. A header image replaces the logo and company name at the top of the file.',
+    taxEnabled: 'Apply tax to quotations from this company', taxPercentage: 'Tax percentage', taxHint: 'When enabled, this percentage is used automatically for each quotation item issued by this company.',
     headerImage: 'Header', footerImage: 'Footer', uploadImage: 'Upload image', replaceImage: 'Replace image', removeImage: 'Remove image', noImage: 'No image',
   },
   users: {

@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
+import Decimal from 'decimal.js';
 import { Repository } from 'typeorm';
 import { StatusSearchPaginationDto, paginated } from '../common/dto/pagination.dto';
 import { uploadsRoot } from '../config/uploads';
@@ -28,13 +29,36 @@ export class CompaniesService {
   }
 
   create(dto: CreateCompanyDto, userId: number) {
-    return this.repo.save(this.repo.create({ ...dto, createdById: userId, updatedById: userId }));
+    this.assertTax(dto.taxEnabled ?? false, dto.taxPercentage);
+    return this.repo.save(this.repo.create({
+      ...dto,
+      taxEnabled: dto.taxEnabled ?? false,
+      taxPercentage: dto.taxPercentage ?? null,
+      createdById: userId,
+      updatedById: userId,
+    }));
   }
 
   async update(id: number, dto: UpdateCompanyDto, userId: number) {
     const c = await this.get(id);
+    const taxEnabled = dto.taxEnabled ?? c.taxEnabled;
+    const taxPercentage = dto.taxPercentage ?? c.taxPercentage;
+    this.assertTax(taxEnabled, taxPercentage);
     Object.assign(c, dto, { updatedById: userId });
+    c.taxEnabled = taxEnabled;
+    c.taxPercentage = taxPercentage;
     return this.repo.save(c);
+  }
+
+  private assertTax(enabled: boolean, percentage: string | null | undefined) {
+    if (!enabled) return;
+    if (percentage == null) {
+      throw new BadRequestException({ code: 'INVALID_PERCENTAGE', message: 'Tax percentage must be between 0 and 100 when tax is enabled' });
+    }
+    const tax = new Decimal(percentage);
+    if (!tax.isFinite() || tax.lt(0) || tax.gt(100)) {
+      throw new BadRequestException({ code: 'INVALID_PERCENTAGE', message: 'Tax percentage must be between 0 and 100 when tax is enabled' });
+    }
   }
 
   async setActive(id: number, isActive: boolean, userId: number) {
