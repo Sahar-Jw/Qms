@@ -60,12 +60,22 @@ describe('printed quotation: company header and footer images', () => {
     expect(html.indexOf('class="cofoot"')).toBeGreaterThan(html.indexOf('class="totals"'));
   });
 
+  it('pins compact company images to the top and bottom of every printed page', async () => {
+    const html = await svc.renderHtml(quotation(withImages), { lang: 'en', includeCost: false });
+    expect(html).toContain('@page { size: A4; margin: 23mm 10mm 20mm; }');
+    expect(html).toMatch(/img\.cohead\s*\{[^}]*max-height:\s*16mm/);
+    expect(html).toMatch(/img\.cofoot\s*\{[^}]*max-height:\s*12mm/);
+    expect(html).toMatch(/img\.cohead\s*\{[^}]*position:\s*fixed;[^}]*top:\s*-19mm/);
+    expect(html).toMatch(/img\.cofoot\s*\{[^}]*position:\s*fixed;[^}]*bottom:\s*-17mm/);
+  });
+
   it('a header image replaces the text letterhead (logo / name / address); without one the text letterhead stays', async () => {
     const withHead = await svc.renderHtml(quotation(withImages), { lang: 'en', includeCost: false });
     expect(withHead).not.toContain('<div class="head">');
     const without = await svc.renderHtml(quotation(), { lang: 'en', includeCost: false });
     expect(without).toContain('<div class="head">');
     expect(without).toContain('Damascus');
+    expect(without).toContain('@page { size: A4; margin: 12mm 10mm 14mm; }');
     expect(tag(without, 'cohead')).toBeUndefined();
     expect(tag(without, 'cofoot')).toBeUndefined();
   });
@@ -91,6 +101,10 @@ describe('printed quotation: company header and footer images', () => {
     expect(html).toContain('data:image/png;base64,');
     expect(html).toContain('src="/uploads/materials/catalog-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.pdf"');
     expect(html).toContain('M-1 - Pump');
+    expect(html).toContain('class="catalog-heading"');
+    expect(html).toContain('class="catalog-file">photo.png</p>');
+    expect(html).toContain('class="catalog-image" src="data:image/png;base64,');
+    expect(html).not.toContain('<p>photo.png</p>');
   });
 
   it('sanitizes converted Word content before printing', async () => {
@@ -111,12 +125,19 @@ describe('printed quotation: company header and footer images', () => {
     fs.writeFileSync(path.join(dir, 'materials', `catalog-${'e'.repeat(32)}.pdf`), Buffer.from(await attachmentPdf.save()));
     const page = {
       setContent: jest.fn(),
-      evaluate: jest.fn(async () => undefined),
+      evaluate: jest.fn(async (script: unknown) => (
+        typeof script === 'string' && script.includes('toPng')
+          ? {
+            header: `data:image/png;base64,${PNG.toString('base64')}`,
+            footer: `data:image/png;base64,${PNG.toString('base64')}`,
+          }
+          : undefined
+      )),
       pdf: jest.fn(async () => quotationBytes),
       close: jest.fn(async () => undefined),
     };
     (svc as any).getBrowser = async () => ({ newPage: async () => page });
-    const output = await svc.renderPdf(quotation({}, [{
+    const output = await svc.renderPdf(quotation(withImages, [{
       materialCode: 'M-1',
       materialName: 'Pump',
       catalogFiles: [{
@@ -128,6 +149,9 @@ describe('printed quotation: company header and footer images', () => {
       amounts: [],
     }]), { lang: 'en', includeCost: false });
 
-    expect((await PDFDocument.load(output)).getPageCount()).toBe(3);
+    const result = await PDFDocument.load(output);
+    expect(result.getPageCount()).toBe(3);
+    expect(output.toString('latin1')).toContain('/Subtype /Image');
+    expect(page.setContent).toHaveBeenCalledWith(expect.stringContaining('class="cohead"'), { waitUntil: 'load' });
   });
 });

@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as mammoth from 'mammoth';
 import * as fs from 'fs';
 import * as path from 'path';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, type PDFImage } from 'pdf-lib';
 import { CurrencyAmounts } from '../calc/calc.types';
 import { Lang } from '../common/enums';
 import { uploadsRoot } from '../config/uploads';
@@ -88,8 +88,19 @@ export class PdfService implements OnModuleDestroy {
     }
   }
 
-  private catalogHeadingHtml(file: MaterialCatalogFile, material: string): string {
-    return `<h1>${this.esc(material)}</h1><p>${this.esc(file.name)}</p>`;
+  private catalogHeadingHtml(
+    file: MaterialCatalogFile,
+    material: string,
+    headerImg: string | null,
+    footerImg: string | null,
+    lang: Lang,
+  ): string {
+    return this.catalogDocumentShell(
+      `<header class="catalog-heading"><p class="eyebrow">${lang === 'ar' ? 'ملف الكتالوج' : 'Material catalog'}</p><h1>${this.esc(material)}</h1><p class="catalog-file">${this.esc(file.name)}</p></header>`,
+      headerImg,
+      footerImg,
+      lang,
+    );
   }
 
   private async catalogContentHtml(file: MaterialCatalogFile, bytes: Buffer): Promise<string> {
@@ -102,7 +113,7 @@ export class PdfService implements OnModuleDestroy {
       return this.sanitizeDocxHtml(result.value);
     }
     const mime = file.mimeType;
-    return `<img src="data:${mime};base64,${bytes.toString('base64')}" alt="">`;
+    return `<img class="catalog-image" src="data:${mime};base64,${bytes.toString('base64')}" alt="">`;
   }
 
   private sanitizeDocxHtml(html: string): string {
@@ -112,30 +123,63 @@ export class PdfService implements OnModuleDestroy {
       .replace(/<(\/?)(p|h[1-6]|table|thead|tbody|tr|td|th|br|strong|em|b|i|u|ul|ol|li)\b[^>]*>/gi, '<$1$2>')
       .replace(/<img\b([^>]*)>/gi, (_tag, attrs: string) => {
         const src = attrs.match(/\bsrc=["'](data:image\/(?:png|jpe?g|gif|webp);base64,[a-z0-9+/=]+)["']/i)?.[1];
-        return src ? `<img src="${src}" alt="">` : '';
+        return src ? `<img class="catalog-image" src="${src}" alt="">` : '';
       });
   }
 
-  private async catalogDocumentHtml(file: MaterialCatalogFile, material: string, bytes: Buffer): Promise<string> {
-    const content = await this.catalogContentHtml(file, bytes);
-    return `<!doctype html><html><head><meta charset="utf-8"><style>
-@page{size:A4;margin:12mm 10mm 14mm}body{font-family:Arial,sans-serif;color:#1f3a5f;line-height:1.5}
-h1{font-size:18px}img{display:block;max-width:100%;max-height:255mm;margin:10px auto;object-fit:contain}
-.catalog-document{color:#111;overflow-wrap:anywhere}table{border-collapse:collapse;max-width:100%}td,th{border:1px solid #999;padding:4px}
-</style></head><body>${this.catalogHeadingHtml(file, material)}<div class="catalog-document">${content}</div></body></html>`;
+  private catalogDocumentShell(content: string, headerImg: string | null, footerImg: string | null, lang: Lang): string {
+    return `<!doctype html><html lang="${lang}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><style>
+@page{size:A4;margin:23mm 10mm 20mm}
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;color:#172b45;line-height:1.5;margin:0;font-size:11px}
+img.cohead{position:fixed;top:-19mm;left:0;width:100%;height:auto;max-height:16mm;object-fit:contain}
+img.cofoot{position:fixed;bottom:-17mm;left:0;width:100%;height:auto;max-height:12mm;object-fit:contain}
+.catalog-heading{border-bottom:1px solid #d7dee8;padding:0 0 8mm;margin-bottom:8mm}
+.catalog-heading .eyebrow{color:#718096;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:0 0 3mm}
+.catalog-heading h1{color:#1f3a5f;font-size:20px;line-height:1.25;margin:0 0 3mm;overflow-wrap:anywhere}
+.catalog-file{color:#667085;font-size:10px;margin:0;overflow-wrap:anywhere}
+.catalog-document{color:#202a36;overflow-wrap:anywhere}
+.catalog-document p{margin:0 0 3mm}
+.catalog-document h1,.catalog-document h2,.catalog-document h3{color:#1f3a5f;break-after:avoid}
+.catalog-document table{border-collapse:collapse;max-width:100%;font-size:10px}
+.catalog-document td,.catalog-document th{border:1px solid #d7dee8;padding:4px 6px}
+.catalog-image{display:block;width:auto;height:auto;max-width:100%;max-height:200mm;margin:6mm auto;object-fit:contain}
+</style></head><body>
+${headerImg ? `<img class="cohead" src="${headerImg}" alt="">` : ''}
+${footerImg ? `<img class="cofoot" src="${footerImg}" alt="">` : ''}
+${content}
+</body></html>`;
   }
 
-  private async catalogAppendix(q: QuotationView): Promise<string> {
+  private async catalogDocumentHtml(
+    file: MaterialCatalogFile,
+    material: string,
+    bytes: Buffer,
+    headerImg: string | null,
+    footerImg: string | null,
+    lang: Lang,
+  ): Promise<string> {
+    const content = await this.catalogContentHtml(file, bytes);
+    const heading = `<header class="catalog-heading"><p class="eyebrow">${lang === 'ar' ? 'ملف الكتالوج' : 'Material catalog'}</p><h1>${this.esc(material)}</h1><p class="catalog-file">${this.esc(file.name)}</p></header>`;
+    return this.catalogDocumentShell(`${heading}<div class="catalog-document">${content}</div>`, headerImg, footerImg, lang);
+  }
+
+  private async catalogAppendix(
+    q: QuotationView,
+    headerImg: string | null,
+    footerImg: string | null,
+    lang: Lang,
+  ): Promise<string> {
     const entries: string[] = [];
     for (const { file, material } of this.catalogFiles(q)) {
-      const title = `<h2>${this.esc(material)}</h2><p>${this.esc(file.name)}</p>`;
+      const heading = `<header class="catalog-heading"><p class="eyebrow">${lang === 'ar' ? 'ملف الكتالوج' : 'Material catalog'}</p><h2>${this.esc(material)}</h2><p class="catalog-file">${this.esc(file.name)}</p></header>`;
       if (file.mimeType === 'application/pdf') {
         await this.readCatalogFile(file);
-        entries.push(`<section class="catalog-page">${title}<iframe title="${this.esc(file.name)}" src="/uploads/${file.path}"><a href="/uploads/${file.path}">${this.esc(file.name)}</a></iframe></section>`);
+        entries.push(`<section class="catalog-page">${heading}<iframe title="${this.esc(file.name)}" src="/uploads/${file.path}"><a href="/uploads/${file.path}">${this.esc(file.name)}</a></iframe></section>`);
       } else {
         const bytes = await this.readCatalogFile(file);
         const content = await this.catalogContentHtml(file, bytes);
-        entries.push(`<section class="catalog-page">${title}<div class="catalog-document">${content}</div></section>`);
+        entries.push(`<section class="catalog-page">${heading}<div class="catalog-document">${content}</div></section>`);
       }
     }
     return entries.join('');
@@ -167,7 +211,9 @@ h1{font-size:18px}img{display:block;max-width:100%;max-height:255mm;margin:10px 
     // Header / footer images of the company: the same in every language (none -> nothing is printed).
     const headerImg = this.logoDataUri(co.headerImage);
     const footerImg = this.logoDataUri(co.footerImage);
-    const catalogHtml = opts.includeCatalog === false ? '' : await this.catalogAppendix(q);
+    const pageTopMargin = headerImg ? '23mm' : '12mm';
+    const pageBottomMargin = footerImg ? '20mm' : '14mm';
+    const catalogHtml = opts.includeCatalog === false ? '' : await this.catalogAppendix(q, headerImg, footerImg, opts.lang);
 
     const terms: [string, string | null | undefined][] = [
       [t.validity, q.validity],
@@ -239,7 +285,7 @@ h1{font-size:18px}img{display:block;max-width:100%;max-height:255mm;margin:10px 
 <title>${this.esc(q.quotationNumber)}</title>
 <style>
 ${this.fontCss()}
-@page { size: A4; margin: 12mm 10mm 14mm; }
+@page { size: A4; margin: ${pageTopMargin} 10mm ${pageBottomMargin}; }
 * { box-sizing: border-box; }
 body { font-family: 'Cairo', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; line-height: 1.55; }
 .head { display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #1f3a5f; padding-bottom: 8px; margin-bottom: 10px; }
@@ -247,13 +293,18 @@ body { font-family: 'Cairo', Tahoma, Arial, sans-serif; font-size: 11px; color: 
 .head .co { flex: 1; }
 .head .co .nm { font-size: 18px; font-weight: 700; color: #1f3a5f; }
 .head .co .sub { color: #444; font-size: 10px; }
-img.cohead { display: block; width: 100%; max-height: 45mm; object-fit: contain; margin: 0 0 10px; }
-img.cofoot { display: block; width: 100%; max-height: 35mm; object-fit: contain; margin-top: 16px; page-break-inside: avoid; }
-.catalog-page { break-before: page; page-break-before: always; }
-.catalog-page img { display: block; max-width: 100%; max-height: 255mm; margin: 10px auto; object-fit: contain; }
-.catalog-page iframe { display: block; width: 100%; height: 265mm; border: 0; }
-.catalog-page h2 { font-size: 15px; color: #1f3a5f; }
-.catalog-document { overflow-wrap: anywhere; }
+img.cohead { display: block; width: 100%; max-height: 16mm; object-fit: contain; margin: 0 0 10px; }
+img.cofoot { display: block; width: 100%; max-height: 12mm; object-fit: contain; margin-top: 16px; page-break-inside: avoid; }
+.catalog-page { break-before: page; page-break-before: always; padding-top: 2mm; }
+.catalog-heading { border-bottom: 1px solid #d7dee8; padding-bottom: 4mm; margin-bottom: 5mm; }
+.catalog-heading .eyebrow { color: #718096; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 0 0 2mm; }
+.catalog-heading h2 { font-size: 15px; line-height: 1.3; color: #1f3a5f; margin: 0 0 2mm; overflow-wrap: anywhere; }
+.catalog-file { color: #667085; font-size: 9px; margin: 0; overflow-wrap: anywhere; }
+.catalog-page .catalog-image { display: block; width: auto; height: auto; max-width: 100%; max-height: 200mm; margin: 6mm auto; object-fit: contain; }
+.catalog-page iframe { display: block; width: 100%; height: 250mm; border: 1px solid #d7dee8; border-radius: 3px; }
+.catalog-document { overflow-wrap: anywhere; color: #202a36; }
+.catalog-document p { margin: 0 0 3mm; }
+.catalog-document h1, .catalog-document h2, .catalog-document h3 { color: #1f3a5f; page-break-after: avoid; }
 .title { text-align: center; font-size: 20px; font-weight: 700; margin: 6px 0 10px; }
 .meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .box { border: 1px solid #c9d1dc; border-radius: 4px; padding: 6px 10px; flex: 1; }
@@ -273,7 +324,11 @@ h3 { margin: 14px 0 4px; font-size: 12px; color: #1f3a5f; }
 .totals { width: 62%; margin-inline-start: auto; }
 .bar { text-align: center; margin: 10px 0; }
 .bar button { font-family: inherit; padding: 6px 18px; font-size: 13px; cursor: pointer; }
-@media print { .bar { display: none; } }
+@media print {
+  .bar { display: none; }
+  img.cohead { position: fixed; top: -19mm; left: 0; margin: 0; }
+  img.cofoot { position: fixed; bottom: -17mm; left: 0; margin: 0; }
+}
 </style>
 </head>
 <body>
@@ -344,46 +399,177 @@ ${opts.autoPrint ? '<script>window.addEventListener("load",function(){setTimeout
     try {
       await page.setContent(html.replace(/<div class="bar">[\s\S]*?<\/div>/, ''), { waitUntil: 'load' });
       await page.evaluate('document.fonts.ready');
+      const imageResult: unknown = await page.evaluate(`(() => {
+        const toPng = (selector) => {
+          const image = document.querySelector(selector);
+          if (!image) return null;
+          const canvas = document.createElement('canvas');
+          canvas.width = image.naturalWidth;
+          canvas.height = image.naturalHeight;
+          canvas.getContext('2d').drawImage(image, 0, 0);
+          return canvas.toDataURL('image/png');
+        };
+        return { header: toPng('img.cohead'), footer: toPng('img.cofoot') };
+      })()`);
+      const headerImg = this.logoDataUri(q.company.headerImage);
+      const footerImg = this.logoDataUri(q.company.footerImage);
+      if (
+        !imageResult ||
+        typeof imageResult !== 'object' ||
+        !('header' in imageResult) ||
+        !('footer' in imageResult) ||
+        (headerImg && typeof imageResult.header !== 'string') ||
+        (footerImg && typeof imageResult.footer !== 'string')
+      ) {
+        throw new InternalServerErrorException('Could not prepare company header/footer images for the PDF');
+      }
+      const companyImages = imageResult as { header: string | null; footer: string | null };
       const pdf = await page.pdf({
         format: 'A4',
         printBackground: true,
         preferCSSPageSize: true,
-        displayHeaderFooter: true,
-        headerTemplate: '<span></span>',
-        footerTemplate: '<div style="font-size:8px;width:100%;text-align:center;color:#666"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
-        margin: { top: '12mm', bottom: '14mm', left: '10mm', right: '10mm' },
+        margin: {
+          top: html.includes('class="cohead"') ? '23mm' : '12mm',
+          bottom: html.includes('class="cofoot"') ? '20mm' : '14mm',
+          left: '10mm',
+          right: '10mm',
+        },
       });
       const output = await PDFDocument.load(pdf);
+      const headerImage = companyImages.header
+        ? await output.embedPng(Buffer.from(companyImages.header.split(',')[1], 'base64'))
+        : undefined;
+      const footerImage = companyImages.footer
+        ? await output.embedPng(Buffer.from(companyImages.footer.split(',')[1], 'base64'))
+        : undefined;
       const pageIndices = (document: PDFDocument) => document.getPageIndices();
       for (const { file, material } of this.catalogFiles(q)) {
         const bytes = await this.readCatalogFile(file);
-        let attachmentPdf: Uint8Array;
         if (file.mimeType === 'application/pdf') {
-          const source = await PDFDocument.load(bytes);
-          await page.setContent(this.catalogHeadingHtml(file, material), { waitUntil: 'load' });
-          attachmentPdf = Buffer.from(await page.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true }));
-          const cover = await PDFDocument.load(attachmentPdf);
-          const coverPages = await output.copyPages(cover, pageIndices(cover));
-          coverPages.forEach((p) => output.addPage(p));
-          const sourcePages = await output.copyPages(source, pageIndices(source));
-          sourcePages.forEach((p) => output.addPage(p));
-        } else {
-          await page.setContent(await this.catalogDocumentHtml(file, material, bytes), { waitUntil: 'load' });
-          attachmentPdf = Buffer.from(await page.pdf({
+          await page.setContent(this.catalogHeadingHtml(file, material, headerImg, footerImg, opts.lang), { waitUntil: 'load' });
+          await page.evaluate('document.fonts.ready');
+          const attachmentPdf = Buffer.from(await page.pdf({
             format: 'A4',
             printBackground: true,
             preferCSSPageSize: true,
-            margin: { top: '12mm', bottom: '14mm', left: '10mm', right: '10mm' },
+            margin: { top: '23mm', bottom: '20mm', left: '10mm', right: '10mm' },
+          }));
+          const cover = await PDFDocument.load(attachmentPdf);
+          const coverPages = await output.copyPages(cover, pageIndices(cover));
+          coverPages.forEach((p) => output.addPage(p));
+          await this.appendCatalogPdf(output, bytes, headerImage, footerImage);
+        } else {
+          await page.setContent(await this.catalogDocumentHtml(file, material, bytes, headerImg, footerImg, opts.lang), { waitUntil: 'load' });
+          await page.evaluate('document.fonts.ready');
+          const attachmentPdf = Buffer.from(await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            preferCSSPageSize: true,
+            margin: { top: '23mm', bottom: '20mm', left: '10mm', right: '10mm' },
           }));
           const source = await PDFDocument.load(attachmentPdf);
           const pages = await output.copyPages(source, pageIndices(source));
           pages.forEach((p) => output.addPage(p));
         }
       }
+      const pages = output.getPages();
+      const pageNumberFont = await output.embedFont(StandardFonts.Helvetica);
+      pages.forEach((outputPage, index) => {
+        const { width } = outputPage.getSize();
+        const label = `${index + 1} / ${pages.length}`;
+        outputPage.drawText(label, {
+          x: width / 2 - pageNumberFont.widthOfTextAtSize(label, 8) / 2,
+          y: 7,
+          size: 8,
+          font: pageNumberFont,
+          color: rgb(0.4, 0.44, 0.5),
+        });
+      });
       return Buffer.from(await output.save());
     } finally {
       await page.close().catch(() => undefined);
     }
+  }
+
+  private async appendCatalogPdf(
+    output: PDFDocument,
+    bytes: Buffer,
+    headerImage?: PDFImage,
+    footerImage?: PDFImage,
+  ): Promise<void> {
+    const source = await PDFDocument.load(bytes);
+    if (!headerImage && !footerImage) {
+      const pages = await output.copyPages(source, source.getPageIndices());
+      pages.forEach((page) => output.addPage(page));
+      return;
+    }
+
+    const ptPerMm = 72 / 25.4;
+    const ruleColor = rgb(0.85, 0.88, 0.92);
+    for (const sourcePage of source.getPages()) {
+      const embedded = sourcePage.node.Contents() ? await output.embedPage(sourcePage) : undefined;
+      const { width, height } = sourcePage.getSize();
+      const page = output.addPage([width, height]);
+      const sideMargin = Math.min(10 * ptPerMm, width * 0.12);
+      const headerBand = headerImage ? Math.min(23 * ptPerMm, height * 0.25) : 0;
+      const footerBand = footerImage ? Math.min(20 * ptPerMm, height * 0.22) : 0;
+
+      if (headerBand) {
+        page.drawRectangle({ x: 0, y: height - headerBand, width, height: headerBand, color: rgb(1, 1, 1) });
+        page.drawLine({
+          start: { x: sideMargin, y: height - headerBand },
+          end: { x: width - sideMargin, y: height - headerBand },
+          thickness: 0.5,
+          color: ruleColor,
+        });
+        this.drawPageImage(page, headerImage!, width, height - headerBand, headerBand, sideMargin, ptPerMm * 16);
+      }
+      if (footerBand) {
+        page.drawRectangle({ x: 0, y: 0, width, height: footerBand, color: rgb(1, 1, 1) });
+        page.drawLine({
+          start: { x: sideMargin, y: footerBand },
+          end: { x: width - sideMargin, y: footerBand },
+          thickness: 0.5,
+          color: ruleColor,
+        });
+        this.drawPageImage(page, footerImage!, width, 0, footerBand, sideMargin, ptPerMm * 12);
+      }
+
+      const bodyWidth = width - sideMargin * 2;
+      const bodyHeight = height - headerBand - footerBand;
+      if (embedded) {
+        const scale = Math.min(bodyWidth / embedded.width, bodyHeight / embedded.height);
+        const scaledWidth = embedded.width * scale;
+        const scaledHeight = embedded.height * scale;
+        page.drawPage(embedded, {
+          x: sideMargin + (bodyWidth - scaledWidth) / 2,
+          y: footerBand + (bodyHeight - scaledHeight) / 2,
+          width: scaledWidth,
+          height: scaledHeight,
+        });
+      }
+    }
+  }
+
+  private drawPageImage(
+    page: import('pdf-lib').PDFPage,
+    image: PDFImage,
+    pageWidth: number,
+    bandBottom: number,
+    bandHeight: number,
+    sideMargin: number,
+    maxHeight: number,
+  ): void {
+    const maxWidth = pageWidth - sideMargin * 2;
+    const scale = Math.min(maxWidth / image.width, maxHeight / image.height, bandHeight / image.height);
+    const width = image.width * scale;
+    const height = image.height * scale;
+    page.drawImage(image, {
+      x: (pageWidth - width) / 2,
+      y: bandBottom + (bandHeight - height) / 2,
+      width,
+      height,
+    });
   }
 
   async onModuleDestroy() {
