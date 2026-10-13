@@ -1,9 +1,17 @@
 /**
  * Browser-side PDF for hosts where Chromium can't run (cPanel shared hosting).
- * Takes the server's self-contained /print HTML (fonts + logo inlined, so Arabic shapes correctly),
- * renders it in a hidden iframe, rasterises it and slices it into A4 pages at row boundaries.
+ *
+ * Takes the server's self-contained /print HTML (fonts + pictures inlined, so Arabic shapes correctly), lays it out in a hidden
+ * iframe, rasterises it and cuts it into A4 pages at row boundaries. Then, with pdf-lib:
+ *  - the company header / footer pictures are stamped at the very top / bottom edge of EVERY page (the numbers come from the
+ *    data-* attributes of the print page, so they always match the server's PDF and the browser's print dialog),
+ *  - the material catalog PDFs are placed where the print page has its `.pdf-slot` markers (Word files and pictures are already
+ *    ordinary pages of the print page), scaled to fit between the header and the footer,
+ *  - the page numbers are added.
  */
-const CONTENT_W = 718; // 190mm @96dpi (A4 minus 10mm side margins)
+const MM = 72 / 25.4; // PDF points per millimetre
+const A4_W = 595.28;
+const A4_H = 841.89;
 
 export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = []): Promise<Blob> {
   const [{ default: html2canvas }, { jsPDF }, pdfLib] = await Promise.all([
@@ -12,21 +20,55 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
     import('pdf-lib'),
   ]);
   const { PDFDocument, rgb, StandardFonts } = pdfLib;
+  type Doc = import('pdf-lib').PDFDocument;
+  type PdfPage = import('pdf-lib').PDFPage;
+  type PdfImage = import('pdf-lib').PDFImage;
 
-  const clean = html.replace(/<div class="bar">[\s\S]*?<\/div>/, '').replace(/<script[\s\S]*?<\/script>/g, '');
+  // html2canvas draws text on a canvas of THIS page, and a canvas can only use fonts declared in the page that owns it.
+  // The print page carries its own @font-face rules (inside the iframe), so declare them here too - without this the letters are
+  // drawn with a fallback font while the layout was measured with Cairo, and the words lose their spaces.
+  const fontStyle = document.createElement('style');
+  fontStyle.textContent = (html.match(/@font-face\{[^}]*\}/g) ?? []).join('\n');
+  document.head.appendChild(fontStyle);
+
+  const clean = html
+    .replace(/<div class="bar">[\s\S]*?<\/div>/, '')
+    .replace(/<script[\s\S]*?<\/script>/g, '')
+    .replace(/<p class="note pdf-note">[\s\S]*?<\/p>/, ''); // "PDF files are not in the browser print" - they are in this one
   const iframe = document.createElement('iframe');
-  iframe.style.cssText = `position:fixed;left:-10000px;top:0;width:${CONTENT_W}px;height:1200px;border:0;visibility:hidden`;
+  iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:718px;height:1200px;border:0;visibility:hidden';
   iframe.srcdoc = clean;
   document.body.appendChild(iframe);
   try {
     await new Promise<void>((res) => { iframe.onload = () => res(); });
     const doc = iframe.contentDocument!;
-    await doc.fonts.ready;
+    await Promise.all([
+      doc.fonts.ready,
+      ...['400', '700'].flatMap((w) => ['a', 'ع'].map((c) => document.fonts.load(`${w} 12px Cairo`, c).catch(() => []))),
+    ]);
     await Promise.all([...doc.images].map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; }))));
-    const pdfUrls = catalogPdfUrls;
+
+    // page geometry, decided by the server (mm)
+    const root = doc.documentElement;
+    const num = (key: string, fallback: number) => {
+      const v = root.dataset[key];
+      return v !== undefined && v !== '' && Number.isFinite(Number(v)) ? Number(v) : fallback;
+    };
+    const side = num('side', 10);
+    const topMm = num('top', 12);
+    const bottomMm = num('bottom', 14);
+    const headTop = num('headTop', 5);
+    const headMax = num('headMax', 13);
+    const footBottom = num('footBottom', 7);
+    const footMax = num('footMax', 10);
+    const numberY = num('numberY', 3);
+    const bodyMm = 210 - side * 2;
+    const contentW = Math.round((bodyMm * 96) / 25.4);
+    iframe.style.width = `${contentW}px`;
+
     const toPng = (selector: string): string | undefined => {
       const image = doc.querySelector<HTMLImageElement>(selector);
-      if (!image) return undefined;
+      if (!image || !image.naturalWidth) return undefined;
       const canvas = doc.createElement('canvas');
       canvas.width = image.naturalWidth;
       canvas.height = image.naturalHeight;
@@ -35,235 +77,125 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
     };
     const companyHeader = toPng('img.cohead');
     const companyFooter = toPng('img.cofoot');
-    const pageTopMargin = companyHeader ? 23 : 12;
-    const pageBottomMargin = companyFooter ? 20 : 14;
-    const pageHeight = (297 - pageTopMargin - pageBottomMargin) * CONTENT_W / 190;
-    const pdfFrames = [...doc.querySelectorAll<HTMLIFrameElement>('.catalog-page iframe')];
-    if (pdfFrames.length !== pdfUrls.length) {
-      throw new Error('Could not match all catalog PDF pages to their attachment headings');
-    }
-    const coverCanvases = await Promise.all(pdfFrames.map((pdfFrame) => {
-      const heading = pdfFrame.parentElement?.querySelector<HTMLElement>('.catalog-heading');
-      if (!heading) throw new Error('A catalog PDF is missing its attachment heading');
-      return html2canvas(heading, {
-        scale: 2,
-        width: CONTENT_W,
-        windowWidth: CONTENT_W,
-        backgroundColor: '#ffffff',
-      });
-    }));
-    doc.querySelectorAll('img.cohead, img.cofoot').forEach((img) => img.remove());
-    pdfFrames.forEach((pdfFrame) => pdfFrame.closest('.catalog-page')?.remove());
+
+    // from here the page is laid out as one continuous sheet (the page frame and the pictures are handled below)
+    root.classList.add('client');
     doc.body.style.margin = '0';
-    doc.body.style.width = `${CONTENT_W}px`;
-    iframe.style.height = `${doc.documentElement.scrollHeight}px`;
-
+    doc.body.style.width = `${contentW}px`;
+    await new Promise((r) => setTimeout(r, 50));
     const total = doc.documentElement.scrollHeight;
-    // y positions where a page may break: bottoms of table rows / blocks
-    const breaks = [...doc.querySelectorAll('tr, .term, .box, section')]
-      .map((el) => Math.round(el.getBoundingClientRect().bottom + doc.defaultView!.scrollY))
-      .sort((a, b) => a - b);
-    const attachmentStarts = [...doc.querySelectorAll('.catalog-page')]
-      .map((el) => Math.round(el.getBoundingClientRect().top + doc.defaultView!.scrollY))
-      .sort((a, b) => a - b);
+    iframe.style.height = `${total}px`;
+    const scrollY = doc.defaultView!.scrollY;
+    const topOf = (el: Element) => Math.round(el.getBoundingClientRect().top + scrollY);
+    const bottomOf = (el: Element) => Math.round(el.getBoundingClientRect().bottom + scrollY);
 
-    const scale = 2;
-    const canvas = await html2canvas(doc.body, { scale, width: CONTENT_W, windowWidth: CONTENT_W, backgroundColor: '#ffffff', useCORS: true });
+    const slots = [...doc.querySelectorAll('.pdf-slot')];
+    if (slots.length !== catalogPdfUrls.length) {
+      throw new Error('Could not match all catalog PDF files to their place in the quotation');
+    }
+    const slotYs = slots.map(topOf);
+    // y positions where a page may break: bottoms of table rows / blocks. Where a page MUST break: a new catalog part / a catalog PDF.
+    const breaks = [...doc.querySelectorAll('tr, .term, .box, p, h2, h3, .catalog-heading, .catalog-image')].map(bottomOf).sort((a, b) => a - b);
+    const forced = [...[...doc.querySelectorAll('.catalog-index, .catalog-page')].map(topOf), ...slotYs].sort((a, b) => a - b);
+
+    const scale = Math.min(2, 14000 / total); // keep the canvas below the browser's size limit
+    const canvas = await html2canvas(doc.body, { scale, width: contentW, windowWidth: contentW, backgroundColor: '#ffffff', useCORS: true });
 
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-    const mmPerPx = 190 / CONTENT_W;
+    const mmPerPx = bodyMm / contentW;
+    const pagePx = (297 - topMm - bottomMm) / mmPerPx;
+    const slotsAfter: { page: number; index: number }[] = [];
+    const pending = slotYs.map((y, index) => ({ y, index }));
+    let pageCount = 0;
     let y = 0;
-    while (y < total) {
-      let end = Math.min(y + pageHeight, total);
-      const attachmentStart = attachmentStarts.find((start) => start > y + 1 && start < end);
-      if (attachmentStart) {
-        end = attachmentStart;
+    while (y < total - 2) {
+      let end = Math.min(y + pagePx, total);
+      const must = forced.find((b) => b > y + 1 && b < end);
+      if (must) {
+        end = must;
       } else if (end < total) {
-        const cut = [...breaks].reverse().find((b) => b > y + pageHeight * 0.4 && b <= end);
+        const cut = [...breaks].reverse().find((b) => b > y + pagePx * 0.4 && b <= end);
         if (cut) end = cut;
       }
       const h = end - y;
       const slice = document.createElement('canvas');
       slice.width = canvas.width;
-      slice.height = Math.round(h * scale);
+      slice.height = Math.max(1, Math.round(h * scale));
       slice.getContext('2d')!.drawImage(canvas, 0, Math.round(y * scale), canvas.width, slice.height, 0, 0, canvas.width, slice.height);
-      if (y > 0) pdf.addPage();
-      pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', 10, pageTopMargin, 190, h * mmPerPx);
-      if (companyHeader) addCompanyImage(pdf, companyHeader, 16, 3);
-      if (companyFooter) addCompanyImage(pdf, companyFooter, 12, 5, true);
+      if (pageCount > 0) pdf.addPage();
+      pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', side, topMm, bodyMm, h * mmPerPx);
+      pageCount++;
+      while (pending.length && pending[0].y <= end + 1) slotsAfter.push({ page: pageCount, index: pending.shift()!.index });
       y = end;
     }
+    pending.forEach((p) => slotsAfter.push({ page: pageCount, index: p.index })); // (a PDF at the very end)
 
-    function addCompanyImage(
-      pdf: import('jspdf').jsPDF,
-      source: string,
-      maxHeight: number,
-      edgeOffset: number,
-      fromBottom = false,
-    ): void {
-      const { width: sourceWidth, height: sourceHeight } = pdf.getImageProperties(source);
-      const aspectRatio = sourceWidth / sourceHeight;
-      const width = Math.min(190, maxHeight * aspectRatio);
-      const height = width / aspectRatio;
-      const top = fromBottom ? 297 - edgeOffset - height : edgeOffset;
-      pdf.addImage(source, 10 + (190 - width) / 2, top, width, height);
-    }
-    const output = await PDFDocument.load(await pdf.output('arraybuffer'));
-    const headerImage = companyHeader
-      ? await output.embedPng(decodeDataUri(companyHeader))
-      : undefined;
-    const footerImage = companyFooter
-      ? await output.embedPng(decodeDataUri(companyFooter))
-      : undefined;
-    for (const [index, url] of pdfUrls.entries()) {
-      await appendCatalogCover(output, coverCanvases[index], headerImage, footerImage, rgb);
+    // ---- put everything together
+    const base = await PDFDocument.load(await pdf.output('arraybuffer'));
+    const out: Doc = await PDFDocument.create();
+    const dataBytes = (uri: string) => Uint8Array.from(atob(uri.slice(uri.indexOf(',') + 1)), (c) => c.charCodeAt(0));
+    const headImg: PdfImage | undefined = companyHeader ? await out.embedPng(dataBytes(companyHeader)) : undefined;
+    const footImg: PdfImage | undefined = companyFooter ? await out.embedPng(dataBytes(companyFooter)) : undefined;
+
+    const stamp = (page: PdfPage) => {
+      const { width, height } = page.getSize();
+      const boxW = width - side * 2 * MM;
+      const place = (img: PdfImage, boxBottom: number, boxH: number) => {
+        const s = Math.min(boxW / img.width, boxH / img.height);
+        page.drawImage(img, { x: (width - img.width * s) / 2, y: boxBottom + (boxH - img.height * s) / 2, width: img.width * s, height: img.height * s });
+      };
+      if (headImg) place(headImg, height - (headTop + headMax) * MM, headMax * MM);
+      if (footImg) place(footImg, footBottom * MM, footMax * MM);
+    };
+
+    const addQuotationPages = async (from: number, to: number) => {
+      if (to <= from) return;
+      const indices = Array.from({ length: to - from }, (_, i) => from + i);
+      (await out.copyPages(base, indices)).forEach((p) => { out.addPage(p); stamp(p); });
+    };
+
+    const addCatalogPdf = async (url: string) => {
       const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) throw new Error(`Could not download catalog PDF (${response.status})`);
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      const attachment = await PDFDocument.load(bytes);
-      if (!headerImage && !footerImage) {
-        const pages = await output.copyPages(attachment, attachment.getPageIndices());
-        pages.forEach((page) => output.addPage(page));
-      } else {
-        await appendStampedPdf(output, attachment, headerImage, footerImage, rgb);
+      const attachment = await PDFDocument.load(new Uint8Array(await response.arrayBuffer()));
+      for (const source of attachment.getPages()) {
+        const page = out.addPage([A4_W, A4_H]);
+        if (source.node.Contents()) {
+          const embedded = await out.embedPage(source);
+          const boxW = A4_W - side * 2 * MM;
+          const boxH = A4_H - (topMm + bottomMm) * MM;
+          const s = Math.min(boxW / embedded.width, boxH / embedded.height);
+          page.drawPage(embedded, {
+            x: (A4_W - embedded.width * s) / 2,
+            y: bottomMm * MM + (boxH - embedded.height * s) / 2,
+            width: embedded.width * s,
+            height: embedded.height * s,
+          });
+        }
+        stamp(page);
       }
+    };
+
+    let cursor = 0;
+    for (const { page, index } of slotsAfter.sort((a, b) => a.page - b.page || a.index - b.index)) {
+      await addQuotationPages(cursor, page);
+      cursor = page;
+      await addCatalogPdf(catalogPdfUrls[index]);
     }
-    const pages = output.getPages();
-    const pageNumberFont = await output.embedFont(StandardFonts.Helvetica);
-    pages.forEach((page, index) => {
-      const { width } = page.getSize();
-      const label = `${index + 1} / ${pages.length}`;
-      page.drawText(label, {
-        x: width / 2 - pageNumberFont.widthOfTextAtSize(label, 8) / 2,
-        y: 7,
-        size: 8,
-        font: pageNumberFont,
-        color: rgb(0.4, 0.44, 0.5),
-      });
+    await addQuotationPages(cursor, pageCount);
+
+    const font = await out.embedFont(StandardFonts.Helvetica);
+    const pages = out.getPages();
+    pages.forEach((p, i) => {
+      const label = `${i + 1} / ${pages.length}`;
+      p.drawText(label, { x: A4_W / 2 - font.widthOfTextAtSize(label, 8) / 2, y: numberY * MM, size: 8, font, color: rgb(0.4, 0.44, 0.5) });
     });
-    const mergedBytes = await output.save();
-    const blobBytes = new Uint8Array(mergedBytes.byteLength);
-    blobBytes.set(mergedBytes);
-    return new Blob([blobBytes.buffer], { type: 'application/pdf' });
+    const merged = await out.save();
+    const bytes = new Uint8Array(merged.byteLength);
+    bytes.set(merged);
+    return new Blob([bytes.buffer], { type: 'application/pdf' });
   } finally {
     iframe.remove();
-  }
-
-  function decodeDataUri(dataUri: string): Uint8Array {
-    const encoded = dataUri.slice(dataUri.indexOf(',') + 1);
-    return Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
-  }
-
-  async function appendCatalogCover(
-    output: import('pdf-lib').PDFDocument,
-    canvas: HTMLCanvasElement,
-    headerImage: import('pdf-lib').PDFImage | undefined,
-    footerImage: import('pdf-lib').PDFImage | undefined,
-    makeColor: typeof import('pdf-lib').rgb,
-  ): Promise<void> {
-    const pageWidth = 595.28;
-    const pageHeight = 841.89;
-    const branded = createBrandedPage(output, pageWidth, pageHeight, headerImage, footerImage, makeColor);
-    const coverImage = await output.embedPng(decodeDataUri(canvas.toDataURL('image/png')));
-    const { sideMargin, headerBand, footerBand, page } = branded;
-    const bodyWidth = pageWidth - sideMargin * 2;
-    const bodyHeight = pageHeight - headerBand - footerBand;
-    const scale = Math.min(bodyWidth / coverImage.width, bodyHeight / coverImage.height);
-    const width = coverImage.width * scale;
-    const height = coverImage.height * scale;
-    page.drawImage(coverImage, {
-      x: (pageWidth - width) / 2,
-      y: footerBand + bodyHeight - height - 18,
-      width,
-      height,
-    });
-  }
-
-  async function appendStampedPdf(
-    output: import('pdf-lib').PDFDocument,
-    source: import('pdf-lib').PDFDocument,
-    headerImage: import('pdf-lib').PDFImage | undefined,
-    footerImage: import('pdf-lib').PDFImage | undefined,
-    makeColor: typeof import('pdf-lib').rgb,
-  ): Promise<void> {
-    const ptPerMm = 72 / 25.4;
-    for (const sourcePage of source.getPages()) {
-      const embedded = sourcePage.node.Contents() ? await output.embedPage(sourcePage) : undefined;
-      const { width, height } = sourcePage.getSize();
-      const branded = createBrandedPage(output, width, height, headerImage, footerImage, makeColor);
-      const { page, sideMargin, headerBand, footerBand } = branded;
-
-      const bodyWidth = width - sideMargin * 2;
-      const bodyHeight = height - headerBand - footerBand;
-      if (embedded) {
-        const scale = Math.min(bodyWidth / embedded.width, bodyHeight / embedded.height);
-        const scaledWidth = embedded.width * scale;
-        const scaledHeight = embedded.height * scale;
-        page.drawPage(embedded, {
-          x: sideMargin + (bodyWidth - scaledWidth) / 2,
-          y: footerBand + (bodyHeight - scaledHeight) / 2,
-          width: scaledWidth,
-          height: scaledHeight,
-        });
-      }
-    }
-  }
-
-  function createBrandedPage(
-    output: import('pdf-lib').PDFDocument,
-    width: number,
-    height: number,
-    headerImage: import('pdf-lib').PDFImage | undefined,
-    footerImage: import('pdf-lib').PDFImage | undefined,
-    makeColor: typeof import('pdf-lib').rgb,
-  ) {
-    const ptPerMm = 72 / 25.4;
-    const sideMargin = Math.min(10 * ptPerMm, width * 0.12);
-    const headerBand = headerImage ? Math.min(23 * ptPerMm, height * 0.25) : 0;
-    const footerBand = footerImage ? Math.min(20 * ptPerMm, height * 0.22) : 0;
-    const page = output.addPage([width, height]);
-    const ruleColor = makeColor(0.85, 0.88, 0.92);
-    if (headerBand) {
-      page.drawRectangle({ x: 0, y: height - headerBand, width, height: headerBand, color: makeColor(1, 1, 1) });
-      page.drawLine({
-        start: { x: sideMargin, y: height - headerBand },
-        end: { x: width - sideMargin, y: height - headerBand },
-        thickness: 0.5,
-        color: ruleColor,
-      });
-      drawPdfPageImage(page, headerImage!, width, height - headerBand, headerBand, sideMargin, ptPerMm * 16);
-    }
-    if (footerBand) {
-      page.drawRectangle({ x: 0, y: 0, width, height: footerBand, color: makeColor(1, 1, 1) });
-      page.drawLine({
-        start: { x: sideMargin, y: footerBand },
-        end: { x: width - sideMargin, y: footerBand },
-        thickness: 0.5,
-        color: ruleColor,
-      });
-      drawPdfPageImage(page, footerImage!, width, 0, footerBand, sideMargin, ptPerMm * 12);
-    }
-    return { page, sideMargin, headerBand, footerBand };
-  }
-
-  function drawPdfPageImage(
-    page: import('pdf-lib').PDFPage,
-    image: import('pdf-lib').PDFImage,
-    pageWidth: number,
-    bandBottom: number,
-    bandHeight: number,
-    sideMargin: number,
-    maxHeight: number,
-  ): void {
-    const maxWidth = pageWidth - sideMargin * 2;
-    const scale = Math.min(maxWidth / image.width, maxHeight / image.height, bandHeight / image.height);
-    const width = image.width * scale;
-    const height = image.height * scale;
-    page.drawImage(image, {
-      x: (pageWidth - width) / 2,
-      y: bandBottom + (bandHeight - height) / 2,
-      width,
-      height,
-    });
+    fontStyle.remove();
   }
 }

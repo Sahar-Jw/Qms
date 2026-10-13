@@ -53,7 +53,7 @@ describe('companies: uploading header / footer images', () => {
   it.each(['header', 'footer'])('saves a PNG as the %s image under letterheads/', async (kind) => {
     const res = await send(kind, PNG, 'image/png');
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = (await res.json()) as Record<string, string>;
     const rel = body[`${kind}Image`] as string;
     expect(rel).toMatch(/^letterheads\/[0-9a-f]{32}\.png$/);
     expect(fs.readFileSync(path.join(dir, rel)).equals(PNG)).toBe(true);
@@ -62,7 +62,7 @@ describe('companies: uploading header / footer images', () => {
   it('refuses a non-image file', async () => {
     const res = await send('header', Buffer.from('<script>alert(1)</script>'), 'image/svg+xml', 'x.svg');
     expect(res.status).toBe(400);
-    expect((await res.json()).code).toBe('INVALID_FILE_TYPE');
+    expect(((await res.json()) as { code: string }).code).toBe('INVALID_FILE_TYPE');
   });
 
   it('refuses a file over 3 MB', async () => {

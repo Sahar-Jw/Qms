@@ -54,19 +54,29 @@ describe('printed quotation: company header and footer images', () => {
     expect(en).toContain('Quotation');
   });
 
-  it('header image sits above the title; footer image after the totals', async () => {
+  it('the pictures are pinned outside the page content, so what is written can never move or cover them', async () => {
     const html = await svc.renderHtml(quotation(withImages), { lang: 'en', includeCost: false });
-    expect(html.indexOf('class="cohead"')).toBeLessThan(html.indexOf('class="title"'));
-    expect(html.indexOf('class="cofoot"')).toBeGreaterThan(html.indexOf('class="totals"'));
+    const content = html.indexOf('<td class="pgbody">');
+    expect(html.indexOf('class="cohead"')).toBeLessThan(content);
+    expect(html.indexOf('class="cofoot"')).toBeLessThan(content);
+    expect(html.indexOf('class="title"')).toBeGreaterThan(content);
   });
 
-  it('pins compact company images to the top and bottom of every printed page', async () => {
+  it('pins compact company images to the very top and bottom edge of every printed page', async () => {
     const html = await svc.renderHtml(quotation(withImages), { lang: 'en', includeCost: false });
-    expect(html).toContain('@page { size: A4; margin: 23mm 10mm 20mm; }');
-    expect(html).toMatch(/img\.cohead\s*\{[^}]*max-height:\s*16mm/);
-    expect(html).toMatch(/img\.cofoot\s*\{[^}]*max-height:\s*12mm/);
-    expect(html).toMatch(/img\.cohead\s*\{[^}]*position:\s*fixed;[^}]*top:\s*-19mm/);
-    expect(html).toMatch(/img\.cofoot\s*\{[^}]*position:\s*fixed;[^}]*bottom:\s*-17mm/);
+    expect(html).toContain('@page { size: A4; margin: 0; }'); // the page frame (spacer head / foot) keeps the content away from them
+    expect(html).toMatch(/img\.cohead\s*\{[^}]*position:\s*fixed;[^}]*top:\s*5mm;[^}]*height:\s*13mm/);
+    expect(html).toMatch(/img\.cofoot\s*\{[^}]*position:\s*fixed;[^}]*bottom:\s*7mm;[^}]*height:\s*10mm/);
+    expect(html).not.toMatch(/(top|bottom):\s*-\d/); // no negative offsets: they land on the wrong page in Chromium
+    expect(html).toContain('<thead><tr><td><div class="hs"></div></td></tr></thead><tfoot><tr><td><div class="fs"></div></td></tr></tfoot>');
+    expect(html).toContain('data-top="21" data-bottom="19"');
+  });
+
+  it.each([['ar', 'rtl'], ['en', 'ltr']] as const)('the %s file is %s and carries the Cairo font (Arabic letters never fall back to ?)', async (lang, dir) => {
+    const html = await svc.renderHtml(quotation(withImages), { lang, includeCost: false });
+    expect(html).toContain(`<html lang="${lang}" dir="${dir}"`);
+    expect(html).toContain("font-family:'Cairo'");
+    expect(html).toMatch(/@font-face\{font-family:'Cairo'/);
   });
 
   it('a header image replaces the text letterhead (logo / name / address); without one the text letterhead stays', async () => {
@@ -75,7 +85,7 @@ describe('printed quotation: company header and footer images', () => {
     const without = await svc.renderHtml(quotation(), { lang: 'en', includeCost: false });
     expect(without).toContain('<div class="head">');
     expect(without).toContain('Damascus');
-    expect(without).toContain('@page { size: A4; margin: 12mm 10mm 14mm; }');
+    expect(without).toContain('data-top="12" data-bottom="14"');
     expect(tag(without, 'cohead')).toBeUndefined();
     expect(tag(without, 'cofoot')).toBeUndefined();
   });
@@ -87,7 +97,7 @@ describe('printed quotation: company header and footer images', () => {
     expect(html).toContain('<div class="head">');
   });
 
-  it('includes material catalog images and PDFs in the print-ready appendix', async () => {
+  it('adds a catalog list, the picture pages and a slot for the catalog PDF to the print page', async () => {
     const html = await svc.renderHtml(quotation({}, [{
       materialCode: 'M-1',
       materialName: 'Pump',
@@ -98,20 +108,21 @@ describe('printed quotation: company header and footer images', () => {
       amounts: [],
     }]), { lang: 'en', includeCost: false });
 
-    expect(html).toContain('data:image/png;base64,');
-    expect(html).toContain('src="/uploads/materials/catalog-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.pdf"');
+    expect(html).toContain('class="catalog-index"');
+    expect(html).toContain('Attached catalogs');
     expect(html).toContain('M-1 - Pump');
-    expect(html).toContain('class="catalog-heading"');
-    expect(html).toContain('class="catalog-file">photo.png</p>');
+    expect(html).toContain('<bdi dir="auto">photo.png</bdi>');
     expect(html).toContain('class="catalog-image" src="data:image/png;base64,');
-    expect(html).not.toContain('<p>photo.png</p>');
+    expect(html).toContain('class="pdf-slot" data-pdf-name="datasheet.pdf"'); // the PDF pages go here (browser PDF) - an <iframe> never prints
+    expect(html).not.toContain('<iframe');
+    expect(html).toContain('class="note pdf-note"'); // the browser print dialog cannot include PDF files
   });
 
   it('sanitizes converted Word content before printing', async () => {
     const html = (svc as any).sanitizeDocxHtml(
       '<p>Specs</p><a href="javascript:alert(1)">Link</a><script>alert(2)</script><img src="data:image/png;base64,AAAA" onerror="alert(3)">',
     );
-    expect(html).toContain('<p>Specs</p>');
+    expect(html).toContain('<p dir="auto">Specs</p>');
     expect(html).toContain('data:image/png;base64,AAAA');
     expect(html).not.toMatch(/javascript:|<script|onerror=/);
   });
