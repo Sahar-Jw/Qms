@@ -100,7 +100,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     };
   }, [lang, setLang, overrides]);
 
-  // The browser-tab title is set by SiteSync (components/providers.tsx): the saved site name, else t('app.name').
+  // The browser-tab title is set by SiteSync (components/providers.tsx) from the saved branding settings.
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

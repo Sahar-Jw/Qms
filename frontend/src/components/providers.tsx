@@ -15,7 +15,7 @@ import { uploadUrl } from '@/lib/urls';
  * signing in: the saved colours, and the site name / icon in the browser tab. Both endpoints are public.
  */
 function SiteSync() {
-  const { brand, tabTitle } = useSiteBrand();
+  const { brand, name: siteName, tabTitle } = useSiteBrand();
   useBrandCache();
   useApplyTheme();
 
@@ -30,6 +30,12 @@ function SiteSync() {
     mo.observe(document.head, { childList: true, characterData: true, subtree: true });
     return () => mo.disconnect();
   }, [tabTitle]);
+
+  useEffect(() => {
+    if (!siteName) return;
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="application-name"]');
+    if (meta) meta.content = siteName;
+  }, [siteName]);
 
   useEffect(() => {
     const href = icon ? uploadUrl(icon) : '';

@@ -9,14 +9,14 @@ const CACHE_KEY = 'qms.brand';
 
 /**
  * The site name / tagline / tab title exactly as written in Settings > Branding - the SAME text in every language.
- * The built-in translated default (t('app.name')) is only used when the branding could not be loaded at all
- * (API down), never as a stand-in while it loads or when the language changes.
+ * The same default name is used when branding could not be loaded at all (API down), never as a stand-in while it
+ * loads or when the language changes.
  */
 export function useSiteBrand() {
   const { t } = useI18n();
   const brand = useBrandSettings();
   const failed = brand.isError && !brand.data;
-  const name = brand.data?.websiteName || (failed ? t('app.name') : '');
+  const name = brand.data?.websiteName || (failed ? 'Quotations' : '');
   const tagline = brand.data?.tagline || (failed ? t('app.tagline') : '');
   const tabTitle = brand.data?.tabTitle || name;
   return { brand: brand.data, name, tagline, tabTitle };
