@@ -15,6 +15,11 @@ import { cleanBody } from '@/lib/hooks';
 import { useI18n } from '@/lib/i18n';
 import { hasRole, type Company, type Paginated } from '@/lib/types';
 
+type Slot = 'logo' | 'header' | 'footer';
+const SLOT_PATH: Record<Slot, string> = { logo: 'logo', header: 'header-image', footer: 'footer-image' };
+const SLOT_MAX: Record<Slot, number> = { logo: 1024 * 1024, header: 3 * 1024 * 1024, footer: 3 * 1024 * 1024 };
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
 type Form = { name: string; address: string; phone: string; email: string; website: string; taxEnabled: boolean; taxPercentage: string };
 const blank: Form = { name: '', address: '', phone: '', email: '', website: '', taxEnabled: false, taxPercentage: '' };
 
@@ -35,6 +40,17 @@ function CompanyModal({ company, onClose }: { company: Company | 'new'; onClose:
   const headerFile = useRef<HTMLInputElement>(null);
   const footerFile = useRef<HTMLInputElement>(null);
   const [current, setCurrent] = useState<Company | null>(editing ? company : null);
+  // Images picked before the company exists: kept here and uploaded right after the first save.
+  const [pending, setPending] = useState<Partial<Record<Slot, File>>>({});
+  const [previews, setPreviews] = useState<Partial<Record<Slot, string>>>({});
+  const previewsRef = useRef(previews);
+  previewsRef.current = previews;
+  useEffect(() => () => { Object.values(previewsRef.current).forEach((u) => u && URL.revokeObjectURL(u)); }, []);
+  const setPreview = (slot: Slot, f: File | null) => setPreviews((p) => {
+    if (p[slot]) URL.revokeObjectURL(p[slot]!);
+    return { ...p, [slot]: f ? URL.createObjectURL(f) : undefined };
+  });
+  const uploadTo = (id: number, slot: Slot, f: File) => { const fd = new FormData(); fd.append('file', f); return api.upload<Company>(`/companies/${id}/${SLOT_PATH[slot]}`, fd); };
   const { register, handleSubmit, watch, formState: { errors } } = useForm<Form>({
     defaultValues: editing ? {
       name: company.name, address: company.address ?? '', phone: company.phone ?? '', email: company.email ?? '', website: company.website ?? '',
@@ -44,41 +60,78 @@ function CompanyModal({ company, onClose }: { company: Company | 'new'; onClose:
   const taxEnabled = watch('taxEnabled');
   const done = () => { qc.invalidateQueries({ queryKey: ['companies'] }); qc.invalidateQueries({ queryKey: ['settings'] }); };
   const save = useMutation({
-    mutationFn: (v: Form) => {
+    mutationFn: async (v: Form) => {
       const { taxEnabled: enabled, taxPercentage, ...details } = v;
-      const body = { ...cleanBody(details, editing), taxEnabled: enabled, taxPercentage: enabled ? taxPercentage.trim() : null };
-      return editing ? api.patch<Company>(`/companies/${company.id}`, body) : api.post<Company>('/companies', body);
+      const body = { ...cleanBody(details, !!current), taxEnabled: enabled, taxPercentage: enabled ? taxPercentage.trim() : null };
+      if (current) return { company: await api.patch<Company>(`/companies/${current.id}`, body), failed: [] as Slot[] };
+      const created = await api.post<Company>('/companies', body);
+      // The images chosen while filling the form go up now that the company has an id.
+      const failed: Slot[] = [];
+      let latest = created;
+      for (const slot of Object.keys(pending) as Slot[]) {
+        try { latest = await uploadTo(created.id, slot, pending[slot]!); } catch { failed.push(slot); }
+      }
+      return { company: latest, failed };
     },
-    onSuccess: () => { done(); toast.success(t('common.saved')); onClose(); },
+    onSuccess: ({ company: saved, failed }) => {
+      done();
+      if (failed.length) {
+        // The company exists now: stay open on it so the failed images can be uploaded again.
+        setCurrent(saved);
+        setPending({});
+        setPreviews((p) => { Object.values(p).forEach((u) => u && URL.revokeObjectURL(u)); return {}; });
+        toast.error(t('companies.imagesFailed'));
+        return;
+      }
+      toast.success(t('common.saved'));
+      onClose();
+    },
     onError: (e) => toastError(e, t, has),
   });
   const upload = useMutation({
-    mutationFn: (f: File) => { const fd = new FormData(); fd.append('file', f); return api.upload<Company>(`/companies/${current!.id}/logo`, fd); },
+    mutationFn: (f: File) => uploadTo(current!.id, 'logo', f),
     onSuccess: (c) => { setCurrent(c); done(); toast.success(t('common.saved')); },
     onError: (e) => toastError(e, t, has),
   });
   const uploadImage = useMutation({
-    mutationFn: ({ kind, f }: { kind: 'header' | 'footer'; f: File }) => { const fd = new FormData(); fd.append('file', f); return api.upload<Company>(`/companies/${current!.id}/${kind}-image`, fd); },
+    mutationFn: ({ kind, f }: { kind: 'header' | 'footer'; f: File }) => uploadTo(current!.id, kind, f),
     onSuccess: (c) => { setCurrent(c); done(); toast.success(t('common.saved')); },
     onError: (e) => toastError(e, t, has),
   });
+  /** One entry point for every picture: saved straight away on an existing company, held until the first save otherwise. */
+  function pick(slot: Slot, f: File | undefined) {
+    if (!f) return;
+    if (!IMAGE_TYPES.includes(f.type)) return void toast.error(t('err.INVALID_FILE_TYPE'));
+    if (f.size > SLOT_MAX[slot]) return void toast.error(t('companies.imageTooBig', { mb: String(SLOT_MAX[slot] / 1024 / 1024) }));
+    if (current) return slot === 'logo' ? upload.mutate(f) : uploadImage.mutate({ kind: slot, f });
+    setPending((p) => ({ ...p, [slot]: f }));
+    setPreview(slot, f);
+  }
+  function dropPending(slot: Slot) {
+    setPending((p) => { const { [slot]: _gone, ...rest } = p; return rest; });
+    setPreview(slot, null);
+  }
   const removeImage = useMutation({
     mutationFn: (kind: 'header' | 'footer') => api.delete<Company>(`/companies/${current!.id}/${kind}-image`),
     onSuccess: (c) => { setCurrent(c); done(); toast.success(t('common.saved')); },
     onError: (e) => toastError(e, t, has),
   });
   return (
-    <Modal open wide title={editing ? t('companies.edit') : t('companies.new')} onClose={onClose}
+    <Modal open wide title={current ? t('companies.edit') : t('companies.new')} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button loading={save.isPending} onClick={handleSubmit((v) => save.mutate(v))}>{t('common.save')}</Button></>}>
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit((v) => save.mutate(v))}>
         <div className="flex items-center gap-4 rounded-2xl bg-sand/50 p-3 sm:col-span-2">
-          <Logo company={current ?? { logo: null, name: '·' }} size="size-16" />
+          {previews.logo
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={previews.logo} alt="" className="size-16 shrink-0 rounded-2xl border border-stone/60 bg-white object-contain p-1" />
+            : <Logo company={current ?? { logo: null, name: '·' }} size="size-16" />}
           <div className="min-w-0 flex-1">
             <div className="text-sm font-bold">{t('companies.logo')}</div>
-            <div className="text-xs text-cocoa">{current ? t('companies.logoHint') : t('companies.saveFirst')}</div>
+            <div className="text-xs text-cocoa">{t('companies.logoHint')}</div>
           </div>
-          <input ref={file} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); e.target.value = ''; }} />
-          <Button variant="outline" size="sm" disabled={!current} loading={upload.isPending} onClick={() => file.current?.click()}><ImagePlus className="size-4" />{t('companies.uploadLogo')}</Button>
+          <input ref={file} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { pick('logo', e.target.files?.[0]); e.target.value = ''; }} />
+          <Button variant="outline" size="sm" loading={upload.isPending} onClick={() => file.current?.click()}><ImagePlus className="size-4" />{t('companies.uploadLogo')}</Button>
+          {previews.logo && <Button variant="ghost" size="sm" onClick={() => dropPending('logo')}><Trash2 className="size-4" />{t('companies.removeImage')}</Button>}
         </div>
         <Field label={t('common.name')} required error={errors.name?.message}><Input maxLength={190} {...register('name', reqText)} /></Field>
         <Field label={t('common.address')} required error={errors.address?.message}><Input maxLength={255} {...register('address', reqText)} /></Field>
@@ -107,22 +160,25 @@ function CompanyModal({ company, onClose }: { company: Company | 'new'; onClose:
         </div>
         {(['header', 'footer'] as const).map((kind) => {
           const file = kind === 'header' ? current?.headerImage : current?.footerImage;
+          const shown = previews[kind] ?? (file ? uploadUrl(file) : null);
           return (
             <div key={kind} className="rounded-2xl bg-sand/50 p-3 sm:col-span-2">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <div className="min-w-0 flex-1 text-sm font-bold">{t(`companies.${kind}Image`)}</div>
                 <input ref={kind === 'header' ? headerFile : footerFile} type="file" accept="image/png,image/jpeg,image/webp" hidden
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage.mutate({ kind, f }); e.target.value = ''; }} />
-                <Button variant="outline" size="sm" disabled={!current} loading={uploadImage.isPending && uploadImage.variables?.kind === kind}
+                  onChange={(e) => { pick(kind, e.target.files?.[0]); e.target.value = ''; }} />
+                <Button variant="outline" size="sm" loading={uploadImage.isPending && uploadImage.variables?.kind === kind}
                   onClick={() => (kind === 'header' ? headerFile : footerFile).current?.click()}>
-                  <ImagePlus className="size-4" />{file ? t('companies.replaceImage') : t('companies.uploadImage')}
+                  <ImagePlus className="size-4" />{shown ? t('companies.replaceImage') : t('companies.uploadImage')}
                 </Button>
-                {file && <Button variant="ghost" size="sm" loading={removeImage.isPending && removeImage.variables === kind} onClick={() => removeImage.mutate(kind)}><Trash2 className="size-4" />{t('companies.removeImage')}</Button>}
+                {previews[kind]
+                  ? <Button variant="ghost" size="sm" onClick={() => dropPending(kind)}><Trash2 className="size-4" />{t('companies.removeImage')}</Button>
+                  : file && <Button variant="ghost" size="sm" loading={removeImage.isPending && removeImage.variables === kind} onClick={() => removeImage.mutate(kind)}><Trash2 className="size-4" />{t('companies.removeImage')}</Button>}
               </div>
-              {file
+              {shown
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={uploadUrl(file)} alt="" className="max-h-28 w-full rounded-xl border border-stone/60 bg-white object-contain" />
-                : <div className="grid h-16 place-items-center rounded-xl border border-dashed border-stone/70 text-xs text-cocoa">{current ? t('companies.noImage') : t('companies.saveFirst')}</div>}
+                ? <img src={shown} alt="" className="max-h-28 w-full rounded-xl border border-stone/60 bg-white object-contain" />
+                : <div className="grid h-16 place-items-center rounded-xl border border-dashed border-stone/70 text-xs text-cocoa">{t('companies.noImage')}</div>}
             </div>
           );
         })}

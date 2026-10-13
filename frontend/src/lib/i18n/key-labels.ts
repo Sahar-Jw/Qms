@@ -53,7 +53,7 @@ export const PART_LABELS: Record<string, Pair> = {
   forgot: ['رابط نسيت كلمة المرور', 'Forgot password link'], forgotTitle: ['عنوان نسيت كلمة المرور', 'Forgot password title'], forgotSub: ['وصف نسيت كلمة المرور', 'Forgot password description'],
   sendLink: ['زر إرسال الرابط', 'Send link button'], forgotSent: ['رسالة تم إرسال الرابط', 'Link sent message'], backToLogin: ['رابط العودة لتسجيل الدخول', 'Back to sign in link'],
   resetTitle: ['عنوان إعادة التعيين', 'Reset title'], resetSub: ['وصف إعادة التعيين', 'Reset description'], resetBtn: ['زر إعادة التعيين', 'Reset button'], resetDone: ['رسالة تمت الإعادة', 'Reset done message'],
-  newPassword: ['كلمة المرور الجديدة', 'New password'], loginTitle: ['عنوان تسجيل الدخول', 'Sign-in title'], loginSub: ['وصف تسجيل الدخول', 'Sign-in description'],
+  newPassword: ['كلمة المرور الجديدة', 'New password'], imagesFailed: ['رسالة فشل رفع الصور', 'Images failed message'], imageTooBig: ['رسالة الصورة كبيرة', 'Image too big message'], confirmPassword: ['تأكيد كلمة المرور', 'Confirm password'], passwordMismatch: ['رسالة كلمتا المرور غير متطابقتين', 'Passwords do not match message'], loginTitle: ['عنوان تسجيل الدخول', 'Sign-in title'], loginSub: ['وصف تسجيل الدخول', 'Sign-in description'],
   registerTitle: ['عنوان إنشاء حساب', 'Register title'], registerSub: ['وصف إنشاء حساب', 'Register description'], password: ['كلمة المرور', 'Password'], fullName: ['الاسم الكامل', 'Full name'],
   login: ['تسجيل الدخول', 'Sign in'], register: ['إنشاء حساب', 'Register'], noAccount: ['ليس لديك حساب؟', "Don't have an account?"], haveAccount: ['لديك حساب؟', 'Already have an account?'],
   pendingTitle: ['عنوان بانتظار التفعيل', 'Awaiting activation title'], pendingBody: ['نص بانتظار التفعيل', 'Awaiting activation text'], passwordHint: ['تلميح كلمة المرور', 'Password hint'],
@@ -142,7 +142,7 @@ export const PART_LABELS: Record<string, Pair> = {
   MATERIAL_INACTIVE: ['المادة معطّلة', 'Material inactive'], DUPLICATE_ENTRY: ['سجل مكرر', 'Duplicate record'], CUSTOMER_NAME_REQUIRED: ['اسم العميل مطلوب', 'Customer name required'],
   MATERIAL_NAME_REQUIRED: ['اسم المادة مطلوب', 'Material name required'], PRICE_CURRENCY_REQUIRED: ['عملة السعر مطلوبة', 'Price currency required'], COMPANY_MISMATCH: ['عدم تطابق الشركة', 'Company mismatch'],
   VALIDITY_BEFORE_QUOTATION_DATE: ['تاريخ الصلاحية قبل تاريخ العرض', 'Validity date before quotation date'],
-  CANNOT_DEACTIVATE_SELF: ['لا يمكن تعطيل حسابك', 'Cannot deactivate yourself'], CANNOT_CHANGE_OWN_ROLE: ['لا يمكن تغيير دورك', 'Cannot change own role'], ROLE_NOT_ASSIGNABLE: ['دور غير قابل للمنح', 'Role not assignable'], WRONG_CURRENT_PASSWORD: ['كلمة المرور الحالية خاطئة', 'Wrong current password'],
+  PASSWORD_MISMATCH: ['كلمتا المرور غير متطابقتين', 'Passwords do not match'], CANNOT_DEACTIVATE_SELF: ['لا يمكن تعطيل حسابك', 'Cannot deactivate yourself'], CANNOT_CHANGE_OWN_ROLE: ['لا يمكن تغيير دورك', 'Cannot change own role'], ROLE_NOT_ASSIGNABLE: ['دور غير قابل للمنح', 'Role not assignable'], WRONG_CURRENT_PASSWORD: ['كلمة المرور الحالية خاطئة', 'Wrong current password'],
   PDF_ENGINE_UNAVAILABLE: ['PDF غير متاح', 'PDF unavailable'], INVALID_FILE_TYPE: ['نوع ملف غير مسموح', 'File type not allowed'], INTERNAL_ERROR: ['خطأ في الخادم', 'Server error'],
   NETWORK: ['تعذر الاتصال بالخادم', 'Cannot reach the server'], QUOTATION_NOT_FOUND: ['العرض غير موجود', 'Quotation not found'],
 };

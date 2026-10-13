@@ -91,6 +91,9 @@ export class AuthService {
   }
 
   async changePassword(userId: number, dto: ChangePasswordDto) {
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new BadRequestException({ code: 'PASSWORD_MISMATCH', message: 'The two new passwords are not the same' });
+    }
     const user = await this.users.findByIdWithPassword(userId);
     if (!user || !(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
       throw new BadRequestException({ code: 'WRONG_CURRENT_PASSWORD', message: 'Current password is incorrect' });

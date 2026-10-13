@@ -84,7 +84,7 @@ const ar: Shape<typeof en> = {
   },
   companies: {
     title: 'الشركات', new: 'شركة جديدة', edit: 'تعديل الشركة', nameAr: 'الاسم بالعربية', nameEn: 'الاسم بالإنجليزية', addressAr: 'العنوان بالعربية',
-    addressEn: 'العنوان بالإنجليزية', logo: 'الشعار', uploadLogo: 'رفع الشعار', logoHint: 'PNG أو JPG أو WEBP حتى 1 ميغابايت', saveFirst: 'احفظ الشركة أولاً ثم ارفع شعارها',
+    addressEn: 'العنوان بالإنجليزية', logo: 'الشعار', uploadLogo: 'رفع الشعار', logoHint: 'PNG أو JPG أو WEBP حتى 1 ميغابايت', saveFirst: 'احفظ الشركة أولاً ثم ارفع شعارها', imagesFailed: 'تم حفظ الشركة لكن تعذّر رفع بعض الصور. أعد المحاولة.', imageTooBig: 'حجم الصورة أكبر من {mb} ميغابايت',
     printTitle: 'ترويسة وتذييل الطباعة (صور)', printHint: 'صورتان تظهران بنفس الشكل في ملف عرض السعر العربي والإنجليزي عند الطباعة أو التحميل PDF. الأفضل أن تكون الصورة بعرض الصفحة. PNG أو JPG أو WEBP حتى 3 ميغابايت. إذا رفعت ترويسة فإنها تحل مكان الشعار واسم الشركة في أعلى الملف.',
     taxEnabled: 'تطبيق الضريبة على عروض أسعار هذه الشركة', taxPercentage: 'نسبة الضريبة', taxHint: 'عند التفعيل، تُستخدم هذه النسبة تلقائياً لكل بند في عروض الأسعار الصادرة عن هذه الشركة.',
     headerImage: 'الترويسة (الهيدر)', footerImage: 'التذييل (الفوتر)', uploadImage: 'رفع صورة', replaceImage: 'استبدال الصورة', removeImage: 'حذف الصورة', noImage: 'لا توجد صورة',
@@ -93,7 +93,7 @@ const ar: Shape<typeof en> = {
   settings: {
     title: 'الإعدادات', company: 'الشركة المُصدِرة', companySub: 'كل عرض سعر تنشئه يصدر باسم هذه الشركة.', current: 'المحددة',
     automatic: 'تُستخدم تلقائياً لأنها الشركة الفعّالة الوحيدة', password: 'تغيير كلمة المرور', currentPassword: 'كلمة المرور الحالية',
-    newPassword: 'كلمة المرور الجديدة', passwordChanged: 'تم تغيير كلمة المرور', account: 'حسابك', companySaved: 'تم تحديث الشركة المُصدِرة', pick: 'استخدام هذه الشركة',
+    newPassword: 'كلمة المرور الجديدة', confirmPassword: 'تأكيد كلمة المرور الجديدة', passwordMismatch: 'كلمتا المرور غير متطابقتين', passwordChanged: 'تم تغيير كلمة المرور', account: 'حسابك', companySaved: 'تم تحديث الشركة المُصدِرة', pick: 'استخدام هذه الشركة',
     tabs: { company: 'الشركة', brand: 'هوية الموقع', theme: 'المظهر', texts: 'النصوص', audit: 'سجل التدقيق' },
   },
   brand: {
@@ -132,7 +132,7 @@ const ar: Shape<typeof en> = {
     submitted: 'البيانات المُرسلة', changes: 'التغييرات', before: 'قبل', after: 'بعد', sideBySide: 'جنباً إلى جنب', inline: 'قديم ← جديد', beforeUnavailable: 'القيمة السابقة غير مسجّلة',
     trueValue: 'نعم', falseValue: 'لا', noDetails: 'لم تُسجَّل بيانات إضافية لهذا الإجراء.',
     imageAdded: 'تم رفع صورة جديدة', imageReplaced: 'تم استبدال الصورة بصورة جديدة', imageRemoved: 'تم حذف الصورة',
-    assets: { logo: 'الشعار', icon: 'الأيقونة', avatar: 'الصورة الشخصية' }, unknownUser: 'غير مسجّل الدخول',
+    assets: { logo: 'الشعار', icon: 'الأيقونة', avatar: 'الصورة الشخصية', headerImage: 'صورة رأس الطباعة', footerImage: 'صورة تذييل الطباعة' }, unknownUser: 'غير مسجّل الدخول',
     actions: {
       create: 'إنشاء', update: 'تعديل', delete: 'حذف', activate: 'تفعيل', deactivate: 'إلغاء التفعيل', status_change: 'تغيير الحالة', duplicate: 'نسخ',
       login: 'تسجيل دخول', login_failed: 'محاولة دخول فاشلة', logout: 'تسجيل خروج', register: 'تسجيل حساب', change_password: 'تغيير كلمة المرور',
@@ -152,7 +152,7 @@ const ar: Shape<typeof en> = {
     PRICE_CURRENCY_REQUIRED: 'أدخل عملة السعر', COMPANY_MISMATCH: 'تصدر العروض باسم الشركة المختارة في الإعدادات', CANNOT_DEACTIVATE_SELF: 'لا يمكنك إيقاف حسابك الخاص',
     VALIDITY_BEFORE_QUOTATION_DATE: 'لا يمكن أن يكون تاريخ الصلاحية قبل تاريخ عرض السعر',
     CANNOT_CHANGE_OWN_ROLE: 'لا يمكنك تغيير دورك', ROLE_NOT_ASSIGNABLE: 'المدير التقني فقط يستطيع منح دور المدير التقني', WRONG_CURRENT_PASSWORD: 'كلمة المرور الحالية غير صحيحة', PDF_ENGINE_UNAVAILABLE: 'خدمة PDF غير متاحة على هذا الخادم. استخدم الطباعة.',
-    INVALID_FILE_TYPE: 'يُسمح بصور PNG أو JPG أو WEBP فقط', INTERNAL_ERROR: 'حدث خطأ في الخادم', NETWORK: 'تعذّر الاتصال بالخادم', QUOTATION_NOT_FOUND: 'العرض غير موجود', COMPANY_NOT_FOUND: 'الشركة غير موجودة', COMPANY_INACTIVE: 'هذه الشركة معطّلة', COMPANY_CANNOT_CHANGE: 'لا يمكن تغيير الشركة المُصدِرة إلا طالما أن العرض مسودة', CUSTOMER_NOT_FOUND: 'العميل غير موجود', MATERIAL_NOT_FOUND: 'المادة غير موجودة', ROLE_NOT_FOUND: 'الدور غير موجود', USER_NOT_FOUND: 'المستخدم غير موجود', FILE_REQUIRED: 'يرجى اختيار ملف', INVALID_PERCENTAGE: 'يجب أن تكون النسبة بين 0 و100', ITEM_NOT_IN_QUOTATION: 'هذا البند لا يتبع العرض', FIELD_REQUIRED: 'لا يمكن ترك هذا الحقل فارغاً',
+    INVALID_FILE_TYPE: 'يُسمح بصور PNG أو JPG أو WEBP فقط', INTERNAL_ERROR: 'حدث خطأ في الخادم', NETWORK: 'تعذّر الاتصال بالخادم', QUOTATION_NOT_FOUND: 'العرض غير موجود', COMPANY_NOT_FOUND: 'الشركة غير موجودة', COMPANY_INACTIVE: 'هذه الشركة معطّلة', COMPANY_CANNOT_CHANGE: 'لا يمكن تغيير الشركة المُصدِرة إلا طالما أن العرض مسودة', CUSTOMER_NOT_FOUND: 'العميل غير موجود', MATERIAL_NOT_FOUND: 'المادة غير موجودة', ROLE_NOT_FOUND: 'الدور غير موجود', USER_NOT_FOUND: 'المستخدم غير موجود', FILE_REQUIRED: 'يرجى اختيار ملف', PASSWORD_MISMATCH: 'كلمتا المرور الجديدتان غير متطابقتين', INVALID_PERCENTAGE: 'يجب أن تكون النسبة بين 0 و100', ITEM_NOT_IN_QUOTATION: 'هذا البند لا يتبع العرض', FIELD_REQUIRED: 'لا يمكن ترك هذا الحقل فارغاً',
   },
 };
 export default ar;

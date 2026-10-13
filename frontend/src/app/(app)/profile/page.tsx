@@ -47,12 +47,19 @@ export default function ProfilePage() {
     upload.mutate(f);
   }
 
-  const [pw, setPw] = useState({ currentPassword: '', newPassword: '' });
+  const blankPw = { currentPassword: '', newPassword: '', confirmPassword: '' };
+  const [pw, setPw] = useState(blankPw);
+  const mismatch = pw.confirmPassword !== '' && pw.newPassword !== pw.confirmPassword;
   const change = useMutation({
     mutationFn: () => api.post('/auth/change-password', pw),
-    onSuccess: () => { setPw({ currentPassword: '', newPassword: '' }); toast.success(t('settings.passwordChanged')); },
+    onSuccess: () => { setPw(blankPw); toast.success(t('settings.passwordChanged')); },
     onError: (e) => toastError(e, t, has),
   });
+  function onChangePassword(e: FormEvent) {
+    e.preventDefault();
+    if (pw.newPassword !== pw.confirmPassword) return void toast.error(t('settings.passwordMismatch'));
+    change.mutate();
+  }
 
   const row = (label: string, value: React.ReactNode) => (
     <div className="flex items-center justify-between gap-4 border-t border-stone/40 py-2.5 text-sm first:border-t-0">
@@ -105,10 +112,11 @@ export default function ProfilePage() {
 
           <Card>
             <CardHeader title={t('settings.password')} icon={<KeyRound className="size-4 text-cocoa" />} />
-            <form className="grid gap-4 p-5 sm:grid-cols-2" onSubmit={(e: FormEvent) => { e.preventDefault(); change.mutate(); }}>
-              <Field label={t('settings.currentPassword')}><PasswordInput required autoComplete="current-password" value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} /></Field>
+            <form className="grid gap-4 p-5 sm:grid-cols-2" onSubmit={onChangePassword}>
+              <Field label={t('settings.currentPassword')} className="sm:col-span-2"><PasswordInput required autoComplete="current-password" value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} /></Field>
               <Field label={t('settings.newPassword')} hint={t('auth.passwordHint')}><PasswordInput required minLength={8} pattern="(?=.*[A-Za-z])(?=.*\d).{8,72}" autoComplete="new-password" value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} /></Field>
-              <div className="sm:col-span-2"><Button type="submit" loading={change.isPending}>{t('settings.password')}</Button></div>
+              <Field label={t('settings.confirmPassword')} error={mismatch ? t('settings.passwordMismatch') : undefined}><PasswordInput required minLength={8} invalid={mismatch} autoComplete="new-password" value={pw.confirmPassword} onChange={(e) => setPw({ ...pw, confirmPassword: e.target.value })} /></Field>
+              <div className="sm:col-span-2"><Button type="submit" loading={change.isPending} disabled={mismatch}>{t('settings.password')}</Button></div>
             </form>
           </Card>
         </div>

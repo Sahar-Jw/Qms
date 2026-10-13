@@ -66,3 +66,6 @@ input:autofill, textarea:autofill, select:autofill {
 
 /* Static build: hide the first paint until I18nProvider has applied the saved language (no Arabic->English flash). */
 html:not([data-ready]) body { visibility: hidden; }
+
+/* Hold the first paint until the saved site colours have arrived (see THEME_BOOT_SCRIPT): no flash of other colours. */
+html[data-theme-pending] body { visibility: hidden; }

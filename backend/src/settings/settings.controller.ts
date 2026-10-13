@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Header, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -136,6 +136,7 @@ export class SettingsController {
 
   /** Public: visitors (landing / login) see the site in the saved colours too, not only signed-in users. */
   @Public()
+  @Header('Cache-Control', 'no-store') // a stale copy in the browser or a proxy is exactly the "old colours" glitch
   @Get('theme')
   theme() {
     return this.settings.getTheme();

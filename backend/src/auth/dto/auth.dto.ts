@@ -33,6 +33,10 @@ export class ChangePasswordDto {
 
   @Matches(PASSWORD_RE, { message: PASSWORD_MSG })
   newPassword: string;
+
+  /** Typed a second time in the profile form; must be identical to newPassword. */
+  @IsString() @IsNotEmpty() @MaxLength(100)
+  confirmPassword: string;
 }
 
 export class ForgotPasswordDto {

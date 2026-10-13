@@ -79,7 +79,7 @@ const en = {
   },
   companies: {
     title: 'Companies', new: 'New company', edit: 'Edit company', nameAr: 'Name (Arabic)', nameEn: 'Name (English)', addressAr: 'Address (Arabic)',
-    addressEn: 'Address (English)', logo: 'Logo', uploadLogo: 'Upload logo', logoHint: 'PNG, JPG or WEBP up to 1 MB', saveFirst: 'Save the company first, then upload its logo',
+    addressEn: 'Address (English)', logo: 'Logo', uploadLogo: 'Upload logo', logoHint: 'PNG, JPG or WEBP up to 1 MB', saveFirst: 'Save the company first, then upload its logo', imagesFailed: 'The company was saved, but some images could not be uploaded. Try them again.', imageTooBig: 'The image is larger than {mb} MB',
     printTitle: 'Print header and footer (images)', printHint: 'Two images shown the same way on the Arabic and the English quotation when printed or downloaded as PDF. Best as a full page-width image. PNG, JPG or WEBP up to 3 MB. A header image replaces the logo and company name at the top of the file.',
     taxEnabled: 'Apply tax to quotations from this company', taxPercentage: 'Tax percentage', taxHint: 'When enabled, this percentage is used automatically for each quotation item issued by this company.',
     headerImage: 'Header', footerImage: 'Footer', uploadImage: 'Upload image', replaceImage: 'Replace image', removeImage: 'Remove image', noImage: 'No image',
@@ -91,7 +91,7 @@ const en = {
   settings: {
     title: 'Settings', company: 'Issuing company', companySub: 'Every quotation you create is issued from this company.', current: 'Selected',
     automatic: 'Used automatically because it is the only active company', password: 'Change password', currentPassword: 'Current password',
-    newPassword: 'New password', passwordChanged: 'Password changed', account: 'Your account', companySaved: 'Issuing company updated', pick: 'Use this company',
+    newPassword: 'New password', confirmPassword: 'Confirm new password', passwordMismatch: 'The two passwords do not match', passwordChanged: 'Password changed', account: 'Your account', companySaved: 'Issuing company updated', pick: 'Use this company',
     tabs: { company: 'Company', brand: 'Branding', theme: 'Theme', texts: 'Texts', audit: 'Audit log' },
   },
   brand: {
@@ -130,7 +130,7 @@ const en = {
     submitted: 'Submitted data', changes: 'Changes', before: 'Before', after: 'After', sideBySide: 'Side by side', inline: 'Old → new', beforeUnavailable: 'Previous value not recorded',
     trueValue: 'Yes', falseValue: 'No', noDetails: 'No extra data was recorded for this action.',
     imageAdded: 'New image uploaded', imageReplaced: 'Image replaced with a new one', imageRemoved: 'Image removed',
-    assets: { logo: 'Logo', icon: 'Icon', avatar: 'Profile picture' }, unknownUser: 'Not signed in',
+    assets: { logo: 'Logo', icon: 'Icon', avatar: 'Profile picture', headerImage: 'Print header image', footerImage: 'Print footer image' }, unknownUser: 'Not signed in',
     actions: {
       create: 'Created', update: 'Updated', delete: 'Deleted', activate: 'Activated', deactivate: 'Deactivated', status_change: 'Status changed', duplicate: 'Duplicated',
       login: 'Signed in', login_failed: 'Failed sign-in', logout: 'Signed out', register: 'Registered', change_password: 'Changed password',
@@ -150,7 +150,7 @@ const en = {
     PRICE_CURRENCY_REQUIRED: 'Enter the price currency', COMPANY_MISMATCH: 'Quotations are issued from the company chosen in settings', CANNOT_DEACTIVATE_SELF: 'You cannot deactivate your own account',
     VALIDITY_BEFORE_QUOTATION_DATE: 'The validity date cannot be before the quotation date',
     CANNOT_CHANGE_OWN_ROLE: 'You cannot change your own role', ROLE_NOT_ASSIGNABLE: 'Only the technical manager can assign the technical manager role', WRONG_CURRENT_PASSWORD: 'The current password is wrong', PDF_ENGINE_UNAVAILABLE: 'PDF is not available on this server. Use Print instead.',
-    INVALID_FILE_TYPE: 'Only PNG, JPG or WEBP images are allowed', INTERNAL_ERROR: 'Something went wrong on the server', NETWORK: 'Cannot reach the server', QUOTATION_NOT_FOUND: 'Quotation not found', COMPANY_NOT_FOUND: 'Company not found', COMPANY_INACTIVE: 'This company is inactive', COMPANY_CANNOT_CHANGE: 'The issuing company can only be changed while the quotation is a draft', CUSTOMER_NOT_FOUND: 'Customer not found', MATERIAL_NOT_FOUND: 'Material not found', ROLE_NOT_FOUND: 'Role not found', USER_NOT_FOUND: 'User not found', FILE_REQUIRED: 'Please choose a file', INVALID_PERCENTAGE: 'A percentage must be between 0 and 100', ITEM_NOT_IN_QUOTATION: 'This item does not belong to the quotation', FIELD_REQUIRED: 'This field cannot be cleared',
+    INVALID_FILE_TYPE: 'Only PNG, JPG or WEBP images are allowed', INTERNAL_ERROR: 'Something went wrong on the server', NETWORK: 'Cannot reach the server', QUOTATION_NOT_FOUND: 'Quotation not found', COMPANY_NOT_FOUND: 'Company not found', COMPANY_INACTIVE: 'This company is inactive', COMPANY_CANNOT_CHANGE: 'The issuing company can only be changed while the quotation is a draft', CUSTOMER_NOT_FOUND: 'Customer not found', MATERIAL_NOT_FOUND: 'Material not found', ROLE_NOT_FOUND: 'Role not found', USER_NOT_FOUND: 'User not found', FILE_REQUIRED: 'Please choose a file', PASSWORD_MISMATCH: 'The two new passwords are not the same', INVALID_PERCENTAGE: 'A percentage must be between 0 and 100', ITEM_NOT_IN_QUOTATION: 'This item does not belong to the quotation', FIELD_REQUIRED: 'This field cannot be cleared',
   },
 };
 export default en;

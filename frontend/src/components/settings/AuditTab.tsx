@@ -31,7 +31,7 @@ const valueText = (value: unknown, yes: string, no: string): string => {
 };
 
 /** Fields that hold an uploaded picture. */
-const IMAGE_FIELDS = new Set(['avatar', 'logo', 'icon']);
+const IMAGE_FIELDS = new Set(['avatar', 'logo', 'icon', 'headerImage', 'footerImage']);
 
 function actionStyle(a: string) {
   if (a === 'delete' || a === 'login_failed') return 'bg-red-50 text-red-800 ring-1 ring-inset ring-red-800/30';
@@ -151,10 +151,10 @@ export function AuditTab() {
               <dt className="font-semibold text-cocoa">{t('audit.record')}</dt>
               <dd>{open.entityLabel ? <bdi>{open.entityLabel}</bdi> : '—'}</dd>
             </dl>
-            <div className="space-y-2">
+            {changedFields.length > 0 && <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-xs font-bold text-cocoa">{t('audit.changes')}</div>
-                {changedFields.length > 0 && (
+                <div className="text-xs font-bold text-cocoa">{hasChangeSet ? t('audit.changes') : t('audit.submitted')}</div>
+                {hasChangeSet && (
                   <div className="inline-flex rounded-full bg-sand/70 p-0.5" role="group" aria-label={t('audit.changes')}>
                     <Button size="sm" variant={changeView === 'sideBySide' ? 'soft' : 'ghost'} aria-pressed={changeView === 'sideBySide'} onClick={() => setChangeView('sideBySide')}>
                       {t('audit.sideBySide')}
@@ -165,7 +165,7 @@ export function AuditTab() {
                   </div>
                 )}
               </div>
-              {changedFields.length ? changedFields.map((field) => (
+              {changedFields.map((field) => (
                 IMAGE_FIELDS.has(field) ? (
                   // Pictures are not shown (only their file name is stored): say which one changed and how.
                   <div key={field} className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-sand/60 p-3">
@@ -174,13 +174,21 @@ export function AuditTab() {
                     <span className="text-cocoa">·</span>
                     <span>{imageChange(beforeValues?.[field], afterValues?.[field])}</span>
                   </div>
+                ) : !hasChangeSet ? (
+                  // Created records and similar: there is no "before", so just the value.
+                  <div key={field} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl bg-sand/60 p-3">
+                    <span className="text-xs font-semibold text-cocoa">{fieldName(field)}</span>
+                    <span className="min-w-0 break-words">{afterValues && field in afterValues
+                      ? valueText(afterValues[field], t('audit.trueValue'), t('audit.falseValue'))
+                      : '—'}</span>
+                  </div>
                 ) : changeView === 'sideBySide' ? (
                   <div key={field} className="grid gap-3 rounded-xl bg-sand/60 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                     <div className="min-w-0">
                       <div className="mb-1 text-xs font-semibold text-cocoa">{fieldName(field)} · {t('audit.before')}</div>
                       <div className="break-words">{beforeValues && field in beforeValues
                         ? valueText(beforeValues[field], t('audit.trueValue'), t('audit.falseValue'))
-                        : open.action === 'create' ? '—' : t('audit.beforeUnavailable')}</div>
+                        : '—'}</div>
                     </div>
                     <div className="min-w-0">
                       <div className="mb-1 text-xs font-semibold text-cocoa">{fieldName(field)} · {t('audit.after')}</div>
@@ -194,15 +202,15 @@ export function AuditTab() {
                     <span className="w-full text-xs font-semibold text-cocoa">{fieldName(field)}</span>
                     <span className="min-w-0 break-words">{beforeValues && field in beforeValues
                       ? valueText(beforeValues[field], t('audit.trueValue'), t('audit.falseValue'))
-                      : open.action === 'create' ? '—' : t('audit.beforeUnavailable')}</span>
+                      : '—'}</span>
                     <ArrowRight className="size-4 shrink-0 text-cocoa rtl:rotate-180" aria-hidden="true" />
                     <span className="min-w-0 break-words font-semibold">{afterValues && field in afterValues
                       ? valueText(afterValues[field], t('audit.trueValue'), t('audit.falseValue'))
                       : '—'}</span>
                   </div>
                 )
-              )) : <p className="text-cocoa">{t('audit.noDetails')}</p>}
-            </div>
+              ))}
+            </div>}
           </div>
         )}
       </Modal>

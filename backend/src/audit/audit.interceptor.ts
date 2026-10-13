@@ -42,12 +42,19 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 
 /** Uploads / removals of a single image: they carry no JSON body, so the log would otherwise stay empty. */
-type AssetField = 'logo' | 'icon' | 'avatar';
+type AssetField = 'logo' | 'icon' | 'avatar' | 'headerImage' | 'footerImage';
+const COMPANY_ASSET: Record<string, AssetField> = { logo: 'logo', 'header-image': 'headerImage', 'footer-image': 'footerImage' };
 const assetFieldOf = (resource: string, segs: string[]): AssetField | null => {
   if (resource === 'settings' && segs[1] === 'brand' && (segs[2] === 'logo' || segs[2] === 'icon')) return segs[2];
   if (resource === 'auth' && segs[1] === 'avatar') return 'avatar';
+  if (resource === 'companies' && /^\d+$/.test(segs[1] ?? '') && segs[2] && COMPANY_ASSET[segs[2]]) return COMPANY_ASSET[segs[2]];
   return null;
 };
+
+/** Returned by detailsFor when a save changed nothing: no log row is written for it. */
+const NOTHING_CHANGED = Symbol('nothing-changed');
+/** Actions whose body is only credentials / noise: the row itself says everything worth knowing. */
+const NO_DETAILS = new Set(['login', 'login_failed', 'logout', 'change_password', 'reset_password']);
 
 /** Bookkeeping columns that say nothing useful about a deleted record. */
 const SNAPSHOT_SKIP = new Set(['id', 'createdAt', 'updatedAt', 'createdById', 'updatedById']);
@@ -101,7 +108,8 @@ export class AuditInterceptor implements NestInterceptor {
     before: Record<string, unknown> | null,
     response: unknown,
     assetField: AssetField | null = null,
-  ): Record<string, unknown> | null {
+  ): Record<string, unknown> | null | typeof NOTHING_CHANGED {
+    if (NO_DETAILS.has(action)) return null;
     if (assetField) {
       const next = isRecord(response) && typeof response[assetField] === 'string' ? response[assetField] : null;
       return { before: { [assetField]: before?.[assetField] ?? null }, after: { [assetField]: next } };
@@ -123,24 +131,25 @@ export class AuditInterceptor implements NestInterceptor {
       if (!fields.length && (action === 'activate' || action === 'deactivate')) {
         const activeField = 'isActive' in before ? 'isActive' : 'active' in before ? 'active' : null;
         if (activeField) {
-          return {
-            before: sanitizeDetails({ [activeField]: before[activeField] }),
-            after: { [activeField]: action === 'activate' },
-          };
+          const target = action === 'activate';
+          if (before[activeField] === target) return NOTHING_CHANGED;
+          return { before: sanitizeDetails({ [activeField]: before[activeField] }), after: { [activeField]: target } };
         }
       }
 
       const responseRecord = isRecord(response) ? response : null;
       const valueAfter = (field: string) =>
         responseRecord && Object.hasOwn(responseRecord, field) ? responseRecord[field] : submitted[field];
-      // Forms send every field on save: list only what really changed (all of them if nothing did).
-      const changed = fields.filter((field) => !sameValue(before[field], valueAfter(field)));
-      const shown = changed.length ? changed : fields;
-      const previous = Object.fromEntries(shown.map((field) => [field, jsonSafe(before[field])]));
-      const current = Object.fromEntries(shown.map((field) => [field, valueAfter(field)]));
+      // Forms send every field on save: list only what really changed. Fields that are not columns of the
+      // record (nested lists such as quotation items) cannot be compared, so they are kept as "after" only.
+      const columns = fields.filter((field) => field in before);
+      const nested = fields.filter((field) => !(field in before));
+      const changed = columns.filter((field) => !sameValue(before[field], valueAfter(field)));
+      const shown = [...changed, ...nested];
+      if (!shown.length) return NOTHING_CHANGED; // saved without touching anything: not worth a log row
       return {
-        before: sanitizeDetails(previous),
-        after: sanitizeDetails(current),
+        before: sanitizeDetails(Object.fromEntries(changed.map((field) => [field, jsonSafe(before[field])]))),
+        after: sanitizeDetails(Object.fromEntries(shown.map((field) => [field, valueAfter(field)]))),
       };
     }
 
@@ -173,7 +182,6 @@ export class AuditInterceptor implements NestInterceptor {
       method: req.method,
       path: req.path,
       ip: req.ip ?? null,
-      details: sanitizeDetails(req.body),
     };
 
     // What to read *before* the request runs, so the log can show old -> new.
@@ -181,6 +189,8 @@ export class AuditInterceptor implements NestInterceptor {
     let loadBefore: (() => Promise<Record<string, unknown> | null>) | null = null;
     if (assetField === 'avatar' || (resource === 'auth' && sub === 'profile')) {
       if (myId != null) loadBefore = () => this.snapshot('users', String(myId));
+    } else if (resource === 'companies' && assetField) {
+      loadBefore = () => this.snapshot('companies', segs[1]); // logo / header / footer of one company
     } else if (assetField || (resource === 'settings' && sub === 'brand')) {
       loadBefore = () => this.brandValue();
     } else if (entity === 'theme' && action === 'update') {
@@ -204,10 +214,12 @@ export class AuditInterceptor implements NestInterceptor {
             const loggedIn = isLogin ? (res as any)?.user : undefined; // no req.user yet on the sign-in request
             const who = req.user ?? (loggedIn ? { id: loggedIn.id, fullName: loggedIn.fullName, role: loggedIn.role } : undefined);
             const role = (who as any)?.role;
+            const details = this.detailsFor(action, req.body, previous, res, assetField);
+            if (details === NOTHING_CHANGED) return;
             void this.audit.record({
               ...base,
               action,
-              details: this.detailsFor(action, req.body, previous, res, assetField),
+              details,
               userId: who?.id ?? null,
               userName: (who as any)?.fullName ?? null,
               userRole: typeof role === 'string' ? role : role?.code ?? null,

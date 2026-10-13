@@ -10,6 +10,8 @@ export type AuditEntry = Pick<AuditLog, 'action' | 'entity' | 'method' | 'path'>
 
 const SENSITIVE = /pass(word)?|token|secret|otp/i;
 const MAX_DETAILS_CHARS = 6000;
+/** The same user doing the exact same thing to the same record inside this window is one event (double click, retry). */
+const DUPLICATE_WINDOW_MS = 5000;
 
 /** Copy of the request body that is safe to store: secrets removed, size capped. */
 export function sanitizeDetails(body: unknown): Record<string, unknown> | null {
@@ -30,11 +32,13 @@ export function sanitizeDetails(body: unknown): Record<string, unknown> | null {
 @Injectable()
 export class AuditService {
   private readonly log = new Logger(AuditService.name);
+  private readonly recent = new Map<string, number>();
 
   constructor(@InjectRepository(AuditLog) private readonly repo: Repository<AuditLog>) {}
 
   /** Never throws: a problem writing the log must not break the request that was just served. */
   async record(entry: AuditEntry): Promise<void> {
+    if (this.isDuplicate(entry)) return;
     try {
       await this.repo.save(
         this.repo.create({
@@ -54,6 +58,15 @@ export class AuditService {
     } catch (e) {
       this.log.error(`Could not write audit log: ${(e as Error).message}`);
     }
+  }
+
+  private isDuplicate(entry: AuditEntry): boolean {
+    const now = Date.now();
+    const key = JSON.stringify([entry.userId ?? entry.userName ?? null, entry.action, entry.entity, entry.entityId ?? null, entry.path, entry.details ?? null]);
+    const last = this.recent.get(key);
+    this.recent.set(key, now);
+    if (this.recent.size > 500) for (const [k, at] of this.recent) if (now - at > DUPLICATE_WINDOW_MS) this.recent.delete(k);
+    return last !== undefined && now - last < DUPLICATE_WINDOW_MS;
   }
 
   async list(q: ListAuditDto): Promise<Paginated<AuditLog>> {
