@@ -25,7 +25,6 @@ describe('settings tabs: who can use what', () => {
     setIssuingCompany: jest.fn().mockResolvedValue({}),
     getTheme: jest.fn().mockResolvedValue({ colors: DEFAULT_THEME }),
     setTheme: jest.fn().mockImplementation(async (colors) => ({ colors })),
-    resetTheme: jest.fn().mockResolvedValue({ colors: DEFAULT_THEME }),
   };
 
   beforeAll(async () => {
@@ -74,16 +73,13 @@ describe('settings tabs: who can use what', () => {
     expect(audit.list).not.toHaveBeenCalled();
   });
 
-  it.each(OTHER_THREE)('theme: %s can change and reset it', async (role) => {
+  it.each(OTHER_THREE)('theme: %s can change it', async (role) => {
     expect((await call('PATCH', '/settings/theme', role, { colors: NEW_COLORS })).status).toBe(200);
-    expect((await call('DELETE', '/settings/theme', role)).status).toBe(200);
   });
 
-  it('theme: employee cannot change or reset it', async () => {
+  it('theme: employee cannot change it', async () => {
     expect((await call('PATCH', '/settings/theme', RoleCode.EMPLOYEE, { colors: NEW_COLORS })).status).toBe(403);
-    expect((await call('DELETE', '/settings/theme', RoleCode.EMPLOYEE)).status).toBe(403);
     expect(settings.setTheme).not.toHaveBeenCalled();
-    expect(settings.resetTheme).not.toHaveBeenCalled();
   });
 
   it('employee still gets what every user needs: the colours, and the company picker', async () => {
@@ -113,13 +109,13 @@ describe('settings tabs: who can use what', () => {
     });
   });
 
-  it('records a reset as "reset", and does not log reads or refused requests', async () => {
-    await call('DELETE', '/settings/theme', RoleCode.MANAGER);
+  it('records theme updates, and does not log reads or refused requests', async () => {
+    await call('PATCH', '/settings/theme', RoleCode.MANAGER, { colors: NEW_COLORS });
     await call('GET', '/settings/theme', RoleCode.MANAGER);
     await call('PATCH', '/settings/theme', RoleCode.EMPLOYEE, { colors: NEW_COLORS }); // 403
     await new Promise((r) => setTimeout(r, 20));
     expect(record).toHaveBeenCalledTimes(1);
-    expect(record.mock.calls[0][0]).toMatchObject({ action: 'reset', entity: 'theme' });
+    expect(record.mock.calls[0][0]).toMatchObject({ action: 'update', entity: 'theme' });
   });
 
   it('records the company choice', async () => {

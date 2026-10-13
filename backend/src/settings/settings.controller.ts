@@ -149,10 +149,4 @@ export class SettingsController {
     return this.settings.setTheme(dto.colors, me.id);
   }
 
-  /** Manager and above: back to the default colours. */
-  @Delete('theme')
-  @MinRole(RoleCode.MANAGER)
-  resetTheme() {
-    return this.settings.resetTheme();
-  }
 }

@@ -1,16 +1,15 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Receipt, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Receipt } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useConfirm } from '@/components/confirm';
 import { Button, Card, CardHeader, Input, Loading, STATUS_STYLE } from '@/components/ui';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { toastError } from '@/lib/errors';
 import { useSiteBrand } from '@/lib/brand';
 import { useI18n } from '@/lib/i18n';
-import { applyTheme, DEFAULT_THEME, isHex, readability, THEME_KEYS, themeVars, useTheme, type ThemeColors, type ThemeKey } from '@/lib/theme';
+import { applyTheme, isHex, readability, THEME_KEYS, themeVars, useTheme, type ThemeColors, type ThemeKey } from '@/lib/theme';
 import type { QStatus } from '@/lib/types';
 
 const same = (a: string, b: string) => a.toUpperCase() === b.toUpperCase();
@@ -21,7 +20,6 @@ const clean = (v: string) => '#' + v.replace(/[^0-9a-fA-F]/g, '').slice(0, 6).to
 export function ThemeTab() {
   const { t, has } = useI18n();
   const qc = useQueryClient();
-  const confirm = useConfirm();
   const saved = useTheme();
   const [draft, setDraft] = useState<ThemeColors | null>(null);
 
@@ -39,12 +37,6 @@ export function ThemeTab() {
     onSuccess: onDone(t('theme.saved')),
     onError: (e) => toastError(e, t, has),
   });
-  const reset = useMutation({
-    mutationFn: () => api.delete<{ colors: ThemeColors }>('/settings/theme'),
-    onSuccess: onDone(t('theme.resetDone')),
-    onError: (e) => toastError(e, t, has),
-  });
-
   if (saved.isLoading) return <Card><Loading /></Card>;
   if (!base || !form) return <Card><p className="p-5 text-sm text-red-700">{t('err.NETWORK')}</p></Card>;
 
@@ -53,13 +45,8 @@ export function ThemeTab() {
   // The preview uses the last valid colour while a hex code is half-typed.
   const preview = Object.fromEntries(THEME_KEYS.map((k) => [k, isHex(form[k]) ? form[k] : base[k]])) as ThemeColors;
   const read = readability(preview);
-  const isDefault = THEME_KEYS.every((k) => same(base[k], DEFAULT_THEME[k]));
   const set = (k: ThemeKey, v: string) => setDraft({ ...form, [k]: v });
-  const busy = save.isPending || reset.isPending;
-
-  async function onReset() {
-    if (await confirm({ danger: true, title: t('theme.resetTitle'), message: t('theme.resetMsg'), confirmText: t('theme.resetConfirm') })) reset.mutate();
-  }
+  const busy = save.isPending;
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-12">
@@ -99,7 +86,6 @@ export function ThemeTab() {
           <div className="flex flex-wrap items-center gap-2 border-t border-stone/50 pt-4">
             <Button loading={save.isPending} disabled={busy || !changed || invalid || read.level === 'unreadable'} onClick={() => save.mutate(preview)}>{t('common.save')}</Button>
             <Button variant="ghost" disabled={busy || !draft} onClick={() => setDraft(null)}>{t('theme.discard')}</Button>
-            <Button variant="outline" className="ms-auto" loading={reset.isPending} disabled={busy || isDefault} onClick={onReset}><RotateCcw className="size-4" />{t('theme.reset')}</Button>
           </div>
           {changed && <p className="text-xs font-semibold text-cocoa">{t('theme.unsaved')}</p>}
         </div>

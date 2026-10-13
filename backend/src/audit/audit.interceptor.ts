@@ -172,7 +172,7 @@ export class AuditInterceptor implements NestInterceptor {
     let action = (sub && SUB_ACTION[sub]) || METHOD_ACTION[req.method];
     if (resource === 'settings' && sub === 'theme') {
       entity = 'theme';
-      action = req.method === 'DELETE' ? 'reset' : 'update';
+      action = 'update';
     }
     const assetField = assetFieldOf(resource, segs);
     if (assetField) action = 'update'; // uploading or removing an image edits the profile / the branding

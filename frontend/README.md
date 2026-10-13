@@ -46,7 +46,7 @@ Roles: technical manager and general manager can do everything and cannot change
 
 ## Look and feel
 
-Palette from your image, plus white and black: `ink #291C0E`, `cocoa #6E473B`, `clay #A78D78`, `stone #BEB5A9`, `sand #E1D4C2` (defined in `src/app/globals.css`, used as `bg-ink`, `text-cocoa`, ...). Quotation statuses use the same five colours as stacked pills, like the swatch image. Font: Cairo (bundled through `@fontsource/cairo`, works offline).
+Default palette: `ink #173158`, `cocoa #074D80`, `clay #3A82B6`, `stone #4A8DCB`, `sand #F6F6F6` (defined in `src/app/globals.css`, used as `bg-ink`, `text-cocoa`, ...). Managers can change and save the site-wide palette in **Settings > Theme**. The saved palette is loaded before first paint and shared with visitors. Quotation statuses use the same five colours as stacked pills. Font: Cairo (bundled through `@fontsource/cairo`, works offline).
 
 ## Production
 

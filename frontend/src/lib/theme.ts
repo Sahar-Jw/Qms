@@ -11,11 +11,11 @@ export type ThemeColors = Record<ThemeKey, string>;
 
 /** Same values as globals.css and the backend. */
 export const DEFAULT_THEME: ThemeColors = {
-  ink: '#291C0E',
-  cocoa: '#6E473B',
-  clay: '#A78D78',
-  stone: '#BEB5A9',
-  sand: '#E1D4C2',
+  ink: '#173158',
+  cocoa: '#074D80',
+  clay: '#3A82B6',
+  stone: '#4A8DCB',
+  sand: '#F6F6F6',
 };
 
 export const THEME_STORAGE_KEY = 'qms-theme';

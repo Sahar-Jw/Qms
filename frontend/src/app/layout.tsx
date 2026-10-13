@@ -11,7 +11,7 @@ import '@fontsource/cairo/latin-700.css';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { I18nProvider, LANG_BOOT_SCRIPT } from '@/lib/i18n';
-import { apiUrl } from '@/lib/urls';
+import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 
 /**
  * Static export: this file runs ONCE at build time, so it can no longer read the visitor's cookie or call the API.
@@ -28,9 +28,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
-        {/* The saved colours, straight from the server. A stylesheet in <head> is loaded together with the site's own CSS
-            (no extra wait) and before anything is painted, so the page never shows other colours. Nothing is cached. */}
-        <link rel="stylesheet" href={apiUrl('/settings/theme.css')} />
+        <Script id="theme-bootstrap" strategy="beforeInteractive">{THEME_BOOT_SCRIPT}</Script>
       </head>
       <body>
         <Script id="lang-bootstrap" strategy="beforeInteractive">{LANG_BOOT_SCRIPT}</Script>

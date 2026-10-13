@@ -7,7 +7,7 @@ import { Company } from '../companies/company.entity';
 import { User } from '../users/user.entity';
 import { uploadsRoot } from '../config/uploads';
 import { AppSetting } from './app-setting.entity';
-import { BRAND_SETTING_KEY, BrandSettings, DEFAULT_THEME, normalizeBrand, normalizeTheme, THEME_SETTING_KEY, ThemeColors } from './theme';
+import { BRAND_SETTING_KEY, BrandSettings, normalizeBrand, normalizeTheme, THEME_SETTING_KEY, ThemeColors } from './theme';
 
 @Injectable()
 export class SettingsService {
@@ -59,12 +59,6 @@ export class SettingsService {
     await this.appSettings.save({ key: BRAND_SETTING_KEY, value: next, updatedById: userId });
     if (old) fs.promises.unlink(path.join(uploadsRoot(), old)).catch(() => undefined);
     return next;
-  }
-
-  /** Back to the built-in colours. */
-  async resetTheme() {
-    await this.appSettings.delete({ key: THEME_SETTING_KEY });
-    return { colors: { ...DEFAULT_THEME } };
   }
 
   /** Active companies a user can pick as the quotation issuer. */

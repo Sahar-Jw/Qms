@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #291C0E;
-  --color-cocoa: #6E473B;
-  --color-clay: #A78D78;
-  --color-stone: #BEB5A9;
-  --color-sand: #E1D4C2;
+  --color-ink: #173158;
+  --color-cocoa: #074d80;
+  --color-clay: #3a82b6;
+  --color-stone: #4a8dcb;
+  --color-sand: #f6f6f6;
   --font-sans: "Cairo", ui-sans-serif, system-ui, sans-serif;
   --shadow-lift: 0 1px 0 color-mix(in srgb, var(--color-ink) 5%, transparent), 0 12px 28px -16px color-mix(in srgb, var(--color-ink) 35%, transparent);
   --shadow-pill: 0 -8px 18px -10px color-mix(in srgb, var(--color-ink) 55%, transparent);
