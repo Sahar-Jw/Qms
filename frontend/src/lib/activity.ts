@@ -1,22 +1,20 @@
 'use client';
 import { useSyncExternalStore } from 'react';
 
-/** Counts in-flight API calls so the UI can show that something is loading. */
+/** Tracks page navigation and other work that should surface in the global loader. */
 let all = 0;
-let writes = 0;
 const subs = new Set<() => void>();
-let snap = { all: 0, writes: 0 };
-const emit = () => { snap = { all, writes }; subs.forEach((f) => f()); };
+let snap = { all: 0 };
+const emit = () => { snap = { all }; subs.forEach((f) => f()); };
 
-export function trackRequest(method: string): () => void {
-  const isWrite = method !== 'GET';
-  all++; if (isWrite) writes++;
+export function trackRequest(): () => void {
+  all++;
   emit();
   let done = false;
   return () => {
     if (done) return;
     done = true;
-    all--; if (isWrite) writes--;
+    all--;
     emit();
   };
 }

@@ -78,7 +78,7 @@ function QuotationDetail() {
 
   const printUrl = (lang: 'ar' | 'en') => apiUrl(`/quotations/${q.id}/print?lang=${lang}&autoprint=true${cost ? '&includeCost=true' : ''}`);
   async function downloadPdf(lang: 'ar' | 'en') {
-    const done = trackRequest('GET');
+    const done = trackRequest();
     try {
       const res = await fetch(apiUrl(`/quotations/${q!.id}/pdf?lang=${lang}${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
       if (!res.ok) {

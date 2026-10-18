@@ -177,7 +177,7 @@ function useDelayed(on: boolean, ms: number) {
   return v;
 }
 
-/** Shows ongoing API work and internal page navigation. */
+/** Shows page navigation and explicitly tracked long-running work. */
 export function GlobalLoader() {
   const { t } = useI18n();
   const { all } = useActivity();
@@ -197,7 +197,7 @@ export function GlobalLoader() {
 
       const destination = new URL(link.href, window.location.href);
       if (destination.origin !== window.location.origin || destination.pathname === pathname) return;
-      navigationDone.current ??= trackRequest('GET');
+      navigationDone.current ??= trackRequest();
     }
 
     document.addEventListener('click', onClick, true);
