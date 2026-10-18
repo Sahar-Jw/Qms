@@ -224,7 +224,7 @@ html.stamp img.cohead, html.stamp img.cofoot { display: none; }
 .head .co { flex: 1; }
 .head .co .nm { font-size: 18px; font-weight: 700; color: #1f3a5f; }
 .head .co .sub { color: #444; font-size: 10px; }
-.title { text-align: center; font-size: 20px; font-weight: 700; color: #1f3a5f; margin: 2px 0 10px; letter-spacing: 0.2px; }
+.title { text-align: center; font-size: 20px; font-weight: 700; color: #1f3a5f; margin: 2px 0 10px; letter-spacing: ${rtl ? 'normal' : '0.2px'}; }
 .meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .box { border: 1px solid #c9d1dc; border-radius: 4px; padding: 6px 10px; flex: 1; }
 .box .row { margin: 1px 0; }
@@ -237,7 +237,8 @@ table.items tbody tr:nth-child(even) td { background: #f6f8fb; }
 tr { page-break-inside: avoid; break-inside: avoid; }
 td.c { text-align: center; }
 td.n { text-align: end; white-space: nowrap; }
-td.desc { width: 28%; }
+td.desc { width: 22%; }
+td.link-cell { width: 16%; overflow-wrap: anywhere; word-break: break-all; }
 .material-name { display: block; text-align: start; unicode-bidi: plaintext; }
 .b { font-weight: 700; }
 .lnk { display: block; margin-top: 2px; font-size: 9px; color: #1f3a5f; text-decoration: underline; overflow-wrap: anywhere; word-break: break-all; }
@@ -356,7 +357,8 @@ ${o.script ?? ''}
         return `<tr>
           <td class="c">${nf(String(idx + 1), 0)}</td>
           <td dir="ltr" style="white-space:nowrap">${this.esc(i.materialCode)}</td>
-          <td class="desc">${itemName ? `<div class="material-name"><bdi dir="auto">${this.esc(itemName)}</bdi></div>` : ''}${materialLink ? `<a class="lnk" dir="ltr" href="${this.esc(materialLink)}">${this.esc(materialLink)}</a>` : ''}</td>
+          <td class="desc">${itemName ? `<div class="material-name"><bdi dir="auto">${this.esc(itemName)}</bdi></div>` : ''}</td>
+          <td class="link-cell">${materialLink ? `<a class="lnk" dir="ltr" href="${this.esc(materialLink)}">${this.esc(materialLink)}</a>` : ''}</td>
           <td class="n" dir="ltr">${nf(i.quantity)}</td>
           <td>${this.esc(i.unit ?? '')}</td>
           <td class="n" dir="ltr">${money(i.unitPrice, i.priceCurrency)}</td>
@@ -412,7 +414,7 @@ ${o.script ?? ''}
 ${termsHtml ? `<div class="terms">${termsHtml}</div>` : ''}
 <table class="items">
   <thead><tr>
-    <th>${t.no}</th><th>${t.code}</th><th>${t.desc}</th><th>${t.qty}</th><th>${t.unit}</th><th>${t.unitPrice}</th>
+    <th>${t.no}</th><th>${t.code}</th><th>${t.desc}</th><th>${t.link}</th><th>${t.qty}</th><th>${t.unit}</th><th>${t.unitPrice}</th>
     <th>${t.value}</th><th>${t.shipping}</th><th>${t.customs}</th><th>${t.required}</th>${opts.includeCost ? `<th>${t.cost}</th>` : ''}
   </tr></thead>
   <tbody>${rows}</tbody>
@@ -426,8 +428,8 @@ ${catalogHtml}`;
 
     return this.shell(content, {
       lang: opts.lang, title: q.quotationNumber, headerImg, footerImg, stamp: opts.stamp,
-      bar: opts.autoPrint ? '' : `<div class="bar"><button onclick="window.print()">${this.esc(t.print)}</button></div>`,
-      script: opts.autoPrint ? '<script>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)})</script>' : '',
+      bar: `<div class="bar"><button onclick="window.print()">${this.esc(t.print)}</button></div>`,
+      script: opts.autoPrint ? '<script>window.addEventListener("load",function(){document.fonts.ready.then(function(){requestAnimationFrame(function(){requestAnimationFrame(function(){window.print()})})})})</script>' : '',
     });
   }
 

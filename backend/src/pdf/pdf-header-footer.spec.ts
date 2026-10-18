@@ -54,6 +54,8 @@ describe('printed quotation: company header and footer images', () => {
     expect(ar).toContain('body { direction: rtl;');
     expect(ar).toContain('<div class="title" dir="rtl">عرض سعر</div>');
     expect(en).toContain('<div class="title" dir="ltr">Quotation</div>');
+    expect(ar).toMatch(/\.title \{[^}]*letter-spacing:\s*normal;/);
+    expect(en).toMatch(/\.title \{[^}]*letter-spacing:\s*0\.2px;/);
   });
 
   it('the pictures are pinned outside the page content, so what is written can never move or cover them', async () => {
@@ -62,6 +64,13 @@ describe('printed quotation: company header and footer images', () => {
     expect(html.indexOf('class="cohead"')).toBeLessThan(content);
     expect(html.indexOf('class="cofoot"')).toBeLessThan(content);
     expect(html).toContain('<div class="title" dir="ltr">Quotation</div>');
+  });
+
+  it('keeps a manual print button available if automatic printing is blocked', async () => {
+    const html = await svc.renderHtml(quotation(), { lang: 'ar', includeCost: false, autoPrint: true });
+    expect(html).toContain('<button onclick="window.print()">طباعة</button>');
+    expect(html).toContain('document.fonts.ready.then');
+    expect(html).toContain('window.print()');
   });
 
   it.each(['ar', 'en'] as const)('prints the material name independently from its link in %s', async (lang) => {
@@ -219,9 +228,10 @@ describe('printed quotation: company header and footer images', () => {
       expect(rule).not.toMatch(/color:\s*#fff/);
     });
 
-    it('prints the material link under the description', async () => {
+    it('prints the material link in its own table column', async () => {
       const html = await svc.renderHtml(quotation({}, [item('https://example.com/p?a=1&b=2')]), { lang: 'en', includeCost: false });
-      expect(html).toContain('<a class="lnk" dir="ltr" href="https://example.com/p?a=1&amp;b=2">https://example.com/p?a=1&amp;b=2</a>');
+      expect(html).toContain('<th>Link</th>');
+      expect(html).toContain('<td class="desc"><div class="material-name"><bdi dir="auto">Pipe</bdi></div></td>\n          <td class="link-cell"><a class="lnk" dir="ltr" href="https://example.com/p?a=1&amp;b=2">https://example.com/p?a=1&amp;b=2</a></td>');
     });
 
     it('prints no link when there is none or it is not http(s)', async () => {

@@ -178,9 +178,9 @@ function QuotationDetail() {
       <Card>
             <CardHeader title={<>{t('quotations.items')} <span className="rounded-full bg-sand px-2.5 py-0.5 text-xs font-bold text-cocoa">{q.items.length}</span></>} />
             <div className="max-h-[32rem] overflow-auto">
-              <table className="w-full min-w-[860px]">
+              <table className="w-full min-w-[1000px]">
                 <thead className="sticky top-0 z-10"><tr>
-                  <th className={th}>{t('materials.image')}</th><th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('quotations.quantity')}</th>
+                  <th className={th}>{t('materials.image')}</th><th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('materials.link')}</th><th className={th}>{t('quotations.quantity')}</th>
                   <th className={th}>{t('quotations.unitPrice')}</th><th className={th}>{t('quotations.value')}</th><th className={th}>{t('quotations.shipping')}</th>
                   <th className={th}>{t('quotations.customs')}</th>{co.taxEnabled && <th className={th}>{t('quotations.tax')}</th>}<th className={th}>{t('quotations.required')}</th>{canCost && <th className={th}>{t('quotations.totalCost')}</th>}
                 </tr></thead>
@@ -190,8 +190,10 @@ function QuotationDetail() {
                       <td className={td}><MaterialThumb image={i.materialImage} size="size-20" zoom /></td>
                       <td className={`${td} font-semibold`} dir="ltr">{i.materialCode}</td>
                       <td className={td}>{i.materialName ?? ''}
-                        {i.materialLink && /^https?:\/\/[^\s<>"']+$/i.test(i.materialLink) && <a href={i.materialLink} target="_blank" rel="noreferrer" dir="ltr" className="block break-all text-xs underline">{i.materialLink}</a>}
                         {i.notes && <div className="text-xs text-clay">{i.notes}</div>}</td>
+                      <td className={td}>{i.materialLink && /^https?:\/\/[^\s<>"']+$/i.test(i.materialLink)
+                        ? <a href={i.materialLink} target="_blank" rel="noreferrer" dir="ltr" className="break-all text-xs underline">{i.materialLink}</a>
+                        : '—'}</td>
                       <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.quantity)} <span className="text-xs text-cocoa">{i.unit}</span></td>
                       <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.unitPrice)} <span className="text-xs text-cocoa">{i.priceCurrency}</span></td>
                       <td className={td}><Money amounts={i.amounts} field="value" /></td>
