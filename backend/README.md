@@ -46,10 +46,12 @@ src/
 | Companies | `GET companies[/:id]` | any |
 | | `POST companies` · `PATCH companies/:id` · `PATCH companies/:id/active` · `POST companies/:id/logo` (png/jpg/webp ≤1 MB, field `file`) | general manager+ |
 | Customers / Materials | `GET` (list `?q=&status=active\|inactive\|all&page=&limit=`) · `GET :id` · `POST` · `PATCH :id` | any |
-| | `POST materials/:id/image` (field `file`) · `DELETE materials/:id/image` · `POST materials/:id/catalog` (field `files`, up to 10 PNG/JPG/WEBP/PDF/DOCX files, 10 MB each) · `DELETE materials/:id/catalog/:fileId` | any |
+| | `POST materials/:id/image` (field `file`) · `DELETE materials/:id/image` · `POST materials/:id/catalog` (field `files`, up to 10 PNG/JPG/WEBP/PDF/DOCX files, each up to the size set in Settings > Files, 10 MB by default) · `DELETE materials/:id/catalog/:fileId` | any |
 | | `PATCH :id/active` | manager+ |
 | Settings | `GET settings/companies` (active companies to pick from: id, names, logo) · `GET settings` · `PATCH settings` `{ issuingCompanyId }` — the company ALL of this user's new quotations are issued from | any user |
 | | `GET settings/theme` → `{ colors: { ink, cocoa, clay, stone, sand } }` (the site-wide palette, same for everyone) | any user |
+| | `GET settings/catalog` → `{ maxFileSizeMb, maxFileSizeBytes }` (size limit of ONE catalog file, default 10 MB) | any user |
+| | `PATCH settings/catalog` `{ maxFileSizeMb }` (whole number 1-50). Read on every upload, so it applies at once; only files added afterwards follow it, files already in catalogs are never touched. Over-size upload → `413 CATALOG_FILE_TOO_LARGE` | manager+ |
 | | `PATCH settings/theme` `{ colors: { ink, cocoa, clay, stone, sand } }` (each `#RRGGBB`) · `DELETE settings/theme` (back to the defaults) | manager+ |
 | Audit log | `GET audit-log` (`q` user/record, `action`, `entity`, `userId`, `from`, `to` as `YYYY-MM-DD`, `page`, `limit`) — newest first. Rows are written automatically for every successful `POST/PATCH/PUT/DELETE` and for failed sign-ins; submitted data is stored with passwords/tokens removed | manager+ (employees get 403) |
 | Quotations | `GET quotations` (`q,status,archived`, `companyId,customerId,responsibleUserId,from,to,page,limit`; `archived=true` = locked only) · `POST` · `GET :id` · `PATCH :id` · `POST :id/duplicate` · `POST :id/status` | any (see rules) |

@@ -10,5 +10,6 @@ import { SettingsService } from './settings.service';
   imports: [TypeOrmModule.forFeature([User, Company, AppSetting])],
   controllers: [SettingsController],
   providers: [SettingsService],
+  exports: [SettingsService], // the materials upload reads the catalog size limit
 })
 export class SettingsModule {}

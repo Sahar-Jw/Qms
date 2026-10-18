@@ -19,7 +19,16 @@ export interface PrintOptions {
   includeCatalog?: boolean;
   /** PDF engines: the company header / footer pictures are NOT drawn by the HTML, they are stamped on every page afterwards. */
   stamp?: boolean;
+  /**
+   * Print page: show the catalog pictures through a link to the uploaded file instead of copying every picture into the page as
+   * base64 (a few big pictures made the page tens of MB, which is what made printing slow). Only valid where the page is opened
+   * from the API itself (the link is relative to /api/quotations/:id/print). The PDF builders keep the pictures inside the page.
+   */
+  linkCatalogImages?: boolean;
 }
+
+/** From /api/quotations/:id/print up to the site root, where the uploaded files are served under /uploads/. */
+const UPLOADS_FROM_PRINT_PAGE = '../../../uploads/';
 
 /**
  * Page geometry in millimetres - the ONE place that decides where the company header / footer pictures sit and how much room
@@ -72,6 +81,7 @@ export class PdfService implements OnModuleDestroy {
   private readonly logger = new Logger(PdfService.name);
   private browserPromise?: Promise<import('puppeteer').Browser>;
   private fontCssCache?: string;
+  private readonly pictureCache = new Map<string, { mtimeMs: number; size: number; uri: string }>();
 
   constructor(private readonly config: ConfigService, private readonly translations: TranslationsService) {}
 
@@ -112,28 +122,51 @@ export class PdfService implements OnModuleDestroy {
     return files;
   }
 
-  private async readCatalogFile(file: MaterialCatalogFile): Promise<Buffer> {
+  private catalogFilePath(file: MaterialCatalogFile): string {
     if (!CATALOG_PATH.test(file.path)) {
       throw new InternalServerErrorException({ code: 'INVALID_CATALOG_FILE', message: 'A catalog file has an invalid stored path' });
     }
+    return path.join(uploadsRoot(), file.path);
+  }
+
+  private unavailable(file: MaterialCatalogFile, error: unknown): never {
+    this.logger.error(`Could not read quotation catalog file ${file.path}: ${(error as Error).message}`);
+    throw new InternalServerErrorException({ code: 'CATALOG_FILE_UNAVAILABLE', message: 'A catalog file could not be loaded for printing' });
+  }
+
+  private async readCatalogFile(file: MaterialCatalogFile): Promise<Buffer> {
     try {
-      return await fs.promises.readFile(path.join(uploadsRoot(), file.path));
+      return await fs.promises.readFile(this.catalogFilePath(file));
     } catch (error) {
-      this.logger.error(`Could not read quotation catalog file ${file.path}: ${(error as Error).message}`);
-      throw new InternalServerErrorException({ code: 'CATALOG_FILE_UNAVAILABLE', message: 'A catalog file could not be loaded for printing' });
+      if (error instanceof InternalServerErrorException) throw error;
+      return this.unavailable(file, error);
     }
   }
 
-  private async catalogContentHtml(file: MaterialCatalogFile, bytes: Buffer): Promise<string> {
+  /** Fails early when the stored file is missing WITHOUT reading it (a PDF catalog file can be many MB and is not needed here). */
+  private async assertCatalogFile(file: MaterialCatalogFile): Promise<void> {
+    try {
+      await fs.promises.access(this.catalogFilePath(file), fs.constants.R_OK);
+    } catch (error) {
+      if (error instanceof InternalServerErrorException) throw error;
+      this.unavailable(file, error);
+    }
+  }
+
+  private async catalogContentHtml(file: MaterialCatalogFile, link: boolean): Promise<string> {
     if (file.mimeType === DOCX_MIME) {
-      const result = await mammoth.convertToHtml({ buffer: bytes }, {
+      const result = await mammoth.convertToHtml({ buffer: await this.readCatalogFile(file) }, {
         convertImage: mammoth.images.imgElement(async (image) => ({
           src: `data:${image.contentType};base64,${await image.read('base64')}`,
         })),
       });
       return this.sanitizeDocxHtml(result.value);
     }
-    return `<img class="catalog-image" src="data:${file.mimeType};base64,${bytes.toString('base64')}" alt="">`;
+    if (link) {
+      await this.assertCatalogFile(file);
+      return `<img class="catalog-image" src="${UPLOADS_FROM_PRINT_PAGE}${file.path}" alt="">`; // path is checked against CATALOG_PATH (hex + fixed extension)
+    }
+    return `<img class="catalog-image" src="data:${file.mimeType};base64,${(await this.readCatalogFile(file)).toString('base64')}" alt="">`;
   }
 
   /**
@@ -172,8 +205,8 @@ export class PdfService implements OnModuleDestroy {
   }
 
   /** One Word / picture catalog file: its own page(s), headed by the material and the file name. */
-  private async catalogPageHtml({ file, material }: CatalogEntry, bytes: Buffer, t: Labels): Promise<string> {
-    const content = await this.catalogContentHtml(file, bytes);
+  private async catalogPageHtml({ file, material }: CatalogEntry, t: Labels, link = false): Promise<string> {
+    const content = await this.catalogContentHtml(file, link);
     return `<section class="catalog-page">
   <header class="catalog-heading"><p class="eyebrow">${this.esc(t.catalogEyebrow)}</p><h2><bdi dir="auto">${this.esc(material)}</bdi></h2><p class="catalog-file"><bdi dir="auto">${this.esc(file.name)}</bdi></p></header>
   <div class="catalog-document">${content}</div>
@@ -301,26 +334,25 @@ ${o.script ?? ''}
 
     const co = q.company;
     const cu = q.customer;
-    const logo = this.logoDataUri(co.logo);
+    // Header / footer pictures of the company: the same in every language (none -> the text letterhead / nothing is printed).
+    const [logo, headerImg, footerImg] = await Promise.all([
+      this.logoDataUri(co.logo), this.logoDataUri(co.headerImage), this.logoDataUri(co.footerImage),
+    ]);
     const coName = co.name ?? '';
     const coAddr = co.address ?? '';
-    // Header / footer pictures of the company: the same in every language (none -> the text letterhead / nothing is printed).
-    const headerImg = this.logoDataUri(co.headerImage);
-    const footerImg = this.logoDataUri(co.footerImage);
 
     const entries = opts.includeCatalog === false ? [] : this.catalogEntries(q);
     let catalogHtml = '';
     if (entries.length) {
-      const parts = [this.catalogIndexHtml(entries, t, entries.some((e) => e.file.mimeType === 'application/pdf'))];
-      for (const entry of entries) {
+      // every file is prepared at the same time (Word conversion / picture copy), the order of the page stays the order of the items
+      const parts = await Promise.all(entries.map(async (entry) => {
         if (entry.file.mimeType === 'application/pdf') {
-          await this.readCatalogFile(entry.file); // fail early when the stored file is missing
-          parts.push(`<div class="pdf-slot" data-pdf-name="${this.esc(entry.file.name)}"></div>`); // the browser PDF puts the real pages here
-        } else {
-          parts.push(await this.catalogPageHtml(entry, await this.readCatalogFile(entry.file), t));
+          await this.assertCatalogFile(entry.file); // fail early when the stored file is missing
+          return `<div class="pdf-slot" data-pdf-name="${this.esc(entry.file.name)}"></div>`; // the browser PDF puts the real pages here
         }
-      }
-      catalogHtml = parts.join('\n');
+        return this.catalogPageHtml(entry, t, opts.linkCatalogImages);
+      }));
+      catalogHtml = [this.catalogIndexHtml(entries, t, entries.some((e) => e.file.mimeType === 'application/pdf')), ...parts].join('\n');
     }
 
     const terms: [string, string | null | undefined][] = [
@@ -436,8 +468,7 @@ ${catalogHtml}`;
   async renderPdf(q: QuotationView, opts: PrintOptions): Promise<Buffer> {
     const t = await this.labels(opts.lang);
     const entries = this.catalogEntries(q);
-    // the quotation itself (no catalog); the company pictures are stamped on every page below
-    const html = await this.renderHtml(q, { ...opts, autoPrint: false, includeCatalog: false, stamp: true });
+    // Chromium first: where it cannot run, the caller must hear 503 at once instead of after the whole page was built for nothing
     let browser;
     try {
       browser = await this.getBrowser();
@@ -448,6 +479,8 @@ ${catalogHtml}`;
         message: 'PDF engine (Chromium) is not available on this server. Install Chrome or Edge, run `npx puppeteer browsers install chrome`, or set PUPPETEER_EXECUTABLE_PATH. The /print page works without it.',
       });
     }
+    // the quotation itself (no catalog); the company pictures are stamped on every page below
+    const html = await this.renderHtml(q, { ...opts, autoPrint: false, includeCatalog: false, stamp: true });
     let page;
     try {
       page = await browser.newPage();
@@ -474,15 +507,27 @@ ${catalogHtml}`;
         lang: opts.lang, title: q.quotationNumber, stamp: true, headerImg: null, footerImg: null, headBand: hasHead, footBand: hasFoot,
       });
 
-      // catalog: a list of the attached files, then each file (Word / pictures become pages, PDFs are placed as they are)
+      // catalog: a list of the attached files, then each file (Word / pictures become pages, PDFs are placed as they are).
+      // Word / picture files that follow each other share ONE browser render (every one of them already starts on a new page):
+      // a render per file re-loaded the fonts and re-laid-out the page again and again, which is what made big catalogs slow.
       if (entries.length) {
         const copy = async (doc: PDFDocument) => (await output.copyPages(doc, doc.getPageIndices())).forEach((p) => output.addPage(p));
-        await copy(await pdfOf(shellFor(this.catalogIndexHtml(entries, t, false))));
+        let run: string[] = [this.catalogIndexHtml(entries, t, false)];
+        const flush = async () => {
+          if (!run.length) return;
+          const sections = run.join('\n');
+          run = [];
+          await copy(await pdfOf(shellFor(sections)));
+        };
         for (const entry of entries) {
-          const bytes = await this.readCatalogFile(entry.file);
-          if (entry.file.mimeType === 'application/pdf') await this.appendCatalogPdf(output, bytes, head, foot);
-          else await copy(await pdfOf(shellFor(await this.catalogPageHtml(entry, bytes, t))));
+          if (entry.file.mimeType === 'application/pdf') {
+            await flush();
+            await this.appendCatalogPdf(output, await this.readCatalogFile(entry.file), head, foot);
+          } else {
+            run.push(await this.catalogPageHtml(entry, t));
+          }
         }
+        await flush();
       }
 
       const font = await output.embedFont(StandardFonts.Helvetica);
@@ -514,8 +559,8 @@ ${catalogHtml}`;
       return { header: toPng('img.cohead'), footer: toPng('img.cofoot') };
     })()`);
     const r = result as { header?: unknown; footer?: unknown } | null;
-    const wantHead = !!this.logoDataUri(q.company.headerImage);
-    const wantFoot = !!this.logoDataUri(q.company.footerImage);
+    const wantHead = !!(await this.logoDataUri(q.company.headerImage));
+    const wantFoot = !!(await this.logoDataUri(q.company.footerImage));
     if (!r || typeof r !== 'object' || (wantHead && typeof r.header !== 'string') || (wantFoot && typeof r.footer !== 'string')) {
       throw new InternalServerErrorException('Could not prepare company header/footer images for the PDF');
     }
@@ -623,13 +668,23 @@ ${catalogHtml}`;
     };
   }
 
-  private logoDataUri(rel: string | null): string | null {
+  /**
+   * A company logo / header / footer picture as a data: address. Read without blocking the server (it used to be readFileSync on
+   * every print) and remembered until the file changes, because the same few pictures are used by every quotation.
+   */
+  private async logoDataUri(rel: string | null): Promise<string | null> {
     if (!rel) return null;
     try {
       const file = path.join(uploadsRoot(), rel);
+      const stat = await fs.promises.stat(file);
+      const hit = this.pictureCache.get(file);
+      if (hit && hit.mtimeMs === stat.mtimeMs && hit.size === stat.size) return hit.uri;
       const ext = path.extname(file).toLowerCase();
       const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
-      return `data:${mime};base64,${fs.readFileSync(file).toString('base64')}`;
+      const uri = `data:${mime};base64,${(await fs.promises.readFile(file)).toString('base64')}`;
+      if (this.pictureCache.size >= 40) this.pictureCache.delete(this.pictureCache.keys().next().value as string);
+      this.pictureCache.set(file, { mtimeMs: stat.mtimeMs, size: stat.size, uri });
+      return uri;
     } catch {
       return null;
     }

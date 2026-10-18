@@ -50,10 +50,10 @@ export class QuotationsController {
   /** Print-ready HTML (works on any host). Use ?autoprint=true to open the print dialog directly. */
   @Get(':id/print')
   @Header('Content-Type', 'text/html; charset=utf-8')
-  @Header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; frame-src 'self'; script-src 'unsafe-inline'")
+  @Header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; img-src data: 'self'; font-src data:; frame-src 'self'; script-src 'unsafe-inline'")
   async print(@Param('id', ParseIntPipe) id: number, @Query() q: PrintQueryDto, @CurrentUser() me: AuthUser) {
     const view = await this.quotations.findOne(id, me);
-    return this.pdf.renderHtml(view, { lang: q.lang, includeCost: this.costAllowed(q, me), autoPrint: q.autoprint });
+    return this.pdf.renderHtml(view, { lang: q.lang, includeCost: this.costAllowed(q, me), autoPrint: q.autoprint, linkCatalogImages: !q.inline });
   }
 
   /** PDF (Chromium). Falls back to 503 PDF_ENGINE_UNAVAILABLE where Chromium cannot run - use /print there. */

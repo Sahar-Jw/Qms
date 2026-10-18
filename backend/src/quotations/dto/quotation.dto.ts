@@ -166,6 +166,13 @@ export class PrintQueryDto {
   /** HTML print page only: open the browser print dialog automatically. */
   @IsOptional() @Transform(({ value }) => value === 'true' || value === true || value === '1') @IsBoolean()
   autoprint?: boolean;
+
+  /**
+   * HTML print page only. Default: catalog pictures are linked (a light page). `inline=true` copies them into the page as base64,
+   * which the browser-side PDF builder needs because it reads the page as text (it can not follow the links).
+   */
+  @IsOptional() @Transform(({ value }) => value === 'true' || value === true || value === '1') @IsBoolean()
+  inline?: boolean;
 }
 
 /** Full copy of an existing quotation (new number, today's date, draft, issued from the company in the user's settings). Optionally switch customer. */

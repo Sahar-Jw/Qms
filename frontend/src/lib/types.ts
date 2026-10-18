@@ -33,6 +33,9 @@ export interface BrandSettings {
   icon: string | null;
 }
 
+/** Site-wide size limit for one catalog file (Settings > Files). Checked only when a file is added; old files are never touched. */
+export interface CatalogSettings { maxFileSizeMb: number; maxFileSizeBytes: number }
+
 export interface AuditLogEntry {
   id: number; userId: number | null; userName: string | null; userRole: RoleCode | null;
   action: string; entity: string; entityId: string | null; entityLabel: string | null;

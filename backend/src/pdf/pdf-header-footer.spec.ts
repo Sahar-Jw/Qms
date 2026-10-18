@@ -212,6 +212,83 @@ describe('printed quotation: company header and footer images', () => {
     expect(page.setContent).toHaveBeenCalledWith(expect.stringContaining('class="cohead"'), { waitUntil: 'load' });
   });
 
+  describe('print speed: catalog files', () => {
+    const photo = { id: 'a'.repeat(32), name: 'photo.png', path: `materials/catalog-${'a'.repeat(32)}.png`, mimeType: 'image/png' };
+    const sheet = { id: 'b'.repeat(32), name: 'datasheet.pdf', path: `materials/catalog-${'b'.repeat(32)}.pdf`, mimeType: 'application/pdf' };
+    const withCatalog = (...catalogFiles: unknown[]) => quotation({}, [{ materialCode: 'M-1', materialName: 'Pump', catalogFiles, amounts: [] }]);
+
+    it('links the catalog pictures instead of copying them into the print page', async () => {
+      const html = await svc.renderHtml(withCatalog(photo), { lang: 'en', includeCost: false, linkCatalogImages: true });
+      expect(html).toContain(`<img class="catalog-image" src="../../../uploads/materials/catalog-${'a'.repeat(32)}.png" alt="">`);
+      expect(html).not.toMatch(/class="catalog-image" src="data:/);
+    });
+
+    it('still copies the pictures in by default (the PDF builders need a self-contained page)', async () => {
+      const html = await svc.renderHtml(withCatalog(photo), { lang: 'en', includeCost: false });
+      expect(html).toMatch(/class="catalog-image" src="data:image\/png;base64,/);
+    });
+
+    it('a linked picture whose file is gone fails early, like a copied one', async () => {
+      const gone = { ...photo, id: 'f'.repeat(32), path: `materials/catalog-${'f'.repeat(32)}.png` };
+      await expect(svc.renderHtml(withCatalog(gone), { lang: 'en', includeCost: false, linkCatalogImages: true }))
+        .rejects.toMatchObject({ response: { code: 'CATALOG_FILE_UNAVAILABLE' } });
+    });
+
+    it('does not read a catalog PDF into memory just to place its slot on the print page', async () => {
+      const read = jest.spyOn(fs.promises, 'readFile');
+      try {
+        const html = await svc.renderHtml(withCatalog(sheet), { lang: 'en', includeCost: false });
+        expect(html).toContain('class="pdf-slot" data-pdf-name="datasheet.pdf"');
+        expect(read.mock.calls.some(([file]) => String(file).endsWith(sheet.path.split('/')[1]))).toBe(false);
+      } finally {
+        read.mockRestore();
+      }
+      const gone = { ...sheet, id: 'f'.repeat(32), path: `materials/catalog-${'f'.repeat(32)}.pdf` };
+      await expect(svc.renderHtml(withCatalog(gone), { lang: 'en', includeCost: false })).rejects.toMatchObject({ response: { code: 'CATALOG_FILE_UNAVAILABLE' } });
+    });
+
+    it('server PDF: files that follow each other share one browser render, a catalog PDF goes in between in order', async () => {
+      const png2 = { ...photo, id: 'c'.repeat(32), name: 'two.png', path: `materials/catalog-${'c'.repeat(32)}.png` };
+      const png3 = { ...photo, id: 'd'.repeat(32), name: 'three.png', path: `materials/catalog-${'d'.repeat(32)}.png` };
+      fs.writeFileSync(path.join(dir, 'materials', `catalog-${'c'.repeat(32)}.png`), PNG);
+      fs.writeFileSync(path.join(dir, 'materials', `catalog-${'d'.repeat(32)}.png`), PNG);
+      const attachment = await PDFDocument.create();
+      attachment.addPage();
+      fs.writeFileSync(path.join(dir, 'materials', `catalog-${'b'.repeat(32)}.pdf`), Buffer.from(await attachment.save()));
+      const onePage = await PDFDocument.create();
+      onePage.addPage();
+      const onePageBytes = Buffer.from(await onePage.save());
+      const rendered: string[] = [];
+      const page = {
+        setContent: jest.fn(async (doc: string) => { rendered.push(doc); }),
+        evaluate: jest.fn(async () => ({ header: null, footer: null })),
+        pdf: jest.fn(async () => onePageBytes),
+        close: jest.fn(async () => undefined),
+      };
+      (svc as any).getBrowser = async () => ({ newPage: async () => page });
+
+      const output = await svc.renderPdf(withCatalog(photo, png2, sheet, png3), { lang: 'en', includeCost: false });
+
+      expect(rendered).toHaveLength(3); // quotation, [list + two pictures], [one picture] - it used to be 1 + 1 + one render per file
+      expect(rendered[1]).toContain('class="catalog-index"');
+      expect(rendered[1]).toContain('photo.png');
+      expect(rendered[1]).toContain('two.png');
+      expect(rendered[1].match(/class="catalog-page"/g)).toHaveLength(2);
+      expect(rendered[2]).not.toContain('class="catalog-index"');
+      expect(rendered[2].match(/class="catalog-page"/g)).toHaveLength(1);
+      expect(rendered[2]).toContain('three.png');
+      expect((await PDFDocument.load(output)).getPageCount()).toBe(4); // quotation, list + pictures, the PDF, last picture
+    });
+
+    it('server PDF: answers 503 at once when there is no browser, before building any page', async () => {
+      const spy = jest.spyOn(svc, 'renderHtml');
+      (svc as any).getBrowser = async () => { throw new Error('no chrome'); };
+      await expect(svc.renderPdf(quotation(), { lang: 'en', includeCost: false })).rejects.toMatchObject({ response: { code: 'PDF_ENGINE_UNAVAILABLE' } });
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
+  });
+
   describe('table header and material link', () => {
     const item = (link: string | null) => ({
       id: 1, materialId: 1, materialCode: 'M1', materialName: 'Pipe', materialImage: null, materialLink: link, catalogFiles: [], unit: 'm', sortOrder: 0,

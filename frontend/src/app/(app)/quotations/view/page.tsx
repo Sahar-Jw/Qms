@@ -36,6 +36,9 @@ function Info({ label, value }: { label: string; value?: ReactNode }) {
   );
 }
 
+/** Once the server says it has no PDF engine (shared hosting), the next downloads go straight to the browser PDF: no wasted round trip. */
+let serverPdfUnavailable = false;
+
 export default function QuotationDetailPage() {
   return <Suspense fallback={<Loading />}><QuotationDetail /></Suspense>;
 }
@@ -80,6 +83,7 @@ function QuotationDetail() {
   async function downloadPdf(lang: 'ar' | 'en') {
     const done = trackRequest();
     try {
+      if (serverPdfUnavailable) throw Object.assign(new Error('PDF engine unavailable'), { code: 'PDF_ENGINE_UNAVAILABLE' });
       const res = await fetch(apiUrl(`/quotations/${q!.id}/pdf?lang=${lang}${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -92,9 +96,11 @@ function QuotationDetail() {
     } catch (e) {
       const code = (e as { code?: string }).code;
       if (code === 'PDF_ENGINE_UNAVAILABLE') {
+        serverPdfUnavailable = true;
         // No Chrome on the server (shared hosting): build the PDF in the browser from the print HTML.
+        // inline=true: this builder reads the page as text, so the catalog pictures must be inside it (the print tab links them instead).
         try {
-          const r = await fetch(apiUrl(`/quotations/${q!.id}/print?lang=${lang}${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
+          const r = await fetch(apiUrl(`/quotations/${q!.id}/print?lang=${lang}&inline=true${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
           if (!r.ok) throw new Error(r.statusText);
           const { htmlToPdfBlob } = await import('@/lib/client-pdf');
           const catalogPdfs = q!.items.flatMap((item) => item.catalogFiles ?? [])

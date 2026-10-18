@@ -78,7 +78,7 @@ const ar: Shape<typeof en> = {
     stock: 'المخزون', unitPrice: 'سعر الوحدة', unit: 'الوحدة', currency: 'العملة', origin: 'بلد المنشأ', catalogue: 'الكتالوج', model: 'رقم الموديل',
     image: 'صورة المنتج', uploadImage: 'اختيار صورة', changeImage: 'تغيير الصورة', removeImage: 'حذف الصورة', imageHint: 'PNG أو JPG أو WEBP حتى 8 ميغابايت. تُخفَّف الملفات الكبيرة دون تغيير أبعادها.', noImage: 'لا توجد صورة',
     details: 'تفاصيل المادة', savingDetails: 'جارٍ حفظ البيانات…', uploadingImage: 'جارٍ رفع الملفات…', optimizing: 'جارٍ تجهيز الصورة…', clickToZoom: 'اضغط على الصورة لتكبيرها',
-    catalogFiles: 'ملفات الكتالوج', catalogHint: 'PNG أو JPG أو WEBP أو PDF أو DOCX؛ بحد أقصى 10 ملفات و10 ميغابايت للملف.', addCatalogFiles: 'إضافة ملفات',
+    catalogFiles: 'ملفات الكتالوج', catalogHint: 'PNG أو JPG أو WEBP أو PDF أو DOCX؛ بحد أقصى 10 ملفات و{size} ميغابايت للملف.', catalogTooBig: '«{name}» أكبر من {size} ميغابايت المسموحة لملف الكتالوج.', addCatalogFiles: 'إضافة ملفات',
     removeCatalogFile: 'حذف ملف الكتالوج', catalogLimit: 'يمكن إضافة 10 ملفات كحد أقصى للمادة الواحدة.', uploadingCatalog: 'جارٍ رفع ملفات الكتالوج…',
     link: 'رابط المنتج', sellingPrice: 'سعر البيع', sellingCurrency: 'عملة البيع', linkHint: 'أي رابط ويب أو Google Drive؛ يُضاف https:// إن لم يوجد. قابل للنقر في عرض السعر.', currencyHint: 'رمز أو علامة، مثل USD أو $',
     catalogueNo: 'رقم الكتالوج', searchPh: 'الرمز، الاسم، المصدر، الكتالوج…',
@@ -94,7 +94,14 @@ const ar: Shape<typeof en> = {
     title: 'الإعدادات', company: 'الشركة المُصدِرة', companySub: 'كل عرض سعر تنشئه يصدر باسم هذه الشركة.', current: 'المحددة',
     automatic: 'تُستخدم تلقائياً لأنها الشركة الفعّالة الوحيدة', password: 'تغيير كلمة المرور', currentPassword: 'كلمة المرور الحالية',
     newPassword: 'كلمة المرور الجديدة', confirmPassword: 'تأكيد كلمة المرور الجديدة', passwordMismatch: 'كلمتا المرور غير متطابقتين', passwordChanged: 'تم تغيير كلمة المرور', account: 'حسابك', companySaved: 'تم تحديث الشركة المُصدِرة', pick: 'استخدام هذه الشركة',
-    tabs: { company: 'الشركة', brand: 'هوية الموقع', theme: 'المظهر', texts: 'النصوص', audit: 'سجل التدقيق' },
+    tabs: { company: 'الشركة', brand: 'هوية الموقع', theme: 'المظهر', files: 'الملفات', texts: 'النصوص', audit: 'سجل التدقيق' },
+  },
+  files: {
+    title: 'ملفات الكتالوج', sub: 'أكبر حجم مسموح لملف واحد يُضاف إلى كتالوج مادة.',
+    maxSize: 'الحد الأقصى لحجم الملف (ميغابايت)', range: 'رقم صحيح من {min} إلى {max}.', invalid: 'أدخل رقماً صحيحاً من {min} إلى {max}.',
+    current: 'الحد الحالي: {size} ميغابايت', saved: 'تم ضبط حد حجم ملف الكتالوج على {size} ميغابايت',
+    applies: 'يُطبَّق على الملفات التي تُضاف من الآن فصاعداً. الملفات الموجودة في الكتالوجات لا تتغير ولا تُحذف مهما كان حجمها.',
+    slow: 'الملفات الكبيرة تجعل عروض الأسعار التي تتضمن كتالوجات أبطأ في الطباعة وفي تنزيل PDF، لذلك اجعل الحد أصغر ما تسمح به ملفاتك.',
   },
   brand: {
     title: 'هوية الموقع', sub: 'حدّث اسم الموقع، عنوان تبويب المتصفح، الشعار، الأيقونة والوصف. تظهر المعاينة مباشرة قبل الحفظ.',
@@ -158,7 +165,7 @@ currency: 'العملة', link: 'الرابط', print: 'طباعة', page: 'صف
     INVALID_FILE_TYPE: 'يُسمح بصور PNG أو JPG أو WEBP فقط', INTERNAL_ERROR: 'حدث خطأ في الخادم', NETWORK: 'تعذّر الاتصال بالخادم', QUOTATION_NOT_FOUND: 'العرض غير موجود', COMPANY_NOT_FOUND: 'الشركة غير موجودة', COMPANY_INACTIVE: 'هذه الشركة معطّلة', COMPANY_CANNOT_CHANGE: 'لا يمكن تغيير الشركة المُصدِرة إلا طالما أن العرض مسودة', CUSTOMER_NOT_FOUND: 'العميل غير موجود', MATERIAL_NOT_FOUND: 'المادة غير موجودة', ROLE_NOT_FOUND: 'الدور غير موجود', USER_NOT_FOUND: 'المستخدم غير موجود', FILE_REQUIRED: 'يرجى اختيار ملف', PASSWORD_MISMATCH: 'كلمتا المرور الجديدتان غير متطابقتين', INVALID_PERCENTAGE: 'يجب أن تكون النسبة بين 0 و100', ITEM_NOT_IN_QUOTATION: 'هذا البند لا يتبع العرض', FIELD_REQUIRED: 'لا يمكن ترك هذا الحقل فارغاً',
     REFERENCE_CONFLICT: 'هذا السجل مستخدم في بيانات أخرى، لذلك لا يمكن تعديله أو حذفه', INSUFFICIENT_STOCK: 'المخزون غير كافٍ لتحويل هذا العرض إلى فاتورة',
     CATALOG_LIMIT_EXCEEDED: 'يمكن أن تحتوي المادة على 10 ملفات كتالوج كحد أقصى', CATALOG_FILE_NOT_FOUND: 'ملف الكتالوج غير موجود', INVALID_CATALOG_FILE: 'تعذّرت قراءة ملف الكتالوج هذا',
-    CATALOG_FILE_UNAVAILABLE: 'تعذّر تحميل أحد ملفات الكتالوج للطباعة',
+    CATALOG_FILE_UNAVAILABLE: 'تعذّر تحميل أحد ملفات الكتالوج للطباعة', CATALOG_FILE_TOO_LARGE: 'يمكن أن يصل حجم ملف الكتالوج إلى {maxFileSizeMb} ميغابايت كحد أقصى',
     TOO_MANY_REQUESTS: 'طلبات كثيرة جداً. انتظر قليلاً ثم أعد المحاولة.', PAYLOAD_TOO_LARGE: 'حجم الملف كبير جداً', INTERNAL_SERVER_ERROR: 'حدث خطأ في الخادم',
   },
 };

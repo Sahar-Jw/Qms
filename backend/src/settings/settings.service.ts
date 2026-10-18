@@ -7,6 +7,7 @@ import { Company } from '../companies/company.entity';
 import { User } from '../users/user.entity';
 import { uploadsRoot } from '../config/uploads';
 import { AppSetting } from './app-setting.entity';
+import { CATALOG_SETTING_KEY, CatalogSettings, normalizeCatalog } from './catalog-limits';
 import { BRAND_SETTING_KEY, BrandSettings, normalizeBrand, normalizeTheme, THEME_SETTING_KEY, ThemeColors } from './theme';
 
 @Injectable()
@@ -27,6 +28,19 @@ export class SettingsService {
     const value = normalizeTheme(colors);
     await this.appSettings.save({ key: THEME_SETTING_KEY, value, updatedById: userId });
     return { colors: value };
+  }
+
+  /** The size limit for material catalog files. Read on every upload, so a change applies at once (no restart). */
+  async getCatalog(): Promise<CatalogSettings> {
+    const row = await this.appSettings.findOneBy({ key: CATALOG_SETTING_KEY });
+    return normalizeCatalog(row?.value);
+  }
+
+  /** Only files uploaded after this call follow the new size; the files already in catalogs are not touched. */
+  async setCatalog(maxFileSizeMb: number, userId: number): Promise<CatalogSettings> {
+    const next = normalizeCatalog({ maxFileSizeMb });
+    await this.appSettings.save({ key: CATALOG_SETTING_KEY, value: { maxFileSizeMb: next.maxFileSizeMb }, updatedById: userId });
+    return next;
   }
 
   async getBrand(): Promise<BrandSettings> {

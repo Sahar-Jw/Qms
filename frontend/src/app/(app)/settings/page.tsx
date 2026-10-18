@@ -1,11 +1,12 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { uploadUrl } from '@/lib/urls';
-import { Building2, Check, Languages, Palette, ScrollText, Sparkles } from 'lucide-react';
+import { Building2, Check, FileUp, Languages, Palette, ScrollText, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { AuditTab } from '@/components/settings/AuditTab';
 import { BrandTab } from '@/components/settings/BrandTab';
+import { FilesTab } from '@/components/settings/FilesTab';
 import { TextsTab } from '@/components/settings/TextsTab';
 import { ThemeTab } from '@/components/settings/ThemeTab';
 import { Card, CardHeader, Loading, PageHeader } from '@/components/ui';
@@ -16,7 +17,7 @@ import { toastError } from '@/lib/errors';
 import { useI18n } from '@/lib/i18n';
 import { hasRole, type PickCompany, type Settings } from '@/lib/types';
 
-type Tab = 'company' | 'brand' | 'theme' | 'texts' | 'audit';
+type Tab = 'company' | 'brand' | 'theme' | 'files' | 'texts' | 'audit';
 
 export default function SettingsPage() {
   const { t } = useI18n();
@@ -31,6 +32,7 @@ export default function SettingsPage() {
     { key: 'company', label: t('settings.tabs.company'), icon: Building2 },
     { key: 'brand', label: t('settings.tabs.brand'), icon: Sparkles },
     { key: 'theme', label: t('settings.tabs.theme'), icon: Palette },
+    { key: 'files', label: t('settings.tabs.files'), icon: FileUp },
     { key: 'texts', label: t('settings.tabs.texts'), icon: Languages },
     { key: 'audit', label: t('settings.tabs.audit'), icon: ScrollText },
   ];
@@ -52,6 +54,7 @@ export default function SettingsPage() {
         {active === 'company' && <CompanyTab />}
         {active === 'brand' && <BrandTab />}
         {active === 'theme' && <ThemeTab />}
+        {active === 'files' && <FilesTab />}
         {active === 'texts' && <TextsTab />}
         {active === 'audit' && <AuditTab />}
       </div>

@@ -2,7 +2,7 @@ import { BadRequestException, Body, Controller, Delete, Get, Header, Patch, Post
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDefined, IsInt, IsObject, IsOptional, Matches, MaxLength, ValidateNested } from 'class-validator';
+import { IsDefined, IsInt, IsObject, IsOptional, Matches, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 import * as fs from 'fs';
 import { diskStorage } from 'multer';
 import * as path from 'path';
@@ -13,12 +13,19 @@ import { MinRole } from '../common/decorators/min-role.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { RoleCode } from '../common/enums';
 import { uploadsRoot } from '../config/uploads';
+import { CATALOG_MAX_MB, CATALOG_MIN_MB } from './catalog-limits';
 import { SettingsService } from './settings.service';
 import { HEX_COLOR } from './theme';
 
 class UpdateSettingsDto {
   @IsInt()
   issuingCompanyId: number;
+}
+
+class UpdateCatalogSettingsDto {
+  /** Whole megabytes, per file. */
+  @Type(() => Number) @IsInt() @Min(CATALOG_MIN_MB) @Max(CATALOG_MAX_MB)
+  maxFileSizeMb: number;
 }
 
 const HEX_MESSAGE = 'must be a colour like #A1B2C3';
@@ -89,6 +96,20 @@ export class SettingsController {
   @Patch()
   update(@Body() dto: UpdateSettingsDto, @CurrentUser() me: AuthUser) {
     return this.settings.setIssuingCompany(me.id, dto.issuingCompanyId);
+  }
+
+  /** Any signed-in user: the materials page shows and checks this size before uploading. */
+  @Header('Cache-Control', 'no-store')
+  @Get('catalog')
+  getCatalog() {
+    return this.settings.getCatalog();
+  }
+
+  /** Manager and above. Applies to files uploaded from now on; files already in catalogs are not changed. */
+  @Patch('catalog')
+  @MinRole(RoleCode.MANAGER)
+  updateCatalog(@Body() dto: UpdateCatalogSettingsDto, @CurrentUser() me: AuthUser) {
+    return this.settings.setCatalog(dto.maxFileSizeMb, me.id);
   }
 
   /** Public: the landing and login pages show the site name and logo before anyone signs in. */

@@ -10,7 +10,7 @@ import { MaterialThumb } from '@/components/MaterialThumb';
 import { ProgressBar } from '@/components/ProgressBar';
 import { ActiveBadge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader, Pagination, Select, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
-import { useMe } from '@/lib/auth';
+import { useCatalogSettings, useMe } from '@/lib/auth';
 import { toastError } from '@/lib/errors';
 import { fmtSize, optimizeImage } from '@/lib/image';
 import { cleanBody, useDebounced } from '@/lib/hooks';
@@ -35,6 +35,9 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
   const editing = material !== 'new';
   const fileRef = useRef<HTMLInputElement>(null);
   const catalogRef = useRef<HTMLInputElement>(null);
+  // Settings > Files: the size limit is read live, so a change shows here at once. It only applies to files added now.
+  const catalogLimit = useCatalogSettings().data;
+  const catalogMb = catalogLimit?.maxFileSizeMb ?? 10;
   const [file, setFile] = useState<File | null>(null);
   const [catalogFiles, setCatalogFiles] = useState(editing ? material.catalog ?? [] : []);
   const [catalogSelection, setCatalogSelection] = useState<File[]>([]);
@@ -118,11 +121,16 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
       toast.error(t('materials.catalogLimit'));
       return;
     }
+    const bigFile = files.find((f) => f.size > catalogMb * 1024 * 1024);
+    if (bigFile) {
+      toast.error(t('materials.catalogTooBig', { name: bigFile.name, size: catalogMb }));
+      return;
+    }
     const accepted = files.every((f) =>
-      f.size <= 10 * 1024 * 1024 && ['image/png', 'image/jpeg', 'image/webp', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(f.type),
+      ['image/png', 'image/jpeg', 'image/webp', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(f.type),
     );
     if (!accepted) {
-      toast.error(t('materials.catalogHint'));
+      toast.error(t('materials.catalogHint', { size: catalogMb }));
       return;
     }
     setCatalogSelection((currentSelection) => [...currentSelection, ...files]);
@@ -153,7 +161,7 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <div className="min-w-0 flex-1">
               <div className="text-sm font-bold">{t('materials.catalogFiles')}</div>
-              <div className="text-xs text-cocoa">{t('materials.catalogHint')}</div>
+              <div className="text-xs text-cocoa">{t('materials.catalogHint', { size: catalogMb })}</div>
             </div>
             <input ref={catalogRef} type="file" accept="image/png,image/jpeg,image/webp,application/pdf,.docx" multiple hidden
               onChange={(e) => { pickCatalog(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
