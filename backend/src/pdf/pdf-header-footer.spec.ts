@@ -69,7 +69,7 @@ describe('printed quotation: company header and footer images', () => {
   it('keeps a manual print button available if automatic printing is blocked', async () => {
     const html = await svc.renderHtml(quotation(), { lang: 'ar', includeCost: false, autoPrint: true });
     expect(html).toContain('<button onclick="window.print()">طباعة</button>');
-    expect(html).toContain('document.fonts.ready.then');
+    expect(html).toContain('Promise.all([document.fonts.ready]');
     expect(html).toContain('window.print()');
   });
 
@@ -221,6 +221,13 @@ describe('printed quotation: company header and footer images', () => {
       const html = await svc.renderHtml(withCatalog(photo), { lang: 'en', includeCost: false, linkCatalogImages: true });
       expect(html).toContain(`<img class="catalog-image" src="../../../uploads/materials/catalog-${'a'.repeat(32)}.png" alt="">`);
       expect(html).not.toMatch(/class="catalog-image" src="data:/);
+    });
+
+    it('the automatic print waits for the fonts and every picture, so linked catalog pictures never print blank', async () => {
+      const html = await svc.renderHtml(withCatalog(photo), { lang: 'en', includeCost: false, autoPrint: true, linkCatalogImages: true });
+      expect(html).toContain('document.images');
+      expect(html).toContain('i.decode?i.decode()');
+      expect(html.indexOf('Promise.all([document.fonts.ready]')).toBeLessThan(html.lastIndexOf('window.print()'));
     });
 
     it('still copies the pictures in by default (the PDF builders need a self-contained page)', async () => {

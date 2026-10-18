@@ -80,8 +80,8 @@ function QuotationDetail() {
         : t('quotations.daysRemaining', { days: new Intl.NumberFormat(lang).format(remainingDays) });
 
   const printUrl = (lang: 'ar' | 'en') => apiUrl(`/quotations/${q.id}/print?lang=${lang}&autoprint=true${cost ? '&includeCost=true' : ''}`);
-  async function downloadPdf(lang: 'ar' | 'en') {
-    const done = trackRequest();
+  /** The complete PDF (quotation + every catalog file): from the server's Chromium, or built here when the server has none. */
+  async function buildPdf(lang: 'ar' | 'en'): Promise<Blob> {
     try {
       if (serverPdfUnavailable) throw Object.assign(new Error('PDF engine unavailable'), { code: 'PDF_ENGINE_UNAVAILABLE' });
       const res = await fetch(apiUrl(`/quotations/${q!.id}/pdf?lang=${lang}${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
@@ -89,35 +89,65 @@ function QuotationDetail() {
         const d = await res.json().catch(() => ({}));
         throw Object.assign(new Error(d.message ?? res.statusText), { code: d.code });
       }
-      const url = URL.createObjectURL(await res.blob());
+      return await res.blob();
+    } catch (e) {
+      if ((e as { code?: string }).code !== 'PDF_ENGINE_UNAVAILABLE') throw e;
+      serverPdfUnavailable = true;
+      // No Chrome on the server (shared hosting): build the PDF in the browser from the print HTML.
+      // inline=true: this builder reads the page as text, so the catalog pictures must be inside it (the print tab links them instead).
+      try {
+        const r = await fetch(apiUrl(`/quotations/${q!.id}/print?lang=${lang}&inline=true${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
+        if (!r.ok) throw new Error(r.statusText);
+        const { htmlToPdfBlob } = await import('@/lib/client-pdf');
+        const catalogPdfs = q!.items.flatMap((item) => item.catalogFiles ?? [])
+          .filter((file) => file.mimeType === 'application/pdf')
+          .filter((file, index, files) => files.findIndex((other) => other.id === file.id) === index)
+          .map((file) => uploadUrl(file.path));
+        return await htmlToPdfBlob(await r.text(), catalogPdfs);
+      } catch {
+        throw Object.assign(new Error('Browser PDF failed'), { code: 'CLIENT_PDF_FAILED' });
+      }
+    }
+  }
+  const reportPdfError = (e: unknown, lang: 'ar' | 'en') => {
+    const code = (e as { code?: string }).code;
+    if (code === 'CLIENT_PDF_FAILED') {
+      window.open(printUrl(lang), '_blank'); // last resort: the print page (it cannot include catalog PDF files)
+      toast.info(t('quotations.pdfFallback'));
+      return;
+    }
+    toast.error(code && has(`err.${code}`) ? t(`err.${code}`) : (e as Error).message);
+  };
+  async function downloadPdf(lang: 'ar' | 'en') {
+    const done = trackRequest();
+    try {
+      const url = URL.createObjectURL(await buildPdf(lang));
       const a = document.createElement('a');
       a.href = url; a.download = `${q!.quotationNumber}-${lang}.pdf`; a.click();
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (e) {
-      const code = (e as { code?: string }).code;
-      if (code === 'PDF_ENGINE_UNAVAILABLE') {
-        serverPdfUnavailable = true;
-        // No Chrome on the server (shared hosting): build the PDF in the browser from the print HTML.
-        // inline=true: this builder reads the page as text, so the catalog pictures must be inside it (the print tab links them instead).
-        try {
-          const r = await fetch(apiUrl(`/quotations/${q!.id}/print?lang=${lang}&inline=true${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
-          if (!r.ok) throw new Error(r.statusText);
-          const { htmlToPdfBlob } = await import('@/lib/client-pdf');
-          const catalogPdfs = q!.items.flatMap((item) => item.catalogFiles ?? [])
-            .filter((file) => file.mimeType === 'application/pdf')
-            .filter((file, index, files) => files.findIndex((other) => other.id === file.id) === index)
-            .map((file) => uploadUrl(file.path));
-          const url = URL.createObjectURL(await htmlToPdfBlob(await r.text(), catalogPdfs));
-          const a = document.createElement('a');
-          a.href = url; a.download = `${q!.quotationNumber}-${lang}.pdf`; a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 10_000);
-        } catch {
-          window.open(printUrl(lang), '_blank');
-          toast.info(t('quotations.pdfFallback'));
-        }
-        return;
-      }
-      toast.error(code && has(`err.${code}`) ? t(`err.${code}`) : (e as Error).message);
+      reportPdfError(e, lang);
+    } finally {
+      done();
+    }
+  }
+  /**
+   * Print. The browser's print dialog can only print what is on the print page, and it cannot merge catalog PDF files into it.
+   * So when a catalog has a PDF file, the complete PDF is built (same as the download) and opened in a new tab, ready to print
+   * with every catalog page. Without catalog PDFs the quick print page is used (it already carries the pictures and Word files).
+   */
+  async function printQuotation(lang: 'ar' | 'en') {
+    const hasCatalogPdf = q!.items.some((item) => (item.catalogFiles ?? []).some((file) => file.mimeType === 'application/pdf'));
+    if (!hasCatalogPdf) { window.open(printUrl(lang), '_blank'); return; }
+    const tab = window.open('', '_blank'); // opened now, in the click, or the browser blocks it after the wait
+    const done = trackRequest();
+    try {
+      const url = URL.createObjectURL(await buildPdf(lang));
+      if (tab) tab.location.href = url; else window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000);
+    } catch (e) {
+      tab?.close();
+      reportPdfError(e, lang);
     } finally {
       done();
     }
@@ -175,7 +205,7 @@ function QuotationDetail() {
           )}
           {(['ar', 'en'] as const).map((l) => (
             <span key={l} className="inline-flex overflow-hidden rounded-full ring-1 ring-sand/40">
-              <button onClick={() => window.open(printUrl(l), '_blank')} className="flex items-center gap-1.5 bg-ink/40 px-3.5 py-1.5 text-xs font-bold hover:bg-ink"><Printer className="size-3.5" />{t(l === 'ar' ? 'quotations.printAr' : 'quotations.printEn')}</button>
+              <button onClick={() => printQuotation(l)} className="flex items-center gap-1.5 bg-ink/40 px-3.5 py-1.5 text-xs font-bold hover:bg-ink"><Printer className="size-3.5" />{t(l === 'ar' ? 'quotations.printAr' : 'quotations.printEn')}</button>
               <button onClick={() => downloadPdf(l)} className="flex items-center gap-1.5 border-s border-sand/30 bg-ink/40 px-3 py-1.5 text-xs font-bold hover:bg-ink" title={t(l === 'ar' ? 'quotations.pdfAr' : 'quotations.pdfEn')}><FileDown className="size-3.5" />PDF</button>
             </span>
           ))}

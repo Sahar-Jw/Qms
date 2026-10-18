@@ -461,7 +461,8 @@ ${catalogHtml}`;
     return this.shell(content, {
       lang: opts.lang, title: q.quotationNumber, headerImg, footerImg, stamp: opts.stamp,
       bar: `<div class="bar"><button onclick="window.print()">${this.esc(t.print)}</button></div>`,
-      script: opts.autoPrint ? '<script>window.addEventListener("load",function(){document.fonts.ready.then(function(){requestAnimationFrame(function(){requestAnimationFrame(function(){window.print()})})})})</script>' : '',
+      // the print dialog opens only after the fonts AND every (linked) catalog picture are loaded, or they would print blank
+      script: opts.autoPrint ? '<script>window.addEventListener("load",function(){var imgs=Array.prototype.slice.call(document.images).map(function(i){return i.decode?i.decode().catch(function(){}):Promise.resolve()});Promise.all([document.fonts.ready].concat(imgs)).then(function(){requestAnimationFrame(function(){requestAnimationFrame(function(){window.print()})})})})</script>' : '',
     });
   }
 
