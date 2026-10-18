@@ -149,7 +149,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
 
       <div className="lg:ms-64">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 bg-sand/75 px-4 backdrop-blur-md lg:px-6">
-          <button className="grid size-10 place-items-center rounded-full bg-white/80 ring-1 ring-stone/60 lg:hidden" onClick={() => setOpen(true)} aria-label="menu"><Menu className="size-5" /></button>
+          <button className="grid size-10 place-items-center rounded-full bg-white/80 ring-1 ring-stone/60 lg:hidden" onClick={() => setOpen(true)} aria-label={t('nav.openMenu')}><Menu className="size-5" /></button>
           <form className="relative max-w-xl flex-1" onSubmit={(e) => { e.preventDefault(); if (timer.current) clearTimeout(timer.current); runSearch(q); }}>
             <Search className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-clay" />
             <input ref={inputRef} value={q} onChange={(e) => onSearchChange(e.target.value)} placeholder={t('nav.search')}

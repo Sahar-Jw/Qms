@@ -4,13 +4,13 @@ type Shape<T> = { [K in keyof T]: T[K] extends string ? string : Shape<T[K]> };
 
 const ar: Shape<typeof en> = {
   app: { name: 'عروض الأسعار', tagline: 'الأسعار والعملاء والمواد في مكان واحد' },
-  nav: { profile: 'ملفي الشخصي', dashboard: 'لوحة التحكم', quotations: 'عروض الأسعار', customers: 'العملاء', materials: 'المواد', companies: 'الشركات', users: 'المستخدمون', settings: 'الإعدادات', search: 'ابحث في العروض والعملاء والمواد' },
+  nav: { profile: 'ملفي الشخصي', dashboard: 'لوحة التحكم', quotations: 'عروض الأسعار', customers: 'العملاء', materials: 'المواد', companies: 'الشركات', users: 'المستخدمون', settings: 'الإعدادات', search: 'ابحث في العروض والعملاء والمواد', openMenu: 'فتح القائمة' },
   common: {
     save: 'حفظ', cancel: 'إلغاء', edit: 'تعديل', add: 'إضافة', new: 'جديد', search: 'بحث', all: 'الكل', status: 'الحالة', actions: 'إجراءات',
     showPassword: 'إظهار كلمة المرور', hidePassword: 'إخفاء كلمة المرور',
     loading: 'جارٍ التحميل…', confirm: 'تأكيد', deactivateTitle: 'تعطيل', deactivateMsg: 'هل تريد تعطيل «{name}»؟ لن يظهر عند إنشاء عروض أسعار جديدة.', deactivateUserMsg: 'هل تريد تعطيل «{name}»؟ لن يتمكن هذا المستخدم من تسجيل الدخول.', confirmTitle: 'تأكيد الإجراء', working: 'جارٍ التنفيذ…', noData: 'لا يوجد شيء هنا بعد', back: 'رجوع', close: 'إغلاق', next: 'التالي', prev: 'السابق', page: 'صفحة', of: 'من', total: 'الإجمالي',
     active: 'فعّال', inactive: 'غير فعّال', name: 'الاسم', phone: 'الهاتف', email: 'البريد الإلكتروني', notes: 'ملاحظات', date: 'التاريخ', from: 'من', to: 'إلى',
-    logout: 'تسجيل الخروج', language: 'اللغة', clear: 'مسح التصفية', saved: 'تم الحفظ', created: 'تم الإنشاء', updated: 'تم التحديث', view: 'عرض', print: 'طباعة',
+    logout: 'تسجيل الخروج', language: 'اللغة', clear: 'مسح التصفية', clearValue: 'مسح الاختيار', saved: 'تم الحفظ', created: 'تم الإنشاء', updated: 'تم التحديث', view: 'عرض', print: 'طباعة',
     duplicate: 'نسخ', activate: 'تفعيل', deactivate: 'إيقاف', country: 'البلد', website: 'الموقع الإلكتروني', address: 'العنوان', code: 'الرمز',
     optional: 'اختياري', required: 'مطلوب', invalid: 'قيمة غير صالحة', results: 'نتيجة', none: 'لا شيء', select: 'اختر…', yes: 'نعم', no: 'لا',
     lastLogin: 'آخر دخول', never: 'لم يدخل بعد', role: 'الدور', rows: 'سجل',
@@ -125,6 +125,9 @@ const ar: Shape<typeof en> = {
     no: '#', code: 'الرمز', desc: 'البيان', qty: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة', value: 'القيمة',
     shipping: 'الشحن', customs: 'التخليص الجمركي', required: 'المطلوب', cost: 'التكلفة', totals: 'الإجماليات حسب العملة',
     currency: 'العملة', print: 'طباعة', page: 'صفحة',
+    oneDayRemaining: 'متبقي يوم واحد', daysRemaining: 'متبقي {days} يوم', expired: 'منتهي الصلاحية',
+    catalogTitle: 'الكتالوجات المرفقة', catalogEyebrow: 'ملف الكتالوج', catalogMaterial: 'المادة', catalogFile: 'الملف', catalogType: 'النوع',
+    catalogPdfNote: 'ملفات PDF المرفقة تُضاف إلى ملف PDF المُحمَّل فقط، ولا تظهر في الطباعة من المتصفح.',
   },
   audit: {
     title: 'سجل التدقيق', sub: 'كل تغيير تم في النظام، الأحدث أولاً.', when: 'الوقت', user: 'المستخدم', action: 'الإجراء', record: 'السجل', details: 'التفاصيل',
@@ -153,6 +156,10 @@ const ar: Shape<typeof en> = {
     VALIDITY_BEFORE_QUOTATION_DATE: 'لا يمكن أن يكون تاريخ الصلاحية قبل تاريخ عرض السعر',
     CANNOT_CHANGE_OWN_ROLE: 'لا يمكنك تغيير دورك', ROLE_NOT_ASSIGNABLE: 'المدير التقني فقط يستطيع منح دور المدير التقني', WRONG_CURRENT_PASSWORD: 'كلمة المرور الحالية غير صحيحة', PDF_ENGINE_UNAVAILABLE: 'خدمة PDF غير متاحة على هذا الخادم. استخدم الطباعة.',
     INVALID_FILE_TYPE: 'يُسمح بصور PNG أو JPG أو WEBP فقط', INTERNAL_ERROR: 'حدث خطأ في الخادم', NETWORK: 'تعذّر الاتصال بالخادم', QUOTATION_NOT_FOUND: 'العرض غير موجود', COMPANY_NOT_FOUND: 'الشركة غير موجودة', COMPANY_INACTIVE: 'هذه الشركة معطّلة', COMPANY_CANNOT_CHANGE: 'لا يمكن تغيير الشركة المُصدِرة إلا طالما أن العرض مسودة', CUSTOMER_NOT_FOUND: 'العميل غير موجود', MATERIAL_NOT_FOUND: 'المادة غير موجودة', ROLE_NOT_FOUND: 'الدور غير موجود', USER_NOT_FOUND: 'المستخدم غير موجود', FILE_REQUIRED: 'يرجى اختيار ملف', PASSWORD_MISMATCH: 'كلمتا المرور الجديدتان غير متطابقتين', INVALID_PERCENTAGE: 'يجب أن تكون النسبة بين 0 و100', ITEM_NOT_IN_QUOTATION: 'هذا البند لا يتبع العرض', FIELD_REQUIRED: 'لا يمكن ترك هذا الحقل فارغاً',
+    REFERENCE_CONFLICT: 'هذا السجل مستخدم في بيانات أخرى، لذلك لا يمكن تعديله أو حذفه', INSUFFICIENT_STOCK: 'المخزون غير كافٍ لتحويل هذا العرض إلى فاتورة',
+    CATALOG_LIMIT_EXCEEDED: 'يمكن أن تحتوي المادة على 10 ملفات كتالوج كحد أقصى', CATALOG_FILE_NOT_FOUND: 'ملف الكتالوج غير موجود', INVALID_CATALOG_FILE: 'تعذّرت قراءة ملف الكتالوج هذا',
+    CATALOG_FILE_UNAVAILABLE: 'تعذّر تحميل أحد ملفات الكتالوج للطباعة',
+    TOO_MANY_REQUESTS: 'طلبات كثيرة جداً. انتظر قليلاً ثم أعد المحاولة.', PAYLOAD_TOO_LARGE: 'حجم الملف كبير جداً', INTERNAL_SERVER_ERROR: 'حدث خطأ في الخادم',
   },
 };
 export default ar;

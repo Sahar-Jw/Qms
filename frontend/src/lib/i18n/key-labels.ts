@@ -129,7 +129,22 @@ export const PART_LABELS: Record<string, Pair> = {
   translations: ['نصوص الموقع', 'Website texts'], auth: ['الحساب', 'Account'], nothing: ['رسالة لا نتائج', 'No matches message'],
   // printed quotation columns
   attn: ['عناية', 'Attention'], desc: ['البيان', 'Description'], qty: ['الكمية', 'Quantity'],
+  catalogTitle: ['عنوان الكتالوجات المرفقة', 'Attached catalogs title'], catalogEyebrow: ['النص الصغير فوق عنوان الكتالوج', 'Small text above the catalog title'],
+  catalogMaterial: ['عمود المادة', 'Material column'], catalogFile: ['عمود الملف', 'File column'], catalogType: ['عمود النوع', 'Type column'], catalogPdfNote: ['ملاحظة ملفات PDF المرفقة', 'Attached PDF files note'],
+  // accessibility labels
+  openMenu: ['زر فتح القائمة', 'Open menu button'], clearValue: ['زر مسح الاختيار', 'Clear selection button'],
+  // audit log, branding and materials screens
+  after: ['بعد', 'After'], before: ['قبل', 'Before'], beforeUnavailable: ['رسالة القيمة السابقة غير مسجّلة', 'Previous value not recorded message'], changes: ['التغييرات', 'Changes'],
+  inline: ['عرض قديم ← جديد', 'Old → new view'], sideBySide: ['عرض جنباً إلى جنب', 'Side by side view'], trueValue: ['قيمة «نعم»', '"Yes" value'], falseValue: ['قيمة «لا»', '"No" value'], assets: ['الصور والملفات', 'Pictures and files'],
+  audit: ['سجل التدقيق', 'Audit log'], brand: ['هوية الموقع', 'Branding'], texts: ['النصوص', 'Texts'], theme: ['المظهر', 'Theme'],
+  catalogue: ['الكتالوج', 'Catalogue'], changeImage: ['زر تغيير الصورة', 'Change picture button'], clickToZoom: ['تلميح تكبير الصورة', 'Zoom picture hint'], image: ['صورة المنتج', 'Product picture'], imageHint: ['تلميح الصورة', 'Picture hint'],
+  optimizing: ['رسالة تجهيز الصورة', 'Preparing picture message'], savingDetails: ['رسالة حفظ البيانات', 'Saving details message'], uploadingImage: ['رسالة رفع الملفات', 'Uploading files message'],
+  iconHint: ['تلميح الأيقونة', 'Icon hint'], iconRemoved: ['رسالة حذف الأيقونة', 'Icon removed message'], iconSaved: ['رسالة تحديث الأيقونة', 'Icon updated message'],
+  logoRemoved: ['رسالة حذف الشعار', 'Logo removed message'], logoSaved: ['رسالة تحديث الشعار', 'Logo updated message'], remove: ['زر الحذف', 'Remove button'], upload: ['زر الرفع', 'Upload button'],
   // error codes
+  REFERENCE_CONFLICT: ['السجل مرتبط ببيانات أخرى', 'Record is in use'], INSUFFICIENT_STOCK: ['المخزون غير كافٍ', 'Insufficient stock'], CATALOG_LIMIT_EXCEEDED: ['تجاوز حد ملفات الكتالوج', 'Catalog file limit exceeded'],
+  CATALOG_FILE_NOT_FOUND: ['ملف الكتالوج غير موجود', 'Catalog file not found'], INVALID_CATALOG_FILE: ['ملف كتالوج غير صالح', 'Invalid catalog file'], CATALOG_FILE_UNAVAILABLE: ['ملف الكتالوج غير متاح', 'Catalog file unavailable'],
+  TOO_MANY_REQUESTS: ['طلبات كثيرة', 'Too many requests'], PAYLOAD_TOO_LARGE: ['الملف كبير جداً', 'File too large'], INTERNAL_SERVER_ERROR: ['خطأ داخلي في الخادم', 'Internal server error'],
   COMPANY_NOT_FOUND: ['الشركة غير موجودة', 'Company not found'], COMPANY_INACTIVE: ['الشركة معطّلة', 'Company inactive'], COMPANY_CANNOT_CHANGE: ['لا يمكن تغيير الشركة المُصدِرة', 'Issuing company cannot be changed'],
   CUSTOMER_NOT_FOUND: ['العميل غير موجود', 'Customer not found'], MATERIAL_NOT_FOUND: ['المادة غير موجودة', 'Material not found'], ROLE_NOT_FOUND: ['الدور غير موجود', 'Role not found'],
   USER_NOT_FOUND: ['المستخدم غير موجود', 'User not found'], FILE_REQUIRED: ['الملف مطلوب', 'File required'], INVALID_PERCENTAGE: ['نسبة غير صالحة', 'Invalid percentage'],

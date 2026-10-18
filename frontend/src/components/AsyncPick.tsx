@@ -58,7 +58,7 @@ export function AsyncPick<T extends { id: number }>({ value, onChange, fetcher, 
         className={cn('h-10 w-full rounded-xl border bg-white ps-10 pe-9 text-sm placeholder:text-clay focus:border-cocoa focus:outline-none focus:ring-4 focus:ring-clay/30', invalid ? 'border-red-700' : 'border-stone')}
       />
       {value && !open && (
-        <button type="button" onClick={() => onChange(null)} className="absolute end-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-cocoa hover:bg-sand" aria-label="clear"><X className="size-3.5" /></button>
+        <button type="button" onClick={() => onChange(null)} className="absolute end-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-cocoa hover:bg-sand" aria-label={t('common.clearValue')}><X className="size-3.5" /></button>
       )}
       {open && (
         <div className="absolute z-30 mt-1 max-h-72 w-full min-w-64 overflow-y-auto rounded-2xl border border-stone bg-white p-1.5 shadow-xl">

@@ -1,12 +1,12 @@
 const en = {
   app: { name: 'Quotations', tagline: 'Prices, customers and materials in one place' },
-  nav: { profile: 'My profile', dashboard: 'Dashboard', quotations: 'Quotations', customers: 'Customers', materials: 'Materials', companies: 'Companies', users: 'Users', settings: 'Settings', search: 'Search quotations, customers, materials' },
+  nav: { profile: 'My profile', dashboard: 'Dashboard', quotations: 'Quotations', customers: 'Customers', materials: 'Materials', companies: 'Companies', users: 'Users', settings: 'Settings', search: 'Search quotations, customers, materials', openMenu: 'Open menu' },
   common: {
     save: 'Save', cancel: 'Cancel', edit: 'Edit', add: 'Add', new: 'New', search: 'Search', all: 'All', status: 'Status', actions: 'Actions',
     showPassword: 'Show password', hidePassword: 'Hide password',
     loading: 'Loading…', confirm: 'Confirm', deactivateTitle: 'Deactivate', deactivateMsg: 'Deactivate "{name}"? It will no longer be available when creating new quotations.', deactivateUserMsg: 'Deactivate "{name}"? This user will no longer be able to sign in.', confirmTitle: 'Please confirm', working: 'Working…', noData: 'Nothing here yet', back: 'Back', close: 'Close', next: 'Next', prev: 'Previous', page: 'Page', of: 'of', total: 'Total',
     active: 'Active', inactive: 'Inactive', name: 'Name', phone: 'Phone', email: 'Email', notes: 'Notes', date: 'Date', from: 'From', to: 'To',
-    logout: 'Sign out', language: 'Language', clear: 'Clear filters', saved: 'Saved', created: 'Created', updated: 'Updated', view: 'View', print: 'Print',
+    logout: 'Sign out', language: 'Language', clear: 'Clear filters', clearValue: 'Clear selection', saved: 'Saved', created: 'Created', updated: 'Updated', view: 'View', print: 'Print',
     duplicate: 'Duplicate', activate: 'Activate', deactivate: 'Deactivate', country: 'Country', website: 'Website', address: 'Address', code: 'Code',
     optional: 'optional', required: 'Required', invalid: 'Invalid value', results: 'results', none: 'None', select: 'Select…', yes: 'Yes', no: 'No',
     lastLogin: 'Last sign-in', never: 'never', role: 'Role', rows: 'rows',
@@ -123,6 +123,9 @@ const en = {
     no: '#', code: 'Code', desc: 'Description', qty: 'Qty', unit: 'Unit', unitPrice: 'Unit price', value: 'Value',
     shipping: 'Shipping', customs: 'Customs', required: 'Required', cost: 'Cost', totals: 'Totals by currency',
     currency: 'Currency', print: 'Print', page: 'Page',
+    oneDayRemaining: '1 day remaining', daysRemaining: '{days} days remaining', expired: 'Expired',
+    catalogTitle: 'Attached catalogs', catalogEyebrow: 'Material catalog', catalogMaterial: 'Material', catalogFile: 'File', catalogType: 'Type',
+    catalogPdfNote: 'Attached PDF files are added to the downloaded PDF only; they do not appear when printing from the browser.',
   },
   audit: {
     title: 'Audit log', sub: 'Every change made in the system, newest first.', when: 'When', user: 'User', action: 'Action', record: 'Record', details: 'Details',
@@ -151,6 +154,10 @@ const en = {
     VALIDITY_BEFORE_QUOTATION_DATE: 'The validity date cannot be before the quotation date',
     CANNOT_CHANGE_OWN_ROLE: 'You cannot change your own role', ROLE_NOT_ASSIGNABLE: 'Only the technical manager can assign the technical manager role', WRONG_CURRENT_PASSWORD: 'The current password is wrong', PDF_ENGINE_UNAVAILABLE: 'PDF is not available on this server. Use Print instead.',
     INVALID_FILE_TYPE: 'Only PNG, JPG or WEBP images are allowed', INTERNAL_ERROR: 'Something went wrong on the server', NETWORK: 'Cannot reach the server', QUOTATION_NOT_FOUND: 'Quotation not found', COMPANY_NOT_FOUND: 'Company not found', COMPANY_INACTIVE: 'This company is inactive', COMPANY_CANNOT_CHANGE: 'The issuing company can only be changed while the quotation is a draft', CUSTOMER_NOT_FOUND: 'Customer not found', MATERIAL_NOT_FOUND: 'Material not found', ROLE_NOT_FOUND: 'Role not found', USER_NOT_FOUND: 'User not found', FILE_REQUIRED: 'Please choose a file', PASSWORD_MISMATCH: 'The two new passwords are not the same', INVALID_PERCENTAGE: 'A percentage must be between 0 and 100', ITEM_NOT_IN_QUOTATION: 'This item does not belong to the quotation', FIELD_REQUIRED: 'This field cannot be cleared',
+    REFERENCE_CONFLICT: 'This record is used by other data, so it cannot be changed or removed', INSUFFICIENT_STOCK: 'There is not enough stock to convert this quotation to an invoice',
+    CATALOG_LIMIT_EXCEEDED: 'A material can have at most 10 catalog files', CATALOG_FILE_NOT_FOUND: 'Catalog file not found', INVALID_CATALOG_FILE: 'This catalog file could not be read',
+    CATALOG_FILE_UNAVAILABLE: 'A catalog file could not be loaded for printing',
+    TOO_MANY_REQUESTS: 'Too many requests. Please wait a moment and try again.', PAYLOAD_TOO_LARGE: 'The file is too large', INTERNAL_SERVER_ERROR: 'Something went wrong on the server',
   },
 };
 export default en;
