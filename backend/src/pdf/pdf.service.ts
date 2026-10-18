@@ -208,7 +208,7 @@ ${this.fontCss()}
 @page { size: A4; margin: 0; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: #fff; }
-body { font-family: 'Cairo', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; line-height: 1.55; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { direction: ${rtl ? 'rtl' : 'ltr'}; font-family: 'Cairo', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; line-height: 1.55; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 /* page frame: free room at the top / bottom of every page + the company pictures pinned to the page edges */
 table.pg { width: 100%; border-collapse: collapse; }
 table.pg > thead > tr > td, table.pg > tfoot > tr > td { border: 0; padding: 0; }
@@ -238,6 +238,7 @@ tr { page-break-inside: avoid; break-inside: avoid; }
 td.c { text-align: center; }
 td.n { text-align: end; white-space: nowrap; }
 td.desc { width: 28%; }
+.material-name { display: block; text-align: start; unicode-bidi: plaintext; }
 .b { font-weight: 700; }
 .lnk { display: block; margin-top: 2px; font-size: 9px; color: #1f3a5f; text-decoration: underline; overflow-wrap: anywhere; word-break: break-all; }
 .dim { color: #999; }
@@ -350,11 +351,12 @@ ${o.script ?? ''}
 
     const rows = q.items
       .map((i: ItemView, idx: number) => {
-        const itemName = i.materialName ?? '';
+        const itemName = i.materialName?.trim();
+        const materialLink = this.safeLink(i.materialLink);
         return `<tr>
           <td class="c">${nf(String(idx + 1), 0)}</td>
           <td dir="ltr" style="white-space:nowrap">${this.esc(i.materialCode)}</td>
-          <td class="desc"><bdi dir="auto">${this.esc(itemName)}</bdi>${this.safeLink(i.materialLink) ? `<a class="lnk" dir="ltr" href="${this.esc(this.safeLink(i.materialLink)!)}">${this.esc(this.safeLink(i.materialLink)!)}</a>` : ''}</td>
+          <td class="desc">${itemName ? `<div class="material-name"><bdi dir="auto">${this.esc(itemName)}</bdi></div>` : ''}${materialLink ? `<a class="lnk" dir="ltr" href="${this.esc(materialLink)}">${this.esc(materialLink)}</a>` : ''}</td>
           <td class="n" dir="ltr">${nf(i.quantity)}</td>
           <td>${this.esc(i.unit ?? '')}</td>
           <td class="n" dir="ltr">${money(i.unitPrice, i.priceCurrency)}</td>
@@ -394,7 +396,7 @@ ${o.script ?? ''}
     <div class="sub">${contact}</div>
   </div>
 </div>`}
-<div class="title">${this.esc(t.title)}</div>
+<div class="title" dir="${rtl ? 'rtl' : 'ltr'}">${this.esc(t.title)}</div>
 <div class="meta">
   <div class="box">
     <div class="row"><span class="k">${this.esc(t.to)}:</span> <b><bdi dir="auto">${this.esc(custName)}</bdi></b></div>

@@ -20,6 +20,7 @@ Thumbs.db
 *.sql.gz
 !src/database/migrations/**/*.sql
 !sql/2026-10-12-material-catalog-company-tax.sql
+!sql/2026-10-18-quotation-item-selling-price.sql
 
 # Local seed scripts and data
 src/database/seed*.ts

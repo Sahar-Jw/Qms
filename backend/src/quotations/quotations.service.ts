@@ -174,10 +174,10 @@ export class QuotationsService {
       item.unit = inc.unit ?? (materialChanged ? mat.unit : prev!.unit);
       item.quantity = inc.quantity;
 
-      // a new line starts from the material's selling price when it has one
-      const useSelling = materialChanged && mat.sellingPrice != null && !!mat.sellingCurrency;
-      item.unitPrice = inc.unitPrice ?? (useSelling ? mat.sellingPrice! : materialChanged ? mat.unitPrice : prev!.unitPrice);
-      const priceCur = inc.priceCurrency ?? (useSelling ? mat.sellingCurrency : materialChanged ? mat.currency : prev!.priceCurrency);
+      item.sellingPrice = inc.sellingPrice !== undefined ? inc.sellingPrice : materialChanged ? mat.sellingPrice : prev!.sellingPrice;
+      item.sellingCurrency = inc.sellingCurrency !== undefined ? inc.sellingCurrency : materialChanged ? mat.sellingCurrency : prev!.sellingCurrency;
+      item.unitPrice = inc.unitPrice ?? (materialChanged ? mat.unitPrice : prev!.unitPrice);
+      const priceCur = inc.priceCurrency ?? (materialChanged ? mat.currency : prev!.priceCurrency);
       if (!priceCur) {
         throw new BadRequestException({ code: 'PRICE_CURRENCY_REQUIRED', message: `Price currency is required for material ${mat.materialCode}` });
       }
@@ -213,10 +213,8 @@ export class QuotationsService {
 
   async create(dto: CreateQuotationDto, user: AuthUser): Promise<QuotationView> {
     const id = await this.dataSource.transaction(async (m) => {
-      const companyId = await this.resolveIssuingCompanyId(m, user.id);
-      if (dto.companyId !== undefined && dto.companyId !== companyId) {
-        throw new BadRequestException({ code: 'COMPANY_MISMATCH', message: 'Quotations are issued from the company chosen in the settings' });
-      }
+      const companyId = dto.companyId ?? await this.resolveIssuingCompanyId(m, user.id);
+      await this.assertActive(m, Company, companyId, 'ISSUING_COMPANY', 'Issuing company');
       const issuingCompany = await m.findOneByOrFail(Company, { id: companyId });
       await this.assertActive(m, Customer, dto.customerId, 'CUSTOMER', 'Customer');
       const quotationDate = dto.quotationDate ?? new Date().toISOString().slice(0, 10);
@@ -264,17 +262,13 @@ export class QuotationsService {
         header.validity === undefined ? q.validity : header.validity,
       );
       if (header.customerId !== undefined && header.customerId !== q.customerId) await this.assertActive(m, Customer, header.customerId, 'CUSTOMER', 'Customer');
-      if (header.responsibleUserId && header.responsibleUserId !== q.responsibleUserId) {
-        await this.assertActive(m, User, header.responsibleUserId, 'USER', 'Responsible user');
-      }
-
       // The issuing company may be changed only while the quotation is still a draft.
       const companyChanged = header.companyId !== undefined && header.companyId !== q.companyId;
       if (companyChanged) {
         if (q.status !== QuotationStatus.DRAFT) {
           throw new BadRequestException({ code: 'COMPANY_CANNOT_CHANGE', message: 'The issuing company can only be changed while the quotation is a draft' });
         }
-        await this.assertActive(m, Company, q.companyId, 'ISSUING_COMPANY', 'Issuing company');
+        await this.assertActive(m, Company, header.companyId!, 'ISSUING_COMPANY', 'Issuing company');
       }
       for (const [k, v] of Object.entries(header)) {
         if (v !== undefined) (q as any)[k] = v;
@@ -412,7 +406,7 @@ export class QuotationsService {
         id: i.id,
         materialId: i.materialId,
         materialCode: i.materialCode,
-        materialName: i.materialName,
+        materialName: i.materialName ?? i.material?.name ?? null,
         materialLink: i.materialLink,
         materialImage: /^materials\/[\w.-]+$/.test(i.material?.img ?? '') ? i.material!.img : null,
         catalogFiles: (i.material?.catalog ?? []).filter((file) =>
@@ -425,6 +419,8 @@ export class QuotationsService {
         quantity: i.quantity,
         unitPrice: i.unitPrice,
         priceCurrency: i.priceCurrency,
+        sellingPrice: i.sellingPrice,
+        sellingCurrency: i.sellingCurrency,
         unitCost: i.unitCost,
         costCurrency: i.costCurrency,
         shippingCost: i.shippingCost,

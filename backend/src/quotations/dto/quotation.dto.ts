@@ -30,6 +30,13 @@ export class QuotationItemDto {
   @IsNotEmpty() @CurrencyCode()
   priceCurrency: string;
 
+  /** Editable quotation-only snapshot of the material's selling price; never printed. */
+  @IsOptional() @DecimalString()
+  sellingPrice?: string | null;
+
+  @IsOptional() @CurrencyCode()
+  sellingCurrency?: string | null;
+
   @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(30)
   unit: string;
 
@@ -72,10 +79,6 @@ export class CreateQuotationDto {
 
   @IsInt()
   customerId: number;
-
-  /** The creator is always responsible for a new quotation. */
-  @IsOptional() @IsInt()
-  responsibleUserId: number;
 
   /** Free text: how the customer will pay (any language). Send "" or null to clear. */
   @IsNotEmpty() @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value)) @IsString() @MaxLength(100)

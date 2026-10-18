@@ -58,7 +58,7 @@ const en = {
     material: 'Material', materialPh: 'Search by code or name', customerPh: 'Search customers', quantity: 'Quantity', unit: 'Unit', unitPrice: 'Unit price',
     currency: 'Currency', shipping: 'Shipping', customs: 'Customs', cost: 'Unit cost', totalCost: 'Cost', summary: 'Summary', itemsCount: 'Items', currenciesCount: 'Currencies', commission: 'Commission %', value: 'Value', required: 'Required',
     perCurrency: 'Totals by currency', noItems: 'Add at least one item', issuingCompany: 'Issued from', changeInSettings: 'Change in settings', companyDraftHint: 'You can change the company while the quotation is a draft.',
-    companyMissing: 'Choose the issuing company in settings before creating quotations.', printAr: 'Print Arabic', printEn: 'Print English',
+    companyMissing: 'Choose the issuing company below before saving this quotation.', printAr: 'Print Arabic', printEn: 'Print English',
     pdfFallback: 'PDF engine is not installed on the server. The print page opened: choose "Save as PDF" as the printer.', pdfAr: 'PDF Arabic', pdfEn: 'PDF English', includeCost: 'Include cost', readOnly: 'This quotation is read-only.', notOwner: 'You can only edit the quotations you created.', mineOnly: 'View only', duplicated: 'Copy created: {number}',
     duplicateConfirm: 'Create a full copy of this quotation as a new draft?', info: 'Information', contact: 'Contact', createdBy: 'Responsible',
     saveCreate: 'Create quotation', saveEdit: 'Save changes', pickCustomer: 'Choose a customer', pickMaterial: 'Choose a material',

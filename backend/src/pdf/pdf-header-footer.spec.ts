@@ -45,13 +45,15 @@ describe('printed quotation: company header and footer images', () => {
     expect(tag(html, 'cofoot')).toMatch(/src="data:image\/png;base64,/);
   });
 
-  it('the header and footer are identical in both languages; only the quotation words change', async () => {
+  it('the header and footer are identical in both languages and the heading follows the document direction', async () => {
     const ar = await svc.renderHtml(quotation(withImages), { lang: 'ar', includeCost: false });
     const en = await svc.renderHtml(quotation(withImages), { lang: 'en', includeCost: false });
     expect(tag(ar, 'cohead')).toBe(tag(en, 'cohead'));
     expect(tag(ar, 'cofoot')).toBe(tag(en, 'cofoot'));
-    expect(ar).toContain('عرض سعر');
-    expect(en).toContain('Quotation');
+    expect(ar).toContain('<html lang="ar" dir="rtl"');
+    expect(ar).toContain('body { direction: rtl;');
+    expect(ar).toContain('<div class="title" dir="rtl">عرض سعر</div>');
+    expect(en).toContain('<div class="title" dir="ltr">Quotation</div>');
   });
 
   it('the pictures are pinned outside the page content, so what is written can never move or cover them', async () => {
@@ -59,7 +61,42 @@ describe('printed quotation: company header and footer images', () => {
     const content = html.indexOf('<td class="pgbody">');
     expect(html.indexOf('class="cohead"')).toBeLessThan(content);
     expect(html.indexOf('class="cofoot"')).toBeLessThan(content);
-    expect(html.indexOf('class="title"')).toBeGreaterThan(content);
+    expect(html).toContain('<div class="title" dir="ltr">Quotation</div>');
+  });
+
+  it.each(['ar', 'en'] as const)('prints the material name independently from its link in %s', async (lang) => {
+    const html = await svc.renderHtml(quotation({}, [{
+      materialCode: 'M-1',
+      materialName: 'مضخة مياه',
+      materialLink: null,
+      quantity: '1',
+      unit: 'pcs',
+      unitPrice: '10',
+      priceCurrency: 'USD',
+      amounts: [],
+      catalogFiles: [],
+    }]), { lang, includeCost: false });
+
+    expect(html).toContain('<div class="material-name"><bdi dir="auto">مضخة مياه</bdi></div>');
+    expect(html).not.toContain('class="lnk"');
+    expect(html).toContain('unicode-bidi: plaintext');
+  });
+
+  it('prints a product link separately from the material name', async () => {
+    const html = await svc.renderHtml(quotation({}, [{
+      materialCode: 'M-1',
+      materialName: 'Water pump',
+      materialLink: 'https://example.com/pump',
+      quantity: '1',
+      unit: 'pcs',
+      unitPrice: '10',
+      priceCurrency: 'USD',
+      amounts: [],
+      catalogFiles: [],
+    }]), { lang: 'en', includeCost: false });
+
+    expect(html).toContain('<div class="material-name"><bdi dir="auto">Water pump</bdi></div>');
+    expect(html).toContain('<a class="lnk" dir="ltr" href="https://example.com/pump">https://example.com/pump</a>');
   });
 
   it('pins compact company images to the very top and bottom edge of every printed page', async () => {

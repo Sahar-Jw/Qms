@@ -42,6 +42,13 @@ export class QuotationItem {
   @Column({ type: 'varchar', length: 3 })
   priceCurrency: string;
 
+  /** Editable quotation-only snapshot of the material's selling price; never printed. */
+  @Column({ type: 'decimal', precision: 18, scale: 4, nullable: true })
+  sellingPrice: string | null;
+
+  @Column({ type: 'varchar', length: 3, nullable: true })
+  sellingCurrency: string | null;
+
   @Column({ type: 'decimal', precision: 18, scale: 4, nullable: true })
   unitCost: string | null;
   @Column({ type: 'varchar', length: 3, nullable: true })

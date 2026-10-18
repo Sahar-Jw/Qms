@@ -63,7 +63,7 @@ const ar: Shape<typeof en> = {
     material: 'المادة', materialPh: 'ابحث بالرمز أو الاسم', customerPh: 'ابحث عن عميل', quantity: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة',
     currency: 'العملة', shipping: 'الشحن', customs: 'التخليص الجمركي', cost: 'تكلفة الوحدة', totalCost: 'التكلفة', summary: 'الملخص', itemsCount: 'البنود', currenciesCount: 'العملات', commission: 'العمولة %', value: 'القيمة', required: 'المطلوب',
     perCurrency: 'الإجماليات حسب العملة', noItems: 'أضف بنداً واحداً على الأقل', issuingCompany: 'تصدر باسم', changeInSettings: 'تغيير من الإعدادات', companyDraftHint: 'يمكنك تغيير الشركة طالما أن العرض مسودة.',
-    companyMissing: 'اختر الشركة المُصدِرة من الإعدادات قبل إنشاء العروض.', printAr: 'طباعة عربي', printEn: 'طباعة إنجليزي',
+    companyMissing: 'اختر الشركة المُصدِرة أدناه قبل حفظ العرض.', printAr: 'طباعة عربي', printEn: 'طباعة إنجليزي',
     pdfFallback: 'محرك PDF غير مثبّت على الخادم. فُتحت صفحة الطباعة: اختر "حفظ كـ PDF" كطابعة.', pdfAr: 'PDF عربي', pdfEn: 'PDF إنجليزي', includeCost: 'مع التكلفة', readOnly: 'هذا العرض للقراءة فقط.', notOwner: 'يمكنك تعديل العروض التي أنشأتها فقط.', mineOnly: 'للعرض فقط', duplicated: 'تم إنشاء النسخة: {number}',
     duplicateConfirm: 'إنشاء نسخة كاملة من هذا العرض كمسودة جديدة؟', info: 'المعلومات', contact: 'جهة الاتصال', createdBy: 'المسؤول',
     saveCreate: 'إنشاء العرض', saveEdit: 'حفظ التعديلات', pickCustomer: 'اختر عميلاً', pickMaterial: 'اختر مادة',

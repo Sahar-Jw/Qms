@@ -59,6 +59,7 @@ export interface ItemView {
   id: number; materialId: number | null; materialCode: string; materialName: string | null; materialImage?: string | null; materialLink?: string | null;
   catalogFiles: { id: string; name: string; path: string; mimeType: string }[];
   unit: string | null; sortOrder: number; quantity: string; unitPrice: string; priceCurrency: string;
+  sellingPrice: string | null; sellingCurrency: string | null;
   unitCost: string | null; costCurrency: string | null; shippingCost: string | null; shippingCurrency: string | null;
   customsCost: string | null; customsCurrency: string | null; commissionPercentage: string | null; taxPercentage: string; notes: string | null;
   amounts: Amounts[];

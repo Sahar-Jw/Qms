@@ -11,7 +11,7 @@ import { AsyncPick } from '@/components/AsyncPick';
 import { Ledger } from '@/components/Totals';
 import { Button, Card, CardHeader, Field, Input, PageHeader, Select, Textarea } from '@/components/ui';
 import { api } from '@/lib/api';
-import { useMe, useSettings } from '@/lib/auth';
+import { useSettings } from '@/lib/auth';
 import { isCurrency, normalizeCurrency } from '@/lib/currency';
 import { daysUntil } from '@/lib/dates';
 import { toastError } from '@/lib/errors';
@@ -25,31 +25,33 @@ type PickMaterial = Pick<Material, 'id' | 'materialCode' | 'name'> & Partial<Mat
 
 interface ItemForm {
   id?: number; material: PickMaterial | null; quantity: string; unit: string; unitPrice: string; priceCurrency: string;
+  sellingPrice: string; sellingCurrency: string;
   shippingCost: string; shippingCurrency: string; customsCost: string; customsCurrency: string;
   unitCost: string; costCurrency: string; commissionPercentage: string; taxPercentage: string; notes: string;
 }
 interface FormValues {
-  customer: PickCustomer | null; responsibleUserId: string; quotationDate: string; bankName: string; validity: string;
+  customer: PickCustomer | null; quotationDate: string; bankName: string; validity: string;
   paymentMethod: string; paymentLocation: string; deliveryMethod: string; customerPaymentMethod: string; notes: string;
   items: ItemForm[];
 }
 
 const CURRENCIES = ['USD', 'EUR', 'SYP', 'TRY', 'AED', 'SAR', 'GBP', 'JOD', 'EGP'];
 const DEC = /^\d{1,14}(\.\d{1,4})?$/;
-const emptyItem = (): ItemForm => ({ material: null, quantity: '1', unit: '', unitPrice: '', priceCurrency: '', shippingCost: '', shippingCurrency: '', customsCost: '', customsCurrency: '', unitCost: '', costCurrency: '', commissionPercentage: '', taxPercentage: '', notes: '' });
+const emptyItem = (): ItemForm => ({ material: null, quantity: '1', unit: '', unitPrice: '', priceCurrency: '', sellingPrice: '', sellingCurrency: '', shippingCost: '', shippingCurrency: '', customsCost: '', customsCurrency: '', unitCost: '', costCurrency: '', commissionPercentage: '', taxPercentage: '', notes: '' });
 const today = () => new Date().toISOString().slice(0, 10);
 const isoDate = (v?: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
 
 function fromView(q: QuotationView): FormValues {
   return {
     customer: { id: q.customer.id, companyName: q.customer.companyName },
-    responsibleUserId: q.responsibleUser ? String(q.responsibleUser.id) : '', quotationDate: q.quotationDate,
+    quotationDate: q.quotationDate,
     bankName: q.bankName ?? '', validity: isoDate(q.validity), paymentMethod: q.paymentMethod ?? '',
     paymentLocation: q.paymentLocation ?? '', deliveryMethod: q.deliveryMethod ?? '', customerPaymentMethod: q.customerPaymentMethod ?? '',
     notes: q.notes ?? '',
     items: q.items.map((i) => ({
       id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, name: i.materialName, img: i.materialImage ?? null } : null,
       quantity: trimDec(i.quantity), unit: i.unit ?? '', unitPrice: trimDec(i.unitPrice), priceCurrency: i.priceCurrency,
+      sellingPrice: trimDec(i.sellingPrice), sellingCurrency: i.sellingCurrency ?? '',
       shippingCost: trimDec(i.shippingCost), shippingCurrency: i.priceCurrency, customsCost: trimDec(i.customsCost), customsCurrency: i.priceCurrency,
       unitCost: trimDec(i.unitCost), costCurrency: i.priceCurrency, commissionPercentage: trimDec(i.commissionPercentage), taxPercentage: trimDec(i.taxPercentage), notes: i.notes ?? '',
     })),
@@ -60,12 +62,11 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   const { t, has, lang } = useI18n();
   const router = useRouter();
   const qc = useQueryClient();
-  const me = useMe().data!;
   const settings = useSettings().data;
   const canCost = true; // cost is open to every role
   const editing = !!initial;
   // A draft can still change the company that issues it; once it is locked / invoiced / expired it cannot.
-  const canPickCompany = editing && initial!.status === 'draft';
+  const canPickCompany = !editing || initial!.status === 'draft';
   const [pickedCompanyId, setPickedCompanyId] = useState<number | null>(editing ? initial!.company.id : null);
   const companies = useQuery({ queryKey: ['settings', 'companies'], queryFn: () => api.get<PickCompany[]>('/settings/companies'), enabled: canPickCompany });
   const companyOptions: PickCompany[] = useMemo(() => {
@@ -78,12 +79,16 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   }, [companies.data, initial]);
   const company: PickCompany | null | undefined = editing
     ? (canPickCompany ? companyOptions.find((c) => c.id === pickedCompanyId) ?? initial!.company : initial!.company)
-    : settings?.issuingCompany;
+    : companyOptions.find((c) => c.id === pickedCompanyId) ?? settings?.issuingCompany;
 
-  const users = useQuery({ queryKey: ['users', 'lookup'], queryFn: () => api.get<{ id: number; fullName: string }[]>('/users/lookup'), enabled: editing });
+  useEffect(() => {
+    if (!editing && pickedCompanyId === null && settings?.issuingCompany) {
+      setPickedCompanyId(settings.issuingCompany.id);
+    }
+  }, [editing, pickedCompanyId, settings?.issuingCompany]);
 
   const { register, control, handleSubmit, setValue, getValues, formState: { errors } } = useForm<FormValues>({
-    defaultValues: initial ? fromView(initial) : { customer: null, responsibleUserId: String(me.id), quotationDate: today(), bankName: '', validity: '', paymentMethod: '', paymentLocation: '', deliveryMethod: '', customerPaymentMethod: '', notes: '', items: [emptyItem()] },
+    defaultValues: initial ? fromView(initial) : { customer: null, quotationDate: today(), bankName: '', validity: '', paymentMethod: '', paymentLocation: '', deliveryMethod: '', customerPaymentMethod: '', notes: '', items: [emptyItem()] },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const items = useWatch({ control, name: 'items' });
@@ -116,9 +121,8 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
     mutationFn: (v: FormValues) => {
       const str = (s: string) => s.trim();
       const body = {
-        ...(editing ? (canPickCompany ? { companyId: pickedCompanyId ?? initial!.company.id } : {}) : { companyId: company?.id }),
+        ...(canPickCompany ? { companyId: pickedCompanyId ?? company?.id } : {}),
         customerId: v.customer!.id,
-        ...(editing ? { responsibleUserId: Number(v.responsibleUserId) } : {}),
         quotationDate: v.quotationDate,
         bankName: str(v.bankName), validity: v.validity, paymentMethod: str(v.paymentMethod),
         paymentLocation: str(v.paymentLocation), deliveryMethod: str(v.deliveryMethod), customerPaymentMethod: str(v.customerPaymentMethod),
@@ -127,6 +131,8 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
           const cur = normalizeCurrency(i.priceCurrency); // symbols ($, €...) become their code; one currency for price, shipping, customs and cost
           return {
             id: i.id, materialId: i.material!.id, quantity: str(i.quantity), unit: str(i.unit), unitPrice: str(i.unitPrice), priceCurrency: cur,
+            sellingPrice: str(i.sellingPrice) || null,
+            sellingCurrency: str(i.sellingCurrency) ? normalizeCurrency(i.sellingCurrency) : null,
             shippingCost: str(i.shippingCost), shippingCurrency: cur, customsCost: str(i.customsCost), customsCurrency: cur,
             ...(canCost ? { unitCost: str(i.unitCost), costCurrency: cur } : {}),
             commissionPercentage: str(i.commissionPercentage), taxPercentage: str(i.taxPercentage), notes: str(i.notes) || undefined,
@@ -156,10 +162,13 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
     setValue(`items.${i}.material`, m, { shouldValidate: true });
     if (m) {
       setValue(`items.${i}.unit`, m.unit ?? '');
-      // a material with a selling price starts the line from it
-      const selling = m.sellingPrice != null && !!m.sellingCurrency;
-      setValue(`items.${i}.unitPrice`, trimDec(selling ? m.sellingPrice : m.unitPrice));
-      setValue(`items.${i}.priceCurrency`, (selling ? m.sellingCurrency : m.currency) ?? getValues(`items.${i}.priceCurrency`));
+      setValue(`items.${i}.unitPrice`, trimDec(m.unitPrice));
+      setValue(`items.${i}.priceCurrency`, m.currency ?? getValues(`items.${i}.priceCurrency`));
+      setValue(`items.${i}.sellingPrice`, trimDec(m.sellingPrice));
+      setValue(`items.${i}.sellingCurrency`, m.sellingCurrency ?? '');
+    } else {
+      setValue(`items.${i}.sellingPrice`, '');
+      setValue(`items.${i}.sellingCurrency`, '');
     }
   }
 
@@ -171,7 +180,6 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
       {missingCompany && (
         <div className="mb-4 flex items-center gap-3 rounded-2xl bg-ink px-5 py-3 text-sm text-sand">
           <AlertTriangle className="size-5 shrink-0 text-clay" />{t('quotations.companyMissing')}
-          <Link href="/settings" className="ms-auto shrink-0 rounded-full bg-sand px-4 py-1.5 font-bold text-ink">{t('nav.settings')}</Link>
         </div>
       )}
 
@@ -191,9 +199,6 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                   )} />
               </Field>
               <Field label={t('quotations.date')} required error={errors.quotationDate?.message}><Input type="date" dir="ltr" {...register('quotationDate', req)} /></Field>
-              {editing && <Field label={t('quotations.responsible')} required error={errors.responsibleUserId?.message}>
-                <Select {...register('responsibleUserId', req)}>{users.data?.map((u) => <option key={u.id} value={u.id}>{u.fullName}</option>)}</Select>
-              </Field>}
               <Field label={t('quotations.bank')} required error={errors.bankName?.message}><Input maxLength={150} {...register('bankName', reqText)} /></Field>
               <Field label={t('quotations.validity')} required error={errors.validity?.message}>
                 <Input type="date" dir="ltr" min={quotationDate || undefined}
@@ -248,6 +253,8 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                       <Field label={t('quotations.unit')} required error={e?.unit?.message}><Input maxLength={30} {...register(`items.${i}.unit`, reqText)} /></Field>
                       <Field label={t('quotations.unitPrice')} required error={e?.unitPrice?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.unitPrice`, decRule(true))} /></Field>
                       <Field label={t('quotations.currency')} required hint={t('materials.currencyHint')} error={e?.priceCurrency?.message}><Input list="currencies" dir="ltr" maxLength={20} {...register(`items.${i}.priceCurrency`, { ...req, validate: (v: string) => isCurrency(v) || t('common.invalid'), onBlur: () => setValue(`items.${i}.priceCurrency`, normalizeCurrency(getValues(`items.${i}.priceCurrency`))) })} /></Field>
+                      <Field label={t('materials.sellingPrice')} error={e?.sellingPrice?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.sellingPrice`, decRule(false))} /></Field>
+                      <Field label={t('materials.sellingCurrency')} hint={t('materials.currencyHint')} error={e?.sellingCurrency?.message}><Input list="currencies" dir="ltr" maxLength={20} {...register(`items.${i}.sellingCurrency`, { validate: (v: string) => !v || isCurrency(v) || t('common.invalid'), onBlur: () => { const value = getValues(`items.${i}.sellingCurrency`); if (value) setValue(`items.${i}.sellingCurrency`, normalizeCurrency(value)); } })} /></Field>
 
                       <Field label={t('quotations.shipping')} required error={e?.shippingCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.shippingCost`, decRule(true))} /></Field>
                       <Field label={t('quotations.customs')} required error={e?.customsCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.customsCost`, decRule(true))} /></Field>
@@ -302,13 +309,13 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                 <div className="min-w-0 leading-tight">
                   <div className="text-xs text-stone">{t('quotations.issuingCompany')}</div>
                   <div className="truncate text-base font-bold text-white">{company ? company.name : '—'}</div>
-                  {!editing && <Link href="/settings" className="text-xs underline decoration-clay underline-offset-4">{t('quotations.changeInSettings')}</Link>}
                 </div>
               </div>
               {canPickCompany && (
                 <div className="mb-4">
-                  <Select aria-label={t('quotations.issuingCompany')} value={pickedCompanyId ?? ''} onChange={(e) => setPickedCompanyId(Number(e.target.value))}
-                    className="!bg-white/95 !text-ink" disabled={companies.isLoading}>
+                  <Select aria-label={t('quotations.issuingCompany')} value={pickedCompanyId ?? ''} onChange={(e) => setPickedCompanyId(e.target.value ? Number(e.target.value) : null)}
+                    className="!bg-white/95 !text-ink" disabled={companies.isLoading || companyOptions.length === 0}>
+                    {!pickedCompanyId && <option value="">{t('quotations.issuingCompany')}</option>}
                     {companyOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </Select>
                   <p className="mt-1.5 text-xs text-stone">{t('quotations.companyDraftHint')}</p>
