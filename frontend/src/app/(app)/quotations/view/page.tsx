@@ -189,7 +189,9 @@ function QuotationDetail() {
                     <tr key={i.id} className={tr}>
                       <td className={td}><MaterialThumb image={i.materialImage} size="size-20" zoom /></td>
                       <td className={`${td} font-semibold`} dir="ltr">{i.materialCode}</td>
-                      <td className={td}>{i.materialName ?? ''}{i.notes && <div className="text-xs text-clay">{i.notes}</div>}</td>
+                      <td className={td}>{i.materialName ?? ''}
+                        {i.materialLink && /^https?:\/\/[^\s<>"']+$/i.test(i.materialLink) && <a href={i.materialLink} target="_blank" rel="noreferrer" dir="ltr" className="block break-all text-xs underline">{i.materialLink}</a>}
+                        {i.notes && <div className="text-xs text-clay">{i.notes}</div>}</td>
                       <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.quantity)} <span className="text-xs text-cocoa">{i.unit}</span></td>
                       <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.unitPrice)} <span className="text-xs text-cocoa">{i.priceCurrency}</span></td>
                       <td className={td}><Money amounts={i.amounts} field="value" /></td>

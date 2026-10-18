@@ -167,14 +167,17 @@ export class QuotationsService {
       if (materialChanged) {
         item.materialCode = mat.materialCode;
         item.materialName = mat.name;
+        item.materialLink = mat.link;
       }
       item.materialId = mat.id;
       item.sortOrder = idx;
       item.unit = inc.unit ?? (materialChanged ? mat.unit : prev!.unit);
       item.quantity = inc.quantity;
 
-      item.unitPrice = inc.unitPrice ?? (materialChanged ? mat.unitPrice : prev!.unitPrice);
-      const priceCur = inc.priceCurrency ?? (materialChanged ? mat.currency : prev!.priceCurrency);
+      // a new line starts from the material's selling price when it has one
+      const useSelling = materialChanged && mat.sellingPrice != null && !!mat.sellingCurrency;
+      item.unitPrice = inc.unitPrice ?? (useSelling ? mat.sellingPrice! : materialChanged ? mat.unitPrice : prev!.unitPrice);
+      const priceCur = inc.priceCurrency ?? (useSelling ? mat.sellingCurrency : materialChanged ? mat.currency : prev!.priceCurrency);
       if (!priceCur) {
         throw new BadRequestException({ code: 'PRICE_CURRENCY_REQUIRED', message: `Price currency is required for material ${mat.materialCode}` });
       }
@@ -410,6 +413,7 @@ export class QuotationsService {
         materialId: i.materialId,
         materialCode: i.materialCode,
         materialName: i.materialName,
+        materialLink: i.materialLink,
         materialImage: /^materials\/[\w.-]+$/.test(i.material?.img ?? '') ? i.material!.img : null,
         catalogFiles: (i.material?.catalog ?? []).filter((file) =>
           /^[a-f0-9]{32}$/.test(file.id) &&

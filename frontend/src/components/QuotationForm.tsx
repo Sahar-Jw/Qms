@@ -12,6 +12,7 @@ import { Ledger } from '@/components/Totals';
 import { Button, Card, CardHeader, Field, Input, PageHeader, Select, Textarea } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe, useSettings } from '@/lib/auth';
+import { isCurrency, normalizeCurrency } from '@/lib/currency';
 import { daysUntil } from '@/lib/dates';
 import { toastError } from '@/lib/errors';
 import { useI18n } from '@/lib/i18n';
@@ -105,7 +106,8 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   const computed = useMemo(() => (items ?? []).map((it) => {
     try {
       if (!DEC.test(it.quantity ?? '') ) return [];
-      return calcItem({ ...it, shippingCurrency: it.priceCurrency, customsCurrency: it.priceCurrency, costCurrency: it.priceCurrency, unitPrice: DEC.test(it.unitPrice) ? it.unitPrice : '', unitCost: canCost && DEC.test(it.unitCost) ? it.unitCost : '', shippingCost: DEC.test(it.shippingCost) ? it.shippingCost : '', customsCost: DEC.test(it.customsCost) ? it.customsCost : '' });
+      const cur = normalizeCurrency(it.priceCurrency);
+      return calcItem({ ...it, priceCurrency: cur, shippingCurrency: cur, customsCurrency: cur, costCurrency: cur, unitPrice: DEC.test(it.unitPrice) ? it.unitPrice : '', unitCost: canCost && DEC.test(it.unitCost) ? it.unitCost : '', shippingCost: DEC.test(it.shippingCost) ? it.shippingCost : '', customsCost: DEC.test(it.customsCost) ? it.customsCost : '' });
     } catch { return []; }
   }), [items, canCost]);
   const totals = useMemo(() => aggregate(computed), [computed]);
@@ -122,7 +124,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
         paymentLocation: str(v.paymentLocation), deliveryMethod: str(v.deliveryMethod), customerPaymentMethod: str(v.customerPaymentMethod),
         notes: editing ? (str(v.notes) || null) : (str(v.notes) || undefined),
         items: v.items.map((i) => {
-          const cur = i.priceCurrency.trim().toUpperCase(); // one currency for price, shipping, customs and cost
+          const cur = normalizeCurrency(i.priceCurrency); // symbols ($, €...) become their code; one currency for price, shipping, customs and cost
           return {
             id: i.id, materialId: i.material!.id, quantity: str(i.quantity), unit: str(i.unit), unitPrice: str(i.unitPrice), priceCurrency: cur,
             shippingCost: str(i.shippingCost), shippingCurrency: cur, customsCost: str(i.customsCost), customsCurrency: cur,
@@ -154,8 +156,10 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
     setValue(`items.${i}.material`, m, { shouldValidate: true });
     if (m) {
       setValue(`items.${i}.unit`, m.unit ?? '');
-      setValue(`items.${i}.unitPrice`, trimDec(m.unitPrice));
-      setValue(`items.${i}.priceCurrency`, m.currency ?? getValues(`items.${i}.priceCurrency`));
+      // a material with a selling price starts the line from it
+      const selling = m.sellingPrice != null && !!m.sellingCurrency;
+      setValue(`items.${i}.unitPrice`, trimDec(selling ? m.sellingPrice : m.unitPrice));
+      setValue(`items.${i}.priceCurrency`, (selling ? m.sellingCurrency : m.currency) ?? getValues(`items.${i}.priceCurrency`));
     }
   }
 
@@ -229,7 +233,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                             <AsyncPick<PickMaterial> value={field.value} onChange={(m) => onMaterial(i, m as Material | null)} cacheKey="materials" invalid={!!e?.material}
                               placeholder={t('quotations.materialPh')} label={(m) => `${m.materialCode} - ${m.name ?? ''}`}
                               thumb={(m) => <MaterialThumb image={m.img} size="size-14" />}
-                              sub={(m) => [m.unitPrice && `${fmt(m.unitPrice)} ${m.currency ?? ''}`, m.source].filter(Boolean).join(' / ')}
+                              sub={(m) => [m.sellingPrice != null && m.sellingCurrency ? `${fmt(m.sellingPrice)} ${m.sellingCurrency}` : m.unitPrice && `${fmt(m.unitPrice)} ${m.currency ?? ''}`, m.source].filter(Boolean).join(' / ')}
                               fetcher={(q) => api.get<Paginated<Material>>('/materials', { q, limit: 20 }).then((r) => r.data)} />
                           )} />
                       </Field>
@@ -243,7 +247,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                       </Field>
                       <Field label={t('quotations.unit')} required error={e?.unit?.message}><Input maxLength={30} {...register(`items.${i}.unit`, reqText)} /></Field>
                       <Field label={t('quotations.unitPrice')} required error={e?.unitPrice?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.unitPrice`, decRule(true))} /></Field>
-                      <Field label={t('quotations.currency')} required error={e?.priceCurrency?.message}><Input list="currencies" dir="ltr" maxLength={3} className="uppercase" {...register(`items.${i}.priceCurrency`, { ...req, pattern: { value: /^[A-Za-z]{3}$/, message: t('common.invalid') } })} /></Field>
+                      <Field label={t('quotations.currency')} required hint={t('materials.currencyHint')} error={e?.priceCurrency?.message}><Input list="currencies" dir="ltr" maxLength={20} {...register(`items.${i}.priceCurrency`, { ...req, validate: (v: string) => isCurrency(v) || t('common.invalid'), onBlur: () => setValue(`items.${i}.priceCurrency`, normalizeCurrency(getValues(`items.${i}.priceCurrency`))) })} /></Field>
 
                       <Field label={t('quotations.shipping')} required error={e?.shippingCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.shippingCost`, decRule(true))} /></Field>
                       <Field label={t('quotations.customs')} required error={e?.customsCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.customsCost`, decRule(true))} /></Field>

@@ -25,6 +25,9 @@ export class QuotationItem {
   materialCode: string;
   @Column({ type: 'varchar', length: 255, nullable: true })
   materialName: string | null;
+  /** Snapshot of the material's product link (printed under the description). */
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  materialLink: string | null;
   @Column({ type: 'varchar', length: 30, nullable: true })
   unit: string | null;
 

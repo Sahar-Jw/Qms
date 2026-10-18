@@ -8,6 +8,7 @@ export interface ItemView {
   materialCode: string;
   materialName: string | null;
   materialImage: string | null;
+  materialLink: string | null;
   catalogFiles: MaterialCatalogFile[];
   unit: string | null;
   sortOrder: number;

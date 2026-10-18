@@ -35,6 +35,17 @@ export class Material extends AuditBase {
   @Column({ type: 'varchar', length: 3, nullable: true })
   currency: string | null;
 
+  /** Price the material is sold at (optional). New quotation lines start from it when it is set. */
+  @Column({ type: 'decimal', precision: 18, scale: 4, nullable: true })
+  sellingPrice: string | null;
+
+  @Column({ type: 'varchar', length: 3, nullable: true })
+  sellingCurrency: string | null;
+
+  /** Product web page (http/https), printed on quotations. */
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  link: string | null;
+
   @Column({ type: 'varchar', length: 100, nullable: true })
   countryOfOrigin: string | null;
 

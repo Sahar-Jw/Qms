@@ -44,7 +44,7 @@ const T = {
     deliveryMethod: 'طريقة التسليم', bank: 'المصرف', customerPayment: 'نظام الدفع', responsible: 'المسؤول',
     no: '#', code: 'الرمز', desc: 'البيان', qty: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة', value: 'القيمة',
     shipping: 'الشحن', customs: 'التخليص الجمركي', required: 'المطلوب', cost: 'التكلفة', totals: 'الإجماليات حسب العملة',
-    currency: 'العملة', print: 'طباعة', page: 'صفحة',
+    currency: 'العملة', link: 'الرابط', print: 'طباعة', page: 'صفحة',
     catalogTitle: 'الكتالوجات المرفقة', catalogEyebrow: 'ملف الكتالوج', catalogMaterial: 'المادة', catalogFile: 'الملف', catalogType: 'النوع',
     catalogPdfNote: 'ملفات PDF المرفقة تُضاف إلى ملف PDF المُحمَّل فقط، ولا تظهر في الطباعة من المتصفح.',
   },
@@ -54,7 +54,7 @@ const T = {
     deliveryMethod: 'Delivery method', bank: 'Bank', customerPayment: 'Payment terms', responsible: 'Prepared by',
     no: '#', code: 'Code', desc: 'Description', qty: 'Qty', unit: 'Unit', unitPrice: 'Unit price', value: 'Value',
     shipping: 'Shipping', customs: 'Customs', required: 'Required', cost: 'Cost', totals: 'Totals by currency',
-    currency: 'Currency', print: 'Print', page: 'Page',
+    currency: 'Currency', link: 'Link', print: 'Print', page: 'Page',
     catalogTitle: 'Attached catalogs', catalogEyebrow: 'Material catalog', catalogMaterial: 'Material', catalogFile: 'File', catalogType: 'Type',
     catalogPdfNote: 'Attached PDF files are added to the downloaded PDF only; they do not appear when printing from the browser.',
   },
@@ -88,6 +88,12 @@ export class PdfService implements OnModuleDestroy {
       this.logger.warn(`Could not load edited print texts: ${(e as Error).message}`);
     }
     return out as Labels;
+  }
+
+  /** Only plain http(s) links are printed (never javascript:, data: ...). */
+  private safeLink(link: string | null | undefined): string | null {
+    const v = (link ?? '').trim();
+    return /^https?:\/\/[^\s<>"']+$/i.test(v) ? v : null;
   }
 
   // ------------------------------------------------------------------ catalog files (appended after the quotation)
@@ -225,7 +231,7 @@ html.stamp img.cohead, html.stamp img.cofoot { display: none; }
 .k { color: #555; }
 .terms { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; border: 1px solid #c9d1dc; border-radius: 4px; padding: 6px 10px; margin-bottom: 10px; }
 table { width: 100%; border-collapse: collapse; }
-th { background: #1f3a5f; color: #fff; font-weight: 600; padding: 5px 4px; border: 1px solid #1f3a5f; text-align: center; font-size: 10px; }
+th { background: #e9eef5; color: #1f3a5f; font-weight: 700; padding: 5px 4px; border: 1px solid #c9d1dc; text-align: center; font-size: 10px; } /* light header: saves ink */
 td { border: 1px solid #c9d1dc; padding: 4px; vertical-align: top; }
 table.items tbody tr:nth-child(even) td { background: #f6f8fb; }
 tr { page-break-inside: avoid; break-inside: avoid; }
@@ -233,6 +239,7 @@ td.c { text-align: center; }
 td.n { text-align: end; white-space: nowrap; }
 td.desc { width: 28%; }
 .b { font-weight: 700; }
+.lnk { display: block; margin-top: 2px; font-size: 9px; color: #1f3a5f; text-decoration: underline; overflow-wrap: anywhere; word-break: break-all; }
 .dim { color: #999; }
 h3 { margin: 14px 0 4px; font-size: 12px; color: #1f3a5f; }
 .totals { width: 62%; margin-inline-start: auto; break-inside: avoid; }
@@ -347,7 +354,7 @@ ${o.script ?? ''}
         return `<tr>
           <td class="c">${nf(String(idx + 1), 0)}</td>
           <td dir="ltr" style="white-space:nowrap">${this.esc(i.materialCode)}</td>
-          <td class="desc"><bdi dir="auto">${this.esc(itemName)}</bdi></td>
+          <td class="desc"><bdi dir="auto">${this.esc(itemName)}</bdi>${this.safeLink(i.materialLink) ? `<a class="lnk" dir="ltr" href="${this.esc(this.safeLink(i.materialLink)!)}">${this.esc(this.safeLink(i.materialLink)!)}</a>` : ''}</td>
           <td class="n" dir="ltr">${nf(i.quantity)}</td>
           <td>${this.esc(i.unit ?? '')}</td>
           <td class="n" dir="ltr">${money(i.unitPrice, i.priceCurrency)}</td>

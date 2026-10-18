@@ -48,6 +48,7 @@ export interface Customer {
 export interface Material {
   id: number; materialCode: string; name: string | null; source: string | null;
   stockQuantity: string; unitPrice: string; unit: string | null; currency: string | null; countryOfOrigin: string | null;
+  sellingPrice: string | null; sellingCurrency: string | null; link: string | null;
   img: string | null; catalog: { id: string; name: string; path: string; mimeType: string }[] | null;
   modelNumber: string | null; catalogueNumber: string | null; isActive: boolean;
 }
@@ -55,7 +56,7 @@ export interface Material {
 export interface Amounts { currency: string; value: string; cost: string; shipping: string; customs: string; required: string }
 
 export interface ItemView {
-  id: number; materialId: number | null; materialCode: string; materialName: string | null; materialImage?: string | null;
+  id: number; materialId: number | null; materialCode: string; materialName: string | null; materialImage?: string | null; materialLink?: string | null;
   catalogFiles: { id: string; name: string; path: string; mimeType: string }[];
   unit: string | null; sortOrder: number; quantity: string; unitPrice: string; priceCurrency: string;
   unitCost: string | null; costCurrency: string | null; shippingCost: string | null; shippingCurrency: string | null;

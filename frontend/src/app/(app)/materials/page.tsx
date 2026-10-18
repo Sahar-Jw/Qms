@@ -15,16 +15,19 @@ import { toastError } from '@/lib/errors';
 import { fmtSize, optimizeImage } from '@/lib/image';
 import { cleanBody, useDebounced } from '@/lib/hooks';
 import { useI18n } from '@/lib/i18n';
+import { isCurrency, normalizeCurrency } from '@/lib/currency';
+import { normalizeLink } from '@/lib/link';
 import { fmt, trimDec } from '@/lib/money';
 import { hasRole, type Material, type Paginated } from '@/lib/types';
 
-type Form = { materialCode: string; name: string; source: string; stockQuantity: string; unitPrice: string; unit: string; currency: string; countryOfOrigin: string; modelNumber: string; catalogueNumber: string };
-const blank: Form = { materialCode: '', name: '', source: '', stockQuantity: '', unitPrice: '', unit: '', currency: '', countryOfOrigin: '', modelNumber: '', catalogueNumber: '' };
+type Form = { materialCode: string; name: string; source: string; stockQuantity: string; unitPrice: string; unit: string; currency: string; sellingPrice: string; sellingCurrency: string; link: string; countryOfOrigin: string; modelNumber: string; catalogueNumber: string };
+const blank: Form = { materialCode: '', name: '', source: '', stockQuantity: '', unitPrice: '', unit: '', currency: '', sellingPrice: '', sellingCurrency: '', link: '', countryOfOrigin: '', modelNumber: '', catalogueNumber: '' };
 const toForm = (m: Material): Form => {
   const f = Object.fromEntries(Object.keys(blank).map((k) => [k, (m as unknown as Record<string, string | null>)[k] ?? ''])) as Form;
-  return { ...f, stockQuantity: trimDec(m.stockQuantity), unitPrice: trimDec(m.unitPrice) };
+  return { ...f, stockQuantity: trimDec(m.stockQuantity), unitPrice: trimDec(m.unitPrice), sellingPrice: trimDec(m.sellingPrice) };
 };
 const DEC = /^\d{1,14}(\.\d{1,4})?$/;
+const URL_RE = /^https?:\/\/[^\s<>"']+$/i;
 
 function MaterialModal({ material, onClose }: { material: Material | 'new'; onClose: () => void }) {
   const { t, has } = useI18n();
@@ -57,13 +60,16 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
       setFile(small); setOrigSize(f.size); setRemoveImg(false);
     } finally { setPreparing(false); }
   };
-  const { register, handleSubmit, formState: { errors } } = useForm<Form>({ defaultValues: editing ? toForm(material) : blank });
+  const { register, handleSubmit, getValues, setValue, watch, formState: { errors } } = useForm<Form>({ defaultValues: editing ? toForm(material) : blank });
   const save = useMutation({
     mutationFn: async (v: Form) => {
       const body = cleanBody(v, editing);
-      if (body.currency) body.currency = String(body.currency).toUpperCase();
+      // symbols ($, €, ل.س ...) are stored as their 3-letter code
+      for (const k of ['currency', 'sellingCurrency'] as const) if (body[k]) body[k] = normalizeCurrency(String(body[k]));
       // numbers can't be null on the backend: leave them out when empty
       for (const k of ['stockQuantity', 'unitPrice'] as const) if (body[k] === null) delete body[k];
+      if (body.link) body.link = normalizeLink(String(body.link));
+      if (!editing) for (const k of ['sellingPrice', 'sellingCurrency', 'link'] as const) if (body[k] === undefined) delete body[k];
       setPhase('saving'); setPct(4);
       const saved = await (editing ? api.patch<Material>(`/materials/${material.id}`, body) : api.post<Material>('/materials', body));
       setPct(10);
@@ -180,13 +186,17 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
         <Field label={t('materials.code')} required error={errors.materialCode?.message}><Input dir="ltr" maxLength={60} {...register('materialCode', req)} /></Field>
         <Field label={t('common.name')} required error={errors.name?.message} className="sm:col-span-2 md:col-span-2"><Input maxLength={255} {...register('name', req)} /></Field>
         <Field label={t('materials.unitPrice')} required error={errors.unitPrice?.message}><Input inputMode="decimal" dir="ltr" {...register('unitPrice', dec)} /></Field>
-        <Field label={t('materials.currency')} required error={errors.currency?.message}><Input dir="ltr" maxLength={3} className="uppercase" {...register('currency', { required: t('common.required'), pattern: { value: /^[A-Za-z]{3}$/, message: t('common.invalid') } })} /></Field>
+        <Field label={t('materials.currency')} required hint={t('materials.currencyHint')} error={errors.currency?.message}><Input dir="ltr" list="currencies" maxLength={20} {...register('currency', { required: t('common.required'), validate: (v: string) => isCurrency(v) || t('common.invalid'), onBlur: () => setValue('currency', normalizeCurrency(getValues('currency'))) })} /></Field>
+        <Field label={t('materials.sellingPrice')} error={errors.sellingPrice?.message}><Input inputMode="decimal" dir="ltr" {...register('sellingPrice', { validate: (v: string) => v.trim() === '' || DEC.test(v.trim()) || t('common.invalid') })} /></Field>
+        <Field label={t('materials.sellingCurrency')} required={watch('sellingPrice').trim() !== ''} hint={t('materials.currencyHint')} error={errors.sellingCurrency?.message}><Input dir="ltr" list="currencies" maxLength={20} {...register('sellingCurrency', { validate: (v: string) => (v.trim() === '' ? getValues('sellingPrice').trim() === '' || t('common.required') : isCurrency(v) || t('common.invalid')), onBlur: () => { const v = getValues('sellingCurrency'); if (v.trim()) setValue('sellingCurrency', normalizeCurrency(v)); } })} /></Field>
+        <Field label={t('materials.link')} hint={t('materials.linkHint')} error={errors.link?.message} className="sm:col-span-2 md:col-span-3"><Input inputMode="url" dir="ltr" maxLength={500} placeholder="https://drive.google.com/…" {...register('link', { validate: (v: string) => v.trim() === '' || URL_RE.test(normalizeLink(v)) || t('common.invalid'), onBlur: () => { const v = getValues('link'); if (v.trim()) setValue('link', normalizeLink(v)); } })} /></Field>
         <Field label={t('materials.unit')} required error={errors.unit?.message}><Input maxLength={30} {...register('unit', req)} /></Field>
         <Field label={t('materials.stock')} required error={errors.stockQuantity?.message}><Input inputMode="decimal" dir="ltr" {...register('stockQuantity', dec)} /></Field>
         <Field label={t('materials.source')} required error={errors.source?.message}><Input maxLength={150} {...register('source', req)} /></Field>
         <Field label={t('materials.origin')} required error={errors.countryOfOrigin?.message}><Input maxLength={100} {...register('countryOfOrigin', req)} /></Field>
         <Field label={t('materials.model')} required error={errors.modelNumber?.message}><Input dir="ltr" maxLength={100} {...register('modelNumber', req)} /></Field>
         <Field label={t('materials.catalogueNo')} required error={errors.catalogueNumber?.message}><Input dir="ltr" maxLength={100} {...register('catalogueNumber', req)} /></Field>
+        <datalist id="currencies">{['USD', 'EUR', 'SYP', 'TRY', 'AED', 'SAR', 'GBP', 'JOD', 'EGP'].map((c) => <option key={c} value={c} />)}</datalist>
         <button type="submit" hidden />
       </form>
     </Modal>
@@ -199,6 +209,8 @@ function MaterialDetails({ material: x, onClose, onEdit }: { material: Material;
     [t('materials.code'), <span key="c" className="font-bold" dir="ltr">{x.materialCode}</span>],
     [t('common.name'), x.name || '—'],
     [t('materials.unitPrice'), <span key="p" className="tabular-nums" dir="ltr">{fmt(x.unitPrice)} {x.currency}</span>],
+    [t('materials.sellingPrice'), x.sellingPrice ? <span key="sp" className="tabular-nums" dir="ltr">{fmt(x.sellingPrice)} {x.sellingCurrency}</span> : '—'],
+    [t('materials.link'), x.link ? <a key="l" href={x.link} target="_blank" rel="noreferrer" className="underline" dir="ltr">{x.link}</a> : '—'],
     [t('materials.stock'), <span key="s" className="tabular-nums" dir="ltr">{fmt(x.stockQuantity, 3)} {x.unit}</span>],
     [t('materials.unit'), x.unit || '—'],
     [t('materials.source'), x.source || '—'],

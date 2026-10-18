@@ -19,7 +19,7 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
     import('jspdf'),
     import('pdf-lib'),
   ]);
-  const { PDFDocument, rgb, StandardFonts } = pdfLib;
+  const { PDFDocument, PDFString, rgb, StandardFonts } = pdfLib;
   type Doc = import('pdf-lib').PDFDocument;
   type PdfPage = import('pdf-lib').PDFPage;
   type PdfImage = import('pdf-lib').PDFImage;
@@ -94,6 +94,9 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
       throw new Error('Could not match all catalog PDF files to their place in the quotation');
     }
     const slotYs = slots.map(topOf);
+    // material links (a.lnk): the picture of the page is not clickable, so a link area is added on top of each one afterwards
+    const linkBoxes = [...doc.querySelectorAll<HTMLAnchorElement>('a.lnk')].flatMap((a) =>
+      /^https?:\/\//i.test(a.href) ? [...a.getClientRects()].map((r) => ({ url: a.href, left: r.left, top: Math.round(r.top + scrollY), width: r.width, height: r.height })) : []);
     // y positions where a page may break: bottoms of table rows / blocks. Where a page MUST break: a new catalog part / a catalog PDF.
     const breaks = [...doc.querySelectorAll('tr, .term, .box, p, h2, h3, .catalog-heading, .catalog-image')].map(bottomOf).sort((a, b) => a - b);
     const forced = [...[...doc.querySelectorAll('.catalog-index, .catalog-page')].map(topOf), ...slotYs].sort((a, b) => a - b);
@@ -105,6 +108,7 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
     const mmPerPx = bodyMm / contentW;
     const pagePx = (297 - topMm - bottomMm) / mmPerPx;
     const slotsAfter: { page: number; index: number }[] = [];
+    const pageRanges: { start: number; end: number }[] = [];
     const pending = slotYs.map((y, index) => ({ y, index }));
     let pageCount = 0;
     let y = 0;
@@ -125,6 +129,7 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
       if (pageCount > 0) pdf.addPage();
       pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', side, topMm, bodyMm, h * mmPerPx);
       pageCount++;
+      pageRanges.push({ start: y, end });
       while (pending.length && pending[0].y <= end + 1) slotsAfter.push({ page: pageCount, index: pending.shift()!.index });
       y = end;
     }
@@ -148,10 +153,28 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
       if (footImg) place(footImg, footBottom * MM, footMax * MM);
     };
 
+    const addLinks = (page: PdfPage, baseIndex: number) => {
+      const range = pageRanges[baseIndex];
+      if (!range) return;
+      const pxToPt = mmPerPx * MM;
+      for (const l of linkBoxes) {
+        if (l.top < range.start - 1 || l.top >= range.end) continue;
+        const x = side * MM + l.left * pxToPt;
+        const w = l.width * pxToPt;
+        const h = Math.min(l.height, range.end - l.top) * pxToPt;
+        const yTop = A4_H - (topMm * MM + (l.top - range.start) * pxToPt);
+        const annot = out.context.obj({
+          Type: 'Annot', Subtype: 'Link', Rect: [x, yTop - h, x + w, yTop], Border: [0, 0, 0],
+          A: { Type: 'Action', S: 'URI', URI: PDFString.of(l.url) },
+        });
+        page.node.addAnnot(out.context.register(annot));
+      }
+    };
+
     const addQuotationPages = async (from: number, to: number) => {
       if (to <= from) return;
       const indices = Array.from({ length: to - from }, (_, i) => from + i);
-      (await out.copyPages(base, indices)).forEach((p) => { out.addPage(p); stamp(p); });
+      (await out.copyPages(base, indices)).forEach((p, k) => { out.addPage(p); stamp(p); addLinks(p, indices[k]); });
     };
 
     const addCatalogPdf = async (url: string) => {

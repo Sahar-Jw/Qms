@@ -1,6 +1,8 @@
 import { applyDecorators } from '@nestjs/common';
 import { Transform } from 'class-transformer';
 import { Matches } from 'class-validator';
+import { normalizeCurrency } from '../currency';
+import { normalizeLink } from '../link';
 
 /**
  * Money / quantity as a decimal STRING (never a float): up to 14 integer digits, up to 4 decimals.
@@ -14,11 +16,11 @@ export function DecimalString(opts: { positive?: boolean } = {}) {
   );
 }
 
-/** ISO-4217-like currency code, normalised to upper case (USD, EUR, SYP, TRY...). */
+/** ISO-4217-like currency code, normalised to upper case (USD, EUR, SYP, TRY...). Symbols such as $ / € / ل.س are converted to their code. */
 export function CurrencyCode() {
   return applyDecorators(
-    Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value)),
-    Matches(/^[A-Z]{3}$/, { message: '$property must be a 3-letter currency code' }),
+    Transform(({ value }) => (typeof value === 'string' ? normalizeCurrency(value) : value)),
+    Matches(/^[A-Z]{3}$/, { message: '$property must be a 3-letter currency code or a known symbol such as $' }),
   );
 }
 
@@ -33,5 +35,14 @@ export function TrimOptional() {
     if (typeof value !== 'string') return value;
     const v = value.trim();
     return v === '' ? undefined : v;
+  });
+}
+
+/** Optional web link: trimmed, "" -> undefined, and "https://" is added when the scheme is missing (drive.google.com/...). */
+export function OptionalLink() {
+  return Transform(({ value }) => {
+    if (typeof value !== 'string') return value;
+    const v = value.trim();
+    return v === '' ? undefined : normalizeLink(v);
   });
 }

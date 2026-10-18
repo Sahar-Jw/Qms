@@ -101,6 +101,7 @@ export const PART_LABELS: Record<string, Pair> = {
   stock: ['المخزون', 'Stock'], origin: ['بلد المنشأ', 'Country of origin'], img: ['صورة المنتج', 'Product picture'],
   catalogFiles: ['ملفات الكتالوج', 'Catalog files'], catalogHint: ['تلميح ملفات الكتالوج', 'Catalog files hint'], addCatalogFiles: ['زر إضافة ملفات الكتالوج', 'Add catalog files button'],
   removeCatalogFile: ['زر حذف ملف الكتالوج', 'Remove catalog file button'], catalogLimit: ['رسالة حد ملفات الكتالوج', 'Catalog file limit message'], uploadingCatalog: ['رسالة رفع ملفات الكتالوج', 'Catalog upload message'],
+  sellingPrice: ['سعر البيع', 'Selling price'], sellingCurrency: ['عملة البيع', 'Selling currency'], linkHint: ['تلميح رابط المنتج', 'Product link hint'], currencyHint: ['تلميح العملة', 'Currency hint'],
   model: ['الموديل', 'Model'], catalogueNo: ['رقم الكتالوج', 'Catalogue number'],
   addressAr: ['العنوان بالعربية', 'Arabic address'], addressEn: ['العنوان بالإنجليزية', 'English address'],
   printTitle: ['عنوان قسم الترويسة والتذييل', 'Print header/footer title'], printHint: ['تلميح الترويسة والتذييل', 'Print header/footer hint'],
@@ -128,7 +129,7 @@ export const PART_LABELS: Record<string, Pair> = {
   change_password: ['تغيير كلمة المرور', 'Changed password'], forgot_password: ['طلب إعادة كلمة المرور', 'Asked for password reset'], reset_password: ['إعادة تعيين كلمة المرور', 'Reset password'],
   translations: ['نصوص الموقع', 'Website texts'], auth: ['الحساب', 'Account'], nothing: ['رسالة لا نتائج', 'No matches message'],
   // printed quotation columns
-  attn: ['عناية', 'Attention'], desc: ['البيان', 'Description'], qty: ['الكمية', 'Quantity'],
+  link: ['الرابط', 'Link / product link'], attn: ['عناية', 'Attention'], desc: ['البيان', 'Description'], qty: ['الكمية', 'Quantity'],
   catalogTitle: ['عنوان الكتالوجات المرفقة', 'Attached catalogs title'], catalogEyebrow: ['النص الصغير فوق عنوان الكتالوج', 'Small text above the catalog title'],
   catalogMaterial: ['عمود المادة', 'Material column'], catalogFile: ['عمود الملف', 'File column'], catalogType: ['عمود النوع', 'Type column'], catalogPdfNote: ['ملاحظة ملفات PDF المرفقة', 'Attached PDF files note'],
   // accessibility labels

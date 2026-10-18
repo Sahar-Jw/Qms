@@ -75,6 +75,7 @@ const en = {
     details: 'Material details', savingDetails: 'Saving details…', uploadingImage: 'Uploading files…', optimizing: 'Preparing picture…', clickToZoom: 'Click the picture to enlarge it',
     catalogFiles: 'Catalog files', catalogHint: 'PNG, JPG, WEBP, PDF or DOCX; up to 10 files total and 10 MB per file.', addCatalogFiles: 'Add files',
     removeCatalogFile: 'Remove catalog file', catalogLimit: 'A material can have at most 10 catalog files.', uploadingCatalog: 'Uploading catalog files…',
+    link: 'Product link', sellingPrice: 'Selling price', sellingCurrency: 'Selling currency', linkHint: 'Any web or Google Drive link; https:// is added if missing. Clickable on the quotation.', currencyHint: 'Code or symbol, e.g. USD or $',
     catalogueNo: 'Catalogue number', searchPh: 'Code, name, source, catalogue…',
   },
   companies: {
@@ -122,7 +123,7 @@ const en = {
     deliveryMethod: 'Delivery method', bank: 'Bank', customerPayment: 'Payment terms', responsible: 'Prepared by',
     no: '#', code: 'Code', desc: 'Description', qty: 'Qty', unit: 'Unit', unitPrice: 'Unit price', value: 'Value',
     shipping: 'Shipping', customs: 'Customs', required: 'Required', cost: 'Cost', totals: 'Totals by currency',
-    currency: 'Currency', print: 'Print', page: 'Page',
+currency: 'Currency', link: 'Link', print: 'Print', page: 'Page',
     oneDayRemaining: '1 day remaining', daysRemaining: '{days} days remaining', expired: 'Expired',
     catalogTitle: 'Attached catalogs', catalogEyebrow: 'Material catalog', catalogMaterial: 'Material', catalogFile: 'File', catalogType: 'Type',
     catalogPdfNote: 'Attached PDF files are added to the downloaded PDF only; they do not appear when printing from the browser.',

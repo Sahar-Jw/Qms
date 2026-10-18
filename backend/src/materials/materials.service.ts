@@ -34,13 +34,22 @@ export class MaterialsService {
     return m;
   }
 
+  /** A selling price needs its currency (checked after merging, so a partial update can rely on the stored currency). */
+  private assertSelling(price: string | null | undefined, currency: string | null | undefined) {
+    if (price != null && !currency) {
+      throw new BadRequestException({ code: 'SELLING_CURRENCY_REQUIRED', message: 'sellingCurrency is required when sellingPrice is set' });
+    }
+  }
+
   create(dto: CreateMaterialDto, userId: number) {
+    this.assertSelling(dto.sellingPrice, dto.sellingCurrency);
     return this.repo.save(this.repo.create({ ...dto, createdById: userId, updatedById: userId })); // duplicate code -> 409 via exception filter
   }
 
   async update(id: number, dto: UpdateMaterialDto, userId: number) {
     const m = await this.get(id);
     Object.assign(m, dto, { updatedById: userId });
+    this.assertSelling(m.sellingPrice, m.sellingCurrency);
     return this.repo.save(m);
   }
 

@@ -80,6 +80,7 @@ const ar: Shape<typeof en> = {
     details: 'تفاصيل المادة', savingDetails: 'جارٍ حفظ البيانات…', uploadingImage: 'جارٍ رفع الملفات…', optimizing: 'جارٍ تجهيز الصورة…', clickToZoom: 'اضغط على الصورة لتكبيرها',
     catalogFiles: 'ملفات الكتالوج', catalogHint: 'PNG أو JPG أو WEBP أو PDF أو DOCX؛ بحد أقصى 10 ملفات و10 ميغابايت للملف.', addCatalogFiles: 'إضافة ملفات',
     removeCatalogFile: 'حذف ملف الكتالوج', catalogLimit: 'يمكن إضافة 10 ملفات كحد أقصى للمادة الواحدة.', uploadingCatalog: 'جارٍ رفع ملفات الكتالوج…',
+    link: 'رابط المنتج', sellingPrice: 'سعر البيع', sellingCurrency: 'عملة البيع', linkHint: 'أي رابط ويب أو Google Drive؛ يُضاف https:// إن لم يوجد. قابل للنقر في عرض السعر.', currencyHint: 'رمز أو علامة، مثل USD أو $',
     catalogueNo: 'رقم الكتالوج', searchPh: 'الرمز، الاسم، المصدر، الكتالوج…',
   },
   companies: {
@@ -124,7 +125,7 @@ const ar: Shape<typeof en> = {
     deliveryMethod: 'طريقة التسليم', bank: 'المصرف', customerPayment: 'نظام الدفع', responsible: 'المسؤول',
     no: '#', code: 'الرمز', desc: 'البيان', qty: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة', value: 'القيمة',
     shipping: 'الشحن', customs: 'التخليص الجمركي', required: 'المطلوب', cost: 'التكلفة', totals: 'الإجماليات حسب العملة',
-    currency: 'العملة', print: 'طباعة', page: 'صفحة',
+currency: 'العملة', link: 'الرابط', print: 'طباعة', page: 'صفحة',
     oneDayRemaining: 'متبقي يوم واحد', daysRemaining: 'متبقي {days} يوم', expired: 'منتهي الصلاحية',
     catalogTitle: 'الكتالوجات المرفقة', catalogEyebrow: 'ملف الكتالوج', catalogMaterial: 'المادة', catalogFile: 'الملف', catalogType: 'النوع',
     catalogPdfNote: 'ملفات PDF المرفقة تُضاف إلى ملف PDF المُحمَّل فقط، ولا تظهر في الطباعة من المتصفح.',
