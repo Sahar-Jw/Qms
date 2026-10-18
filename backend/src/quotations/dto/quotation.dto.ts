@@ -63,7 +63,11 @@ export class QuotationItemDto {
   @IsNotEmpty() @DecimalString()
   commissionPercentage: string;
 
-  /** The server replaces this value with the issuing company's configured tax rate. */
+  /** Tick = tax applies to this line. */
+  @IsOptional() @IsBoolean()
+  taxEnabled?: boolean;
+
+  /** Tax % of this line (0-100). Required when taxEnabled is true; ignored (stored as 0) otherwise. */
   @IsOptional() @DecimalString()
   taxPercentage?: string;
 

@@ -64,7 +64,7 @@ export class SettingsService {
   /** Active companies a user can pick as the quotation issuer. */
   async pickList() {
     const rows = await this.companies.find({ where: { isActive: true }, order: { name: 'ASC' } });
-    return rows.map((c) => ({ id: c.id, name: c.name, logo: c.logo, taxEnabled: c.taxEnabled, taxPercentage: c.taxPercentage }));
+    return rows.map((c) => ({ id: c.id, name: c.name, logo: c.logo }));
   }
 
   async get(userId: number) {
@@ -80,7 +80,7 @@ export class SettingsService {
     }
     return {
       issuingCompany: company
-        ? { id: company.id, name: company.name, logo: company.logo, isActive: company.isActive, taxEnabled: company.taxEnabled, taxPercentage: company.taxPercentage }
+        ? { id: company.id, name: company.name, logo: company.logo, isActive: company.isActive }
         : null,
       issuingCompanyIsAutomatic: auto,
     };

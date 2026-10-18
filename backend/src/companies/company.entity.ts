@@ -36,10 +36,4 @@ export class Company extends AuditBase {
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
-
-  @Column({ type: 'boolean', default: false })
-  taxEnabled: boolean;
-
-  @Column({ type: 'decimal', precision: 7, scale: 4, nullable: true })
-  taxPercentage: string | null;
 }

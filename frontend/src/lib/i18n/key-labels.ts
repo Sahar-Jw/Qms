@@ -106,7 +106,7 @@ export const PART_LABELS: Record<string, Pair> = {
   addressAr: ['العنوان بالعربية', 'Arabic address'], addressEn: ['العنوان بالإنجليزية', 'English address'],
   printTitle: ['عنوان قسم الترويسة والتذييل', 'Print header/footer title'], printHint: ['تلميح الترويسة والتذييل', 'Print header/footer hint'],
   headerImage: ['صورة الترويسة', 'Header image'], footerImage: ['صورة التذييل', 'Footer image'], uploadImage: ['زر رفع صورة', 'Upload image button'],
-  taxEnabled: ['خيار تفعيل الضريبة', 'Enable tax option'], taxPercentage: ['نسبة الضريبة', 'Tax percentage'], taxHint: ['تلميح إعداد الضريبة', 'Tax settings hint'],
+  taxEnabled: ['خيار تطبيق الضريبة على البند', 'Apply tax checkbox (item)'],
   replaceImage: ['زر استبدال الصورة', 'Replace image button'], removeImage: ['زر حذف الصورة', 'Remove image button'], noImage: ['لا توجد صورة', 'No image'], uploadLogo: ['زر رفع الشعار', 'Upload logo button'], logoHint: ['تلميح الشعار', 'Logo hint'],
   saveFirst: ['رسالة احفظ أولاً', 'Save first message'],
   // users / settings

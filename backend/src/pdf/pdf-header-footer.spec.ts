@@ -216,7 +216,7 @@ describe('printed quotation: company header and footer images', () => {
     const item = (link: string | null) => ({
       id: 1, materialId: 1, materialCode: 'M1', materialName: 'Pipe', materialImage: null, materialLink: link, catalogFiles: [], unit: 'm', sortOrder: 0,
       quantity: '1', unitPrice: '2', priceCurrency: 'USD', unitCost: null, costCurrency: null, shippingCost: null, shippingCurrency: null,
-      customsCost: null, customsCurrency: null, commissionPercentage: null, taxPercentage: '0', notes: null,
+      customsCost: null, customsCurrency: null, commissionPercentage: null, taxEnabled: false, taxPercentage: '0', notes: null,
       amounts: [{ currency: 'USD', value: '2', cost: '0', shipping: '0', customs: '0', required: '2' }],
     });
 

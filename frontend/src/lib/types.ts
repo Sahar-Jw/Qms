@@ -20,10 +20,9 @@ export interface Company {
   id: number; name: string; logo: string | null;
   address: string | null; phone: string | null; email: string | null; website: string | null;
   headerImage: string | null; footerImage: string | null;
-  taxEnabled: boolean; taxPercentage: string | null;
   isActive: boolean;
 }
-export interface PickCompany { id: number; name: string; logo: string | null; taxEnabled: boolean; taxPercentage: string | null }
+export interface PickCompany { id: number; name: string; logo: string | null }
 export interface Settings { issuingCompany: (PickCompany & { isActive: boolean }) | null; issuingCompanyIsAutomatic: boolean }
 
 export interface BrandSettings {
@@ -61,7 +60,7 @@ export interface ItemView {
   unit: string | null; sortOrder: number; quantity: string; unitPrice: string; priceCurrency: string;
   sellingPrice: string | null; sellingCurrency: string | null;
   unitCost: string | null; costCurrency: string | null; shippingCost: string | null; shippingCurrency: string | null;
-  customsCost: string | null; customsCurrency: string | null; commissionPercentage: string | null; taxPercentage: string; notes: string | null;
+  customsCost: string | null; customsCurrency: string | null; commissionPercentage: string | null; taxEnabled: boolean; taxPercentage: string; notes: string | null;
   amounts: Amounts[];
 }
 

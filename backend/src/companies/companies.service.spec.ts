@@ -53,21 +53,4 @@ describe('companies: header / footer images', () => {
     await expect(svc.setLetterheadImage(1, 'header', undefined, 9)).rejects.toMatchObject({ response: { code: 'FILE_REQUIRED' } });
     expect(repo.save).not.toHaveBeenCalled();
   });
-
-  it('requires a valid configured percentage when tax is enabled', async () => {
-    const { svc, repo } = make({});
-    expect(() => svc.create({
-      name: 'Acme', address: 'Damascus', phone: '1', email: 'a@example.test',
-      taxEnabled: true, taxPercentage: '101',
-    }, 9)).toThrow();
-    expect(repo.save).not.toHaveBeenCalled();
-  });
-
-  it('stores company tax settings and clears the percentage when tax is disabled', async () => {
-    const { svc } = make({ id: 1, taxEnabled: true, taxPercentage: '5.0000' });
-    const enabled = await svc.update(1, { taxEnabled: true, taxPercentage: '8.5' }, 9);
-    expect(enabled).toMatchObject({ taxEnabled: true, taxPercentage: '8.5' });
-    const disabled = await svc.update(1, { taxEnabled: false }, 9);
-    expect(disabled).toMatchObject({ taxEnabled: false, taxPercentage: '8.5' });
-  });
 });

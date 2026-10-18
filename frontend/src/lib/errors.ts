@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import { ApiError } from './api';
+import { ApiError, NetworkError } from './api';
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
 
@@ -10,7 +10,9 @@ export function errorMessage(e: unknown, t: T, has: (k: string) => boolean): str
     if (e.details?.length) return e.details.join(' · ');
     return e.message;
   }
-  if (e instanceof TypeError) return t('err.NETWORK');
+  if (e instanceof NetworkError) return t('err.NETWORK');
+  // A bug in the page itself (not the network): show what it is and keep the details in the console.
+  console.error(e);
   return (e as Error)?.message ?? t('err.INTERNAL_ERROR');
 }
 

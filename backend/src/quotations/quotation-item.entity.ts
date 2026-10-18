@@ -68,7 +68,11 @@ export class QuotationItem {
   @Column({ type: 'decimal', precision: 7, scale: 4, nullable: true })
   commissionPercentage: string | null;
 
-  /** Tax % of this line (0-100), required. Stored only - NOT used in any formula until the SRS defines it. */
+  /** Whether tax applies to this line (checkbox on the item). */
+  @Column({ type: 'boolean', default: false })
+  taxEnabled: boolean;
+
+  /** Tax % of this line (0-100), editable per item. Always 0 when taxEnabled is false. Stored only - NOT used in any formula until the SRS defines it. */
   @Column({ type: 'decimal', precision: 7, scale: 4, default: 0 })
   taxPercentage: string;
 

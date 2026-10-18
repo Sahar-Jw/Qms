@@ -3,7 +3,7 @@ import { lastValueFrom, of } from 'rxjs';
 import { AuditInterceptor } from './audit.interceptor';
 import { AuditService } from './audit.service';
 
-const company = { id: 3, name: 'Acme', phone: '123', taxEnabled: false, logo: null, headerImage: null, footerImage: null };
+const company = { id: 3, name: 'Acme', phone: '123', logo: null, headerImage: null, footerImage: null };
 
 function setup(before: Record<string, unknown> = company) {
   const record = jest.fn();
@@ -23,7 +23,7 @@ function setup(before: Record<string, unknown> = company) {
 describe('audit log content', () => {
   it('writes nothing when a form is saved without changing anything', async () => {
     const { record, run } = setup();
-    await run('PATCH', '/api/companies/3', { name: 'Acme', phone: '123', taxEnabled: false }, { ...company });
+    await run('PATCH', '/api/companies/3', { name: 'Acme', phone: '123' }, { ...company });
     expect(record).not.toHaveBeenCalled();
   });
 

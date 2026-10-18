@@ -124,6 +124,7 @@ function QuotationDetail() {
   };
   const statusLabel = (to: QStatus) => t(`statusAction.${to}`);
   const co = q.company;
+  const hasTax = q.items.some((i) => i.taxEnabled);
 
   return (
     <div className="space-y-4">
@@ -182,7 +183,7 @@ function QuotationDetail() {
                 <thead className="sticky top-0 z-10"><tr>
                   <th className={th}>{t('materials.image')}</th><th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('materials.link')}</th><th className={th}>{t('quotations.quantity')}</th>
                   <th className={th}>{t('quotations.unitPrice')}</th><th className={th}>{t('quotations.value')}</th><th className={th}>{t('quotations.shipping')}</th>
-                  <th className={th}>{t('quotations.customs')}</th>{co.taxEnabled && <th className={th}>{t('quotations.tax')}</th>}<th className={th}>{t('quotations.required')}</th>{canCost && <th className={th}>{t('quotations.totalCost')}</th>}
+                  <th className={th}>{t('quotations.customs')}</th>{hasTax && <th className={th}>{t('quotations.tax')}</th>}<th className={th}>{t('quotations.required')}</th>{canCost && <th className={th}>{t('quotations.totalCost')}</th>}
                 </tr></thead>
                 <tbody>
                   {q.items.map((i) => (
@@ -199,7 +200,7 @@ function QuotationDetail() {
                       <td className={td}><Money amounts={i.amounts} field="value" /></td>
                       <td className={td}><Money amounts={i.amounts} field="shipping" /></td>
                       <td className={td}><Money amounts={i.amounts} field="customs" /></td>
-                      {co.taxEnabled && <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.taxPercentage)}%</td>}
+                      {hasTax && <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{i.taxEnabled ? `${fmt(i.taxPercentage)}%` : '—'}</td>}
                       <td className={`${td} font-bold`}><Money amounts={i.amounts} field="required" /></td>
                       {canCost && <td className={`${td} text-cocoa`}><Money amounts={i.amounts} field="cost" /></td>}
                     </tr>

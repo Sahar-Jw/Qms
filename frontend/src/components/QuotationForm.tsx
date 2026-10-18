@@ -27,7 +27,7 @@ interface ItemForm {
   id?: number; material: PickMaterial | null; quantity: string; unit: string; unitPrice: string; priceCurrency: string;
   sellingPrice: string; sellingCurrency: string;
   shippingCost: string; shippingCurrency: string; customsCost: string; customsCurrency: string;
-  unitCost: string; costCurrency: string; commissionPercentage: string; taxPercentage: string; notes: string;
+  unitCost: string; costCurrency: string; commissionPercentage: string; taxEnabled: boolean; taxPercentage: string; notes: string;
 }
 interface FormValues {
   customer: PickCustomer | null; quotationDate: string; bankName: string; validity: string;
@@ -37,7 +37,7 @@ interface FormValues {
 
 const CURRENCIES = ['USD', 'EUR', 'SYP', 'TRY', 'AED', 'SAR', 'GBP', 'JOD', 'EGP'];
 const DEC = /^\d{1,14}(\.\d{1,4})?$/;
-const emptyItem = (): ItemForm => ({ material: null, quantity: '1', unit: '', unitPrice: '', priceCurrency: '', sellingPrice: '', sellingCurrency: '', shippingCost: '', shippingCurrency: '', customsCost: '', customsCurrency: '', unitCost: '', costCurrency: '', commissionPercentage: '', taxPercentage: '', notes: '' });
+const emptyItem = (): ItemForm => ({ material: null, quantity: '1', unit: '', unitPrice: '', priceCurrency: '', sellingPrice: '', sellingCurrency: '', shippingCost: '', shippingCurrency: '', customsCost: '', customsCurrency: '', unitCost: '', costCurrency: '', commissionPercentage: '', taxEnabled: false, taxPercentage: '', notes: '' });
 const today = () => new Date().toISOString().slice(0, 10);
 const isoDate = (v?: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
 
@@ -53,7 +53,7 @@ function fromView(q: QuotationView): FormValues {
       quantity: trimDec(i.quantity), unit: i.unit ?? '', unitPrice: trimDec(i.unitPrice), priceCurrency: i.priceCurrency,
       sellingPrice: trimDec(i.sellingPrice), sellingCurrency: i.sellingCurrency ?? '',
       shippingCost: trimDec(i.shippingCost), shippingCurrency: i.priceCurrency, customsCost: trimDec(i.customsCost), customsCurrency: i.priceCurrency,
-      unitCost: trimDec(i.unitCost), costCurrency: i.priceCurrency, commissionPercentage: trimDec(i.commissionPercentage), taxPercentage: trimDec(i.taxPercentage), notes: i.notes ?? '',
+      unitCost: trimDec(i.unitCost), costCurrency: i.priceCurrency, commissionPercentage: trimDec(i.commissionPercentage), taxEnabled: i.taxEnabled, taxPercentage: i.taxEnabled ? trimDec(i.taxPercentage) : '', notes: i.notes ?? '',
     })),
   };
 }
@@ -74,7 +74,6 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
     // keep the current company selectable even if it has since been deactivated
     return list.some((c) => c.id === initial?.company.id) || !initial ? list : [{
       id: initial.company.id, name: initial.company.name, logo: initial.company.logo,
-      taxEnabled: initial.company.taxEnabled, taxPercentage: initial.company.taxPercentage,
     }, ...list];
   }, [companies.data, initial]);
   const company: PickCompany | null | undefined = editing
@@ -92,10 +91,6 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const items = useWatch({ control, name: 'items' });
-  const companyTax = company?.taxEnabled ? company.taxPercentage ?? '0' : '0';
-  useEffect(() => {
-    items?.forEach((_item, index) => setValue(`items.${index}.taxPercentage`, trimDec(companyTax)));
-  }, [companyTax, fields.length, items?.length, setValue]);
   const customer = useWatch({ control, name: 'customer' });
   const quotationDate = useWatch({ control, name: 'quotationDate' });
   const validity = useWatch({ control, name: 'validity' });
@@ -135,7 +130,7 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
             sellingCurrency: str(i.sellingCurrency) ? normalizeCurrency(i.sellingCurrency) : null,
             shippingCost: str(i.shippingCost), shippingCurrency: cur, customsCost: str(i.customsCost), customsCurrency: cur,
             ...(canCost ? { unitCost: str(i.unitCost), costCurrency: cur } : {}),
-            commissionPercentage: str(i.commissionPercentage), taxPercentage: str(i.taxPercentage), notes: str(i.notes) || undefined,
+            commissionPercentage: str(i.commissionPercentage), taxEnabled: i.taxEnabled, ...(i.taxEnabled ? { taxPercentage: str(i.taxPercentage) } : {}), notes: str(i.notes) || undefined,
           };
         }),
       };
@@ -260,10 +255,21 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                       <Field label={t('quotations.customs')} required error={e?.customsCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.customsCost`, decRule(true))} /></Field>
                       {canCost && <Field label={t('quotations.cost')} required error={e?.unitCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.unitCost`, decRule(true))} /></Field>}
                       <Field label={t('quotations.commission')} required error={e?.commissionPercentage?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.commissionPercentage`, decRule(true))} /></Field>
-                      {company?.taxEnabled && <Field label={t('quotations.tax')} required error={e?.taxPercentage?.message}>
-                        <Input inputMode="decimal" dir="ltr" readOnly {...register(`items.${i}.taxPercentage`, {
-                          ...req,
-                          validate: (v) => (DEC.test(String(v).trim()) && Number(v) <= 100) || t('err.INVALID_PERCENTAGE'),
+                      <div className="col-span-2 flex flex-col justify-end gap-1.5 md:col-span-2">
+                        <label className="flex h-10 items-center gap-2 text-sm font-bold">
+                          <input type="checkbox" className="size-4 accent-cocoa" {...register(`items.${i}.taxEnabled`, {
+                            onChange: (ev) => { if (!ev.target.checked) setValue(`items.${i}.taxPercentage`, '', { shouldValidate: true }); },
+                          })} />
+                          {t('quotations.taxEnabled')}
+                        </label>
+                      </div>
+                      {items?.[i]?.taxEnabled && <Field label={t('quotations.tax')} required error={e?.taxPercentage?.message}>
+                        <Input inputMode="decimal" dir="ltr" placeholder="0" {...register(`items.${i}.taxPercentage`, {
+                          validate: (v) => {
+                            if (!getValues(`items.${i}.taxEnabled`)) return true;
+                            if (!String(v ?? '').trim()) return t('common.required');
+                            return (DEC.test(String(v).trim()) && Number(v) <= 100) || t('err.INVALID_PERCENTAGE');
+                          },
                         })} />
                       </Field>}
 

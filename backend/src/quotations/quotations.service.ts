@@ -131,7 +131,7 @@ export class QuotationsService {
    * existing lines missing from the payload are deleted. Amounts are recalculated per currency.
    * Material snapshots (code / names) are kept for unchanged lines so history never changes.
    */
-  private async syncItems(m: EntityManager, quotationId: number, incoming: QuotationItemDto[], user: AuthUser, companyTax: string) {
+  private async syncItems(m: EntityManager, quotationId: number, incoming: QuotationItemDto[], user: AuthUser) {
     const canCost = this.canEditCost(user);
     const existing = await m.find(QuotationItem, { where: { quotationId } });
     const existingMap = new Map(existing.map((i) => [i.id, i]));
@@ -199,7 +199,15 @@ export class QuotationsService {
 
       this.assertPercent(inc.commissionPercentage, 'commissionPercentage');
       item.commissionPercentage = inc.commissionPercentage ?? null;
-      item.taxPercentage = companyTax;
+      const taxEnabled = inc.taxEnabled ?? false;
+      if (taxEnabled) {
+        if (inc.taxPercentage === undefined || inc.taxPercentage === null || inc.taxPercentage === '') {
+          throw new BadRequestException({ code: 'INVALID_PERCENTAGE', message: `Tax percentage is required for material ${mat.materialCode} when tax is enabled` });
+        }
+        this.assertPercent(inc.taxPercentage, 'taxPercentage');
+      }
+      item.taxEnabled = taxEnabled;
+      item.taxPercentage = taxEnabled ? inc.taxPercentage! : '0';
       item.notes = inc.notes ?? null;
 
       const saved = await m.save(QuotationItem, item);
@@ -215,7 +223,6 @@ export class QuotationsService {
     const id = await this.dataSource.transaction(async (m) => {
       const companyId = dto.companyId ?? await this.resolveIssuingCompanyId(m, user.id);
       await this.assertActive(m, Company, companyId, 'ISSUING_COMPANY', 'Issuing company');
-      const issuingCompany = await m.findOneByOrFail(Company, { id: companyId });
       await this.assertActive(m, Customer, dto.customerId, 'CUSTOMER', 'Customer');
       const quotationDate = dto.quotationDate ?? new Date().toISOString().slice(0, 10);
       this.assertValidityDate(quotationDate, dto.validity);
@@ -234,7 +241,7 @@ export class QuotationsService {
         updatedById: user.id,
       });
       const saved = await m.save(Quotation, q);
-      await this.syncItems(m, saved.id, items, user, issuingCompany.taxEnabled ? issuingCompany.taxPercentage ?? '0' : '0');
+      await this.syncItems(m, saved.id, items, user);
       return saved.id;
     });
     return this.findOne(id, user);
@@ -275,12 +282,7 @@ export class QuotationsService {
       }
       q.updatedById = user.id;
       await m.save(Quotation, q);
-      if (items || companyChanged) {
-        const company = await m.findOneByOrFail(Company, { id: q.companyId });
-        const tax = company.taxEnabled ? company.taxPercentage ?? '0' : '0';
-        if (items) await this.syncItems(m, id, items, user, tax);
-        else await m.update(QuotationItem, { quotationId: id }, { taxPercentage: tax });
-      }
+      if (items) await this.syncItems(m, id, items, user);
     });
     return this.findOne(id, user);
   }
@@ -300,7 +302,6 @@ export class QuotationsService {
 
       // A copy stays under the SAME company as the original (not the user's current issuing company).
       const companyId = src.companyId;
-      const company = await m.findOneByOrFail(Company, { id: companyId });
       const customerId = dto.customerId ?? src.customerId;
       await this.assertActive(m, Customer, customerId, 'CUSTOMER', 'Customer');
       const resp = src.responsibleUserId ? await m.findOne(User, { where: { id: src.responsibleUserId } }) : null;
@@ -331,7 +332,6 @@ export class QuotationsService {
         delete (rest as { amounts?: unknown }).amounts;
         const clone = await m.save(QuotationItem, m.create(QuotationItem, {
           ...rest,
-          taxPercentage: company.taxEnabled ? company.taxPercentage ?? '0' : '0',
           quotationId: saved.id,
         }));
         const { amounts } = this.calc.calcItem(clone);
@@ -428,6 +428,7 @@ export class QuotationsService {
         customsCost: i.customsCost,
         customsCurrency: i.customsCurrency,
         commissionPercentage: i.commissionPercentage,
+        taxEnabled: i.taxEnabled,
         taxPercentage: i.taxPercentage,
         notes: i.notes,
         amounts: [...(i.amounts ?? [])]
@@ -446,7 +447,6 @@ export class QuotationsService {
         id: co.id, name: co.name, logo: co.logo,
         address: co.address, phone: co.phone, email: co.email, website: co.website,
         headerImage: co.headerImage, footerImage: co.footerImage,
-        taxEnabled: co.taxEnabled, taxPercentage: co.taxPercentage,
       },
       customer: {
         id: cu.id, companyName: cu.companyName,

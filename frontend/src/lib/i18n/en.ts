@@ -54,7 +54,7 @@ const en = {
     newTitle: 'New quotation', editTitle: 'Edit {number}', details: 'Quotation details', items: 'Items', addItem: 'Add item', removeItem: 'Remove item',
     bank: 'Bank', validity: 'Validity', deliveryTime: 'Delivery time', oneDayRemaining: '1 day remaining', daysRemaining: '{days} days remaining', expired: 'Expired', paymentMethod: 'Payment method', paymentLocation: 'Payment location',
     deliveryMethod: 'Delivery method', customerPayment: 'How the customer pays', customerPaymentPh: 'e.g. 50% advance, rest on delivery',
-    tax: 'Tax %', internalNotes: 'Internal notes (never printed)', itemNotes: 'Item note (never printed)',
+    tax: 'Tax %', taxEnabled: 'Apply tax', internalNotes: 'Internal notes (never printed)', itemNotes: 'Item note (never printed)',
     material: 'Material', materialPh: 'Search by code or name', customerPh: 'Search customers', quantity: 'Quantity', unit: 'Unit', unitPrice: 'Unit price',
     currency: 'Currency', shipping: 'Shipping', customs: 'Customs', cost: 'Unit cost', totalCost: 'Cost', summary: 'Summary', itemsCount: 'Items', currenciesCount: 'Currencies', commission: 'Commission %', value: 'Value', required: 'Required',
     perCurrency: 'Totals by currency', noItems: 'Add at least one item', issuingCompany: 'Issued from', changeInSettings: 'Change in settings', companyDraftHint: 'You can change the company while the quotation is a draft.',
@@ -82,7 +82,6 @@ const en = {
     title: 'Companies', new: 'New company', edit: 'Edit company', nameAr: 'Name (Arabic)', nameEn: 'Name (English)', addressAr: 'Address (Arabic)',
     addressEn: 'Address (English)', logo: 'Logo', uploadLogo: 'Upload logo', logoHint: 'PNG, JPG or WEBP up to 1 MB', saveFirst: 'Save the company first, then upload its logo', imagesFailed: 'The company was saved, but some images could not be uploaded. Try them again.', imageTooBig: 'The image is larger than {mb} MB',
     printTitle: 'Print header and footer (images)', printHint: 'Two images shown the same way on the Arabic and the English quotation when printed or downloaded as PDF. Best as a full page-width image. PNG, JPG or WEBP up to 3 MB. A header image replaces the logo and company name at the top of the file.',
-    taxEnabled: 'Apply tax to quotations from this company', taxPercentage: 'Tax percentage', taxHint: 'When enabled, this percentage is used automatically for each quotation item issued by this company.',
     headerImage: 'Header', footerImage: 'Footer', uploadImage: 'Upload image', replaceImage: 'Replace image', removeImage: 'Remove image', noImage: 'No image',
   },
   users: {

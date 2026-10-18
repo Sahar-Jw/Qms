@@ -199,6 +199,7 @@ async function saveFixture(manager: EntityManager) {
         customsCost: line.customs ?? null,
         customsCurrency: line.customs ? line.customsCurrency ?? material.currency : null,
         commissionPercentage: line.commission ?? null,
+        taxEnabled: true,
         taxPercentage: '5',
         notes: line.notes ?? null,
       }));

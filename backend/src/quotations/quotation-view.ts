@@ -24,7 +24,8 @@ export interface ItemView {
   customsCost: string | null;
   customsCurrency: string | null;
   commissionPercentage: string | null;
-  taxPercentage: string; // required, stored only, not used in totals
+  taxEnabled: boolean;
+  taxPercentage: string; // 0 when taxEnabled is false; stored only, not used in totals
   notes: string | null; // internal - never printed
   amounts: CurrencyAmounts[];
 }
@@ -38,7 +39,6 @@ export interface QuotationView {
     id: number; name: string; logo: string | null;
     address: string | null; phone: string | null; email: string | null; website: string | null;
     headerImage: string | null; footerImage: string | null;
-    taxEnabled: boolean; taxPercentage: string | null;
   };
   customer: {
     id: number; companyName: string | null;

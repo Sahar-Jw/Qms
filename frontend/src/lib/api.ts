@@ -6,6 +6,11 @@ export class ApiError extends Error {
   }
 }
 
+/** The request never got an answer (offline, DNS, CORS block, server or proxy down). Anything else is a different problem. */
+export class NetworkError extends Error {
+  constructor(public cause?: unknown) { super('Network error'); }
+}
+
 type Params = Record<string, string | number | boolean | undefined | null>;
 
 export function qs(params?: Params): string {
@@ -18,12 +23,17 @@ export function qs(params?: Params): string {
 
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
-  const res = await fetch(apiUrl(url), {
-    method,
-    credentials: FETCH_CREDENTIALS,
-    headers: body !== undefined && !isForm ? { 'Content-Type': 'application/json' } : undefined,
-    body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(apiUrl(url), {
+      method,
+      credentials: FETCH_CREDENTIALS,
+      headers: body !== undefined && !isForm ? { 'Content-Type': 'application/json' } : undefined,
+      body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
+    });
+  } catch (e) {
+    throw new NetworkError(e);
+  }
   const text = await res.text();
   let data: any = null;
   try { data = text ? JSON.parse(text) : null; } catch { /* non-JSON */ }
@@ -41,7 +51,7 @@ function uploadWithProgress<T>(url: string, form: FormData, onProgress: (fractio
     xhr.open('POST', apiUrl(url));
     xhr.withCredentials = FETCH_CREDENTIALS === 'include';
     xhr.upload.onprogress = (e) => { if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total); };
-    xhr.onerror = () => reject(new TypeError('Network error'));
+    xhr.onerror = () => reject(new NetworkError());
     xhr.onabort = xhr.onerror;
     xhr.onload = () => {
       let data: any = null;

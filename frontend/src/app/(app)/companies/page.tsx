@@ -20,8 +20,8 @@ const SLOT_PATH: Record<Slot, string> = { logo: 'logo', header: 'header-image', 
 const SLOT_MAX: Record<Slot, number> = { logo: 1024 * 1024, header: 3 * 1024 * 1024, footer: 3 * 1024 * 1024 };
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
-type Form = { name: string; address: string; phone: string; email: string; website: string; taxEnabled: boolean; taxPercentage: string };
-const blank: Form = { name: '', address: '', phone: '', email: '', website: '', taxEnabled: false, taxPercentage: '' };
+type Form = { name: string; address: string; phone: string; email: string; website: string };
+const blank: Form = { name: '', address: '', phone: '', email: '', website: '' };
 
 function Logo({ company, size = 'size-14' }: { company: Pick<Company, 'logo' | 'name'>; size?: string }) {
   const { pick } = useI18n();
@@ -51,18 +51,15 @@ function CompanyModal({ company, onClose }: { company: Company | 'new'; onClose:
     return { ...p, [slot]: f ? URL.createObjectURL(f) : undefined };
   });
   const uploadTo = (id: number, slot: Slot, f: File) => { const fd = new FormData(); fd.append('file', f); return api.upload<Company>(`/companies/${id}/${SLOT_PATH[slot]}`, fd); };
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<Form>({
+  const { register, handleSubmit, formState: { errors } } = useForm<Form>({
     defaultValues: editing ? {
       name: company.name, address: company.address ?? '', phone: company.phone ?? '', email: company.email ?? '', website: company.website ?? '',
-      taxEnabled: company.taxEnabled, taxPercentage: company.taxPercentage ?? '',
     } : blank,
   });
-  const taxEnabled = watch('taxEnabled');
   const done = () => { qc.invalidateQueries({ queryKey: ['companies'] }); qc.invalidateQueries({ queryKey: ['settings'] }); };
   const save = useMutation({
     mutationFn: async (v: Form) => {
-      const { taxEnabled: enabled, taxPercentage, ...details } = v;
-      const body = { ...cleanBody(details, !!current), taxEnabled: enabled, taxPercentage: enabled ? taxPercentage.trim() : null };
+      const body = cleanBody(v, !!current);
       if (current) return { company: await api.patch<Company>(`/companies/${current.id}`, body), failed: [] as Slot[] };
       const created = await api.post<Company>('/companies', body);
       // The images chosen while filling the form go up now that the company has an id.
@@ -138,22 +135,6 @@ function CompanyModal({ company, onClose }: { company: Company | 'new'; onClose:
         <Field label={t('common.phone')} required error={errors.phone?.message}><Input dir="ltr" maxLength={60} {...register('phone', reqText)} /></Field>
         <Field label={t('common.email')} required error={errors.email?.message}><Input type="email" dir="ltr" maxLength={150} {...register('email', reqText)} /></Field>
         <Field label={t('common.website')} className="sm:col-span-2"><Input dir="ltr" {...register('website')} /></Field>
-        <div className="rounded-2xl bg-sand/50 p-3 sm:col-span-2">
-          <label className="flex items-center gap-2 text-sm font-bold">
-            <input type="checkbox" className="size-4 accent-cocoa" {...register('taxEnabled')} />
-            {t('companies.taxEnabled')}
-          </label>
-          <p className="mt-1 text-xs text-cocoa">{t('companies.taxHint')}</p>
-          {taxEnabled && <Field label={t('companies.taxPercentage')} required className="mt-3 max-w-xs" error={errors.taxPercentage?.message}>
-            <Input inputMode="decimal" dir="ltr" placeholder="0" aria-invalid={!!errors.taxPercentage} {...register('taxPercentage', {
-              validate: (value) => {
-                if (!watch('taxEnabled')) return true;
-                if (!value.trim()) return t('common.required');
-                return /^(?:100(?:\.0{1,4})?|(?:\d{1,2})(?:\.\d{1,4})?)$/.test(value.trim()) || t('err.INVALID_PERCENTAGE');
-              },
-            })} />
-          </Field>}
-        </div>
         <div className="sm:col-span-2">
           <div className="text-sm font-bold">{t('companies.printTitle')}</div>
           <div className="text-xs text-cocoa">{t('companies.printHint')}</div>
