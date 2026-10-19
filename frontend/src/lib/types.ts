@@ -62,6 +62,7 @@ export interface ItemView {
   catalogFiles: { id: string; name: string; path: string; mimeType: string }[];
   unit: string | null; sortOrder: number; quantity: string; unitPrice: string; priceCurrency: string;
   sellingPrice: string | null; sellingCurrency: string | null;
+  itemCost: string | null;
   unitCost: string | null; costCurrency: string | null; shippingCost: string | null; shippingCurrency: string | null;
   customsCost: string | null; customsCurrency: string | null; commissionPercentage: string | null; taxEnabled: boolean; taxPercentage: string; notes: string | null;
   amounts: Amounts[];

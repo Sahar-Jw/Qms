@@ -30,6 +30,11 @@ const EDITABLE = new Set([QuotationStatus.DRAFT, QuotationStatus.EXPIRED]);
 
 @Injectable()
 export class QuotationsService {
+  /** Money is calculated from the selling price / currency (older lines without one keep their saved price). */
+  private priced(item: QuotationItem): QuotationItem {
+    return { ...item, unitPrice: item.sellingPrice ?? item.unitPrice, priceCurrency: item.sellingCurrency ?? item.priceCurrency };
+  }
+
   constructor(
     @InjectRepository(Quotation) private readonly repo: Repository<Quotation>,
     private readonly dataSource: DataSource,
@@ -174,8 +179,9 @@ export class QuotationsService {
       item.unit = inc.unit ?? (materialChanged ? mat.unit : prev!.unit);
       item.quantity = inc.quantity;
 
-      item.sellingPrice = inc.sellingPrice !== undefined ? inc.sellingPrice : materialChanged ? mat.sellingPrice : prev!.sellingPrice;
-      item.sellingCurrency = inc.sellingCurrency !== undefined ? inc.sellingCurrency : materialChanged ? mat.sellingCurrency : prev!.sellingCurrency;
+      item.sellingPrice = inc.sellingPrice;
+      item.sellingCurrency = inc.sellingCurrency;
+      item.itemCost = inc.itemCost || null;
       item.unitPrice = inc.unitPrice ?? (materialChanged ? mat.unitPrice : prev!.unitPrice);
       const priceCur = inc.priceCurrency ?? (materialChanged ? mat.currency : prev!.priceCurrency);
       if (!priceCur) {
@@ -211,7 +217,7 @@ export class QuotationsService {
       item.notes = inc.notes ?? null;
 
       const saved = await m.save(QuotationItem, item);
-      const { amounts } = this.calc.calcItem(saved);
+      const { amounts } = this.calc.calcItem(this.priced(saved));
       await m.delete(QuotationItemAmount, { itemId: saved.id });
       await m.insert(QuotationItemAmount, amounts.map((a) => ({ itemId: saved.id, ...a })));
     }
@@ -334,7 +340,7 @@ export class QuotationsService {
           ...rest,
           quotationId: saved.id,
         }));
-        const { amounts } = this.calc.calcItem(clone);
+        const { amounts } = this.calc.calcItem(this.priced(clone));
         await m.insert(QuotationItemAmount, amounts.map((a) => ({ itemId: clone.id, ...a })));
       }
       return saved.id;
@@ -421,6 +427,7 @@ export class QuotationsService {
         priceCurrency: i.priceCurrency,
         sellingPrice: i.sellingPrice,
         sellingCurrency: i.sellingCurrency,
+        itemCost: i.itemCost,
         unitCost: i.unitCost,
         costCurrency: i.costCurrency,
         shippingCost: i.shippingCost,

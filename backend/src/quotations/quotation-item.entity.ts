@@ -49,6 +49,10 @@ export class QuotationItem {
   @Column({ type: 'varchar', length: 3, nullable: true })
   sellingCurrency: string | null;
 
+  /** "الكلفة": per-unit cost typed on the line; the form shows quantity x itemCost as "كلفة الوحدة". Never printed. */
+  @Column({ type: 'decimal', precision: 18, scale: 4, nullable: true })
+  itemCost: string | null;
+
   @Column({ type: 'decimal', precision: 18, scale: 4, nullable: true })
   unitCost: string | null;
   @Column({ type: 'varchar', length: 3, nullable: true })

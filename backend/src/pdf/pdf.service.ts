@@ -393,11 +393,11 @@ ${o.script ?? ''}
           <td class="link-cell">${materialLink ? `<a class="lnk" dir="ltr" href="${this.esc(materialLink)}">${this.esc(materialLink)}</a>` : ''}</td>
           <td class="n" dir="ltr">${nf(i.quantity)}</td>
           <td>${this.esc(i.unit ?? '')}</td>
-          <td class="n" dir="ltr">${money(i.unitPrice, i.priceCurrency)}</td>
-          <td class="n">${lines(pick(i.amounts, 'value', i.priceCurrency))}</td>
+          <td class="n" dir="ltr">${money(i.sellingPrice ?? i.unitPrice, i.sellingCurrency ?? i.priceCurrency)}</td>
+          <td class="n">${lines(pick(i.amounts, 'value', i.sellingCurrency ?? i.priceCurrency))}</td>
           <td class="n">${lines(pick(i.amounts, 'shipping'))}</td>
           <td class="n">${lines(pick(i.amounts, 'customs'))}</td>
-          <td class="n b">${lines(pick(i.amounts, 'required', i.priceCurrency))}</td>
+          <td class="n b">${lines(pick(i.amounts, 'required', i.sellingCurrency ?? i.priceCurrency))}</td>
           ${opts.includeCost ? `<td class="n">${lines(pick(i.amounts, 'cost'))}</td>` : ''}
         </tr>`;
       })

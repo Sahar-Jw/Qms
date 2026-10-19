@@ -61,7 +61,7 @@ const ar: Shape<typeof en> = {
     deliveryMethod: 'طريقة التسليم', customerPayment: 'طريقة دفع العميل', customerPaymentPh: 'مثال: دفعة مقدمة 50٪ والباقي عند التسليم',
     tax: 'نسبة الضريبة %', taxEnabled: 'تطبيق الضريبة', internalNotes: 'ملاحظات داخلية (لا تُطبع)', itemNotes: 'ملاحظة البند (لا تُطبع)',
     material: 'المادة', materialPh: 'ابحث بالرمز أو الاسم', customerPh: 'ابحث عن عميل', quantity: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة',
-    currency: 'العملة', shipping: 'الشحن', customs: 'التخليص الجمركي', cost: 'تكلفة الوحدة', totalCost: 'التكلفة', summary: 'الملخص', itemsCount: 'البنود', currenciesCount: 'العملات', commission: 'العمولة %', value: 'القيمة', required: 'المطلوب',
+    currency: 'العملة', shipping: 'الشحن', customs: 'التخليص الجمركي', cost: 'تكلفة الوحدة', itemCost: 'الكلفة', unitCostTotal: 'كلفة الوحدة', totalCost: 'التكلفة', summary: 'الملخص', itemsCount: 'البنود', currenciesCount: 'العملات', commission: 'العمولة %', value: 'القيمة', required: 'المطلوب',
     perCurrency: 'الإجماليات حسب العملة', noItems: 'أضف بنداً واحداً على الأقل', issuingCompany: 'تصدر باسم', changeInSettings: 'تغيير من الإعدادات', companyDraftHint: 'يمكنك تغيير الشركة طالما أن العرض مسودة.',
     companyMissing: 'اختر الشركة المُصدِرة أدناه قبل حفظ العرض.', printAr: 'طباعة عربي', printEn: 'طباعة إنجليزي',
     pdfFallback: 'محرك PDF غير مثبّت على الخادم. فُتحت صفحة الطباعة: اختر "حفظ كـ PDF" كطابعة.', pdfAr: 'PDF عربي', pdfEn: 'PDF إنجليزي', includeCost: 'مع التكلفة', readOnly: 'هذا العرض للقراءة فقط.', notOwner: 'يمكنك تعديل العروض التي أنشأتها فقط.', mineOnly: 'للعرض فقط', duplicated: 'تم إنشاء النسخة: {number}',
@@ -75,7 +75,7 @@ const ar: Shape<typeof en> = {
   },
   materials: {
     title: 'المواد', new: 'مادة جديدة', edit: 'تعديل المادة', code: 'الرمز', nameAr: 'الاسم بالعربية', nameEn: 'الاسم بلغة أجنبية', source: 'المصدر',
-    stock: 'المخزون', unitPrice: 'سعر الوحدة', unit: 'الوحدة', currency: 'العملة', origin: 'بلد المنشأ', catalogue: 'الكتالوج', model: 'رقم الموديل',
+    stock: 'المخزون', unitPrice: 'كلفة السعر', unit: 'الوحدة', currency: 'العملة', origin: 'بلد المنشأ', catalogue: 'الكتالوج', model: 'رقم الموديل',
     image: 'صورة المنتج', uploadImage: 'اختيار صورة', changeImage: 'تغيير الصورة', removeImage: 'حذف الصورة', imageHint: 'PNG أو JPG أو WEBP حتى 8 ميغابايت. تُخفَّف الملفات الكبيرة دون تغيير أبعادها.', noImage: 'لا توجد صورة',
     details: 'تفاصيل المادة', savingDetails: 'جارٍ حفظ البيانات…', uploadingImage: 'جارٍ رفع الملفات…', optimizing: 'جارٍ تجهيز الصورة…', clickToZoom: 'اضغط على الصورة لتكبيرها',
     catalogFiles: 'ملفات الكتالوج', catalogHint: 'PNG أو JPG أو WEBP أو PDF أو DOCX؛ بحد أقصى 10 ملفات و{size} ميغابايت للملف.', catalogTooBig: '«{name}» أكبر من {size} ميغابايت المسموحة لملف الكتالوج.', addCatalogFiles: 'إضافة ملفات',

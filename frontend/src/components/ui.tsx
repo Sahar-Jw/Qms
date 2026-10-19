@@ -70,7 +70,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputHTMLAttribut
       <Input ref={ref} type={show ? 'text' : 'password'} className={cn('pr-11', className)} {...rest} />
       <button type="button" tabIndex={-1} onClick={() => setShow((v) => !v)} aria-pressed={show} aria-label={show ? t('common.hidePassword') : t('common.showPassword')} title={show ? t('common.hidePassword') : t('common.showPassword')}
         className="absolute right-1.5 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-cocoa transition-colors hover:bg-sand">
-        {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+        {show ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
       </button>
     </div>
   );

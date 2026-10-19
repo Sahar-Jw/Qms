@@ -17,6 +17,7 @@ export interface ItemView {
   priceCurrency: string;
   sellingPrice: string | null;
   sellingCurrency: string | null;
+  itemCost: string | null;
   unitCost: string | null;
   costCurrency: string | null;
   shippingCost: string | null;

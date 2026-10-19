@@ -232,7 +232,7 @@ function QuotationDetail() {
                         ? <a href={i.materialLink} target="_blank" rel="noreferrer" dir="ltr" className="break-all text-xs underline">{i.materialLink}</a>
                         : '—'}</td>
                       <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.quantity)} <span className="text-xs text-cocoa">{i.unit}</span></td>
-                      <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.unitPrice)} <span className="text-xs text-cocoa">{i.priceCurrency}</span></td>
+                      <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.sellingPrice ?? i.unitPrice)} <span className="text-xs text-cocoa">{i.sellingCurrency ?? i.priceCurrency}</span></td>
                       <td className={td}><Money amounts={i.amounts} field="value" /></td>
                       <td className={td}><Money amounts={i.amounts} field="shipping" /></td>
                       <td className={td}><Money amounts={i.amounts} field="customs" /></td>

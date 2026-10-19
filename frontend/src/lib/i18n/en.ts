@@ -56,7 +56,7 @@ const en = {
     deliveryMethod: 'Delivery method', customerPayment: 'How the customer pays', customerPaymentPh: 'e.g. 50% advance, rest on delivery',
     tax: 'Tax %', taxEnabled: 'Apply tax', internalNotes: 'Internal notes (never printed)', itemNotes: 'Item note (never printed)',
     material: 'Material', materialPh: 'Search by code or name', customerPh: 'Search customers', quantity: 'Quantity', unit: 'Unit', unitPrice: 'Unit price',
-    currency: 'Currency', shipping: 'Shipping', customs: 'Customs', cost: 'Unit cost', totalCost: 'Cost', summary: 'Summary', itemsCount: 'Items', currenciesCount: 'Currencies', commission: 'Commission %', value: 'Value', required: 'Required',
+    currency: 'Currency', shipping: 'Shipping', customs: 'Customs', cost: 'Unit cost', itemCost: 'Cost', unitCostTotal: 'Line unit cost', totalCost: 'Cost', summary: 'Summary', itemsCount: 'Items', currenciesCount: 'Currencies', commission: 'Commission %', value: 'Value', required: 'Required',
     perCurrency: 'Totals by currency', noItems: 'Add at least one item', issuingCompany: 'Issued from', changeInSettings: 'Change in settings', companyDraftHint: 'You can change the company while the quotation is a draft.',
     companyMissing: 'Choose the issuing company below before saving this quotation.', printAr: 'Print Arabic', printEn: 'Print English',
     pdfFallback: 'PDF engine is not installed on the server. The print page opened: choose "Save as PDF" as the printer.', pdfAr: 'PDF Arabic', pdfEn: 'PDF English', includeCost: 'Include cost', readOnly: 'This quotation is read-only.', notOwner: 'You can only edit the quotations you created.', mineOnly: 'View only', duplicated: 'Copy created: {number}',
@@ -70,7 +70,7 @@ const en = {
   },
   materials: {
     title: 'Materials', new: 'New material', edit: 'Edit material', code: 'Code', nameAr: 'Name (Arabic)', nameEn: 'Name (foreign language)', source: 'Source',
-    stock: 'Stock', unitPrice: 'Unit price', unit: 'Unit', currency: 'Currency', origin: 'Country of origin', catalogue: 'Catalogue', model: 'Model number',
+    stock: 'Stock', unitPrice: 'Price cost', unit: 'Unit', currency: 'Currency', origin: 'Country of origin', catalogue: 'Catalogue', model: 'Model number',
     image: 'Product picture', uploadImage: 'Choose picture', changeImage: 'Change picture', removeImage: 'Remove picture', imageHint: 'PNG, JPG or WEBP up to 8 MB. Big files are made lighter without changing their size.', noImage: 'No picture',
     details: 'Material details', savingDetails: 'Saving details…', uploadingImage: 'Uploading files…', optimizing: 'Preparing picture…', clickToZoom: 'Click the picture to enlarge it',
     catalogFiles: 'Catalog files', catalogHint: 'PNG, JPG, WEBP, PDF or DOCX; up to 10 files total and {size} MB per file.', catalogTooBig: '"{name}" is larger than the {size} MB allowed for a catalog file.', addCatalogFiles: 'Add files',

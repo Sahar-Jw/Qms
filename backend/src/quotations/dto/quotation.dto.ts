@@ -23,19 +23,23 @@ export class QuotationItemDto {
   @DecimalString({ positive: true })
   quantity: string;
 
-  /** Defaults to the material's price / currency when omitted on a new line. */
+  /** كلفة السعر. Defaults to the material's price / currency when omitted on a new line. */
   @IsNotEmpty() @DecimalString()
   unitPrice: string;
 
   @IsNotEmpty() @CurrencyCode()
   priceCurrency: string;
 
-  /** Editable quotation-only snapshot of the material's selling price; never printed. */
-  @IsOptional() @DecimalString()
-  sellingPrice?: string | null;
+  /** The price the quotation is really calculated and printed with (value = quantity x sellingPrice). */
+  @IsNotEmpty() @DecimalString()
+  sellingPrice: string;
 
-  @IsOptional() @CurrencyCode()
-  sellingCurrency?: string | null;
+  @IsNotEmpty() @CurrencyCode()
+  sellingCurrency: string;
+
+  /** "الكلفة" typed on the line (optional, never printed). */
+  @IsOptional() @DecimalString()
+  itemCost?: string | null;
 
   @IsNotEmpty() @TrimOptional() @IsString() @MaxLength(30)
   unit: string;

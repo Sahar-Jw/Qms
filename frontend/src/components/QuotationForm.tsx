@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
+import Decimal from 'decimal.js';
 import { toast } from 'sonner';
 import { AsyncPick } from '@/components/AsyncPick';
 import { Ledger } from '@/components/Totals';
@@ -25,7 +26,7 @@ type PickMaterial = Pick<Material, 'id' | 'materialCode' | 'name'> & Partial<Mat
 
 interface ItemForm {
   id?: number; material: PickMaterial | null; quantity: string; unit: string; unitPrice: string; priceCurrency: string;
-  sellingPrice: string; sellingCurrency: string;
+  sellingPrice: string; sellingCurrency: string; itemCost: string;
   shippingCost: string; shippingCurrency: string; customsCost: string; customsCurrency: string;
   unitCost: string; costCurrency: string; commissionPercentage: string; taxEnabled: boolean; taxPercentage: string; notes: string;
 }
@@ -37,7 +38,7 @@ interface FormValues {
 
 const CURRENCIES = ['USD', 'EUR', 'SYP', 'TRY', 'AED', 'SAR', 'GBP', 'JOD', 'EGP'];
 const DEC = /^\d{1,14}(\.\d{1,4})?$/;
-const emptyItem = (): ItemForm => ({ material: null, quantity: '1', unit: '', unitPrice: '', priceCurrency: '', sellingPrice: '', sellingCurrency: '', shippingCost: '', shippingCurrency: '', customsCost: '', customsCurrency: '', unitCost: '', costCurrency: '', commissionPercentage: '', taxEnabled: false, taxPercentage: '', notes: '' });
+const emptyItem = (): ItemForm => ({ material: null, quantity: '1', unit: '', unitPrice: '', priceCurrency: '', sellingPrice: '', sellingCurrency: '', itemCost: '', shippingCost: '', shippingCurrency: '', customsCost: '', customsCurrency: '', unitCost: '', costCurrency: '', commissionPercentage: '', taxEnabled: false, taxPercentage: '', notes: '' });
 const today = () => new Date().toISOString().slice(0, 10);
 const isoDate = (v?: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
 
@@ -51,11 +52,21 @@ function fromView(q: QuotationView): FormValues {
     items: q.items.map((i) => ({
       id: i.id, material: i.materialId ? { id: i.materialId, materialCode: i.materialCode, name: i.materialName, img: i.materialImage ?? null } : null,
       quantity: trimDec(i.quantity), unit: i.unit ?? '', unitPrice: trimDec(i.unitPrice), priceCurrency: i.priceCurrency,
-      sellingPrice: trimDec(i.sellingPrice), sellingCurrency: i.sellingCurrency ?? '',
+      sellingPrice: trimDec(i.sellingPrice ?? i.unitPrice), sellingCurrency: i.sellingCurrency ?? i.priceCurrency, // older lines fall back to their saved price
+      itemCost: trimDec(i.itemCost),
       shippingCost: trimDec(i.shippingCost), shippingCurrency: i.priceCurrency, customsCost: trimDec(i.customsCost), customsCurrency: i.priceCurrency,
       unitCost: trimDec(i.unitCost), costCurrency: i.priceCurrency, commissionPercentage: trimDec(i.commissionPercentage), taxEnabled: i.taxEnabled, taxPercentage: i.taxEnabled ? trimDec(i.taxPercentage) : '', notes: i.notes ?? '',
     })),
   };
+}
+
+function ReadOnlyAmount({ amount, currency }: { amount?: string; currency?: string }) {
+  return (
+    <div dir="ltr" className="flex h-10 items-center justify-between gap-2 rounded-xl border border-stone bg-sand/50 px-3.5 text-sm font-semibold tabular-nums text-cocoa">
+      <span>{amount === undefined ? '—' : fmt(amount)}</span>
+      <span className="text-xs">{normalizeCurrency(currency ?? '')}</span>
+    </div>
+  );
 }
 
 export function QuotationForm({ initial }: { initial?: QuotationView }) {
@@ -106,11 +117,21 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
   const computed = useMemo(() => (items ?? []).map((it) => {
     try {
       if (!DEC.test(it.quantity ?? '') ) return [];
-      const cur = normalizeCurrency(it.priceCurrency);
-      return calcItem({ ...it, priceCurrency: cur, shippingCurrency: cur, customsCurrency: cur, costCurrency: cur, unitPrice: DEC.test(it.unitPrice) ? it.unitPrice : '', unitCost: canCost && DEC.test(it.unitCost) ? it.unitCost : '', shippingCost: DEC.test(it.shippingCost) ? it.shippingCost : '', customsCost: DEC.test(it.customsCost) ? it.customsCost : '' });
+      const cur = normalizeCurrency(it.sellingCurrency); // money is calculated from the selling price / selling currency
+      return calcItem({ ...it, priceCurrency: cur, shippingCurrency: cur, customsCurrency: cur, costCurrency: cur, unitPrice: DEC.test(it.sellingPrice) ? it.sellingPrice : '', unitCost: canCost && DEC.test(it.unitCost) ? it.unitCost : '', shippingCost: DEC.test(it.shippingCost) ? it.shippingCost : '', customsCost: DEC.test(it.customsCost) ? it.customsCost : '' });
     } catch { return []; }
   }), [items, canCost]);
   const totals = useMemo(() => aggregate(computed), [computed]);
+  // القيمة = quantity x selling price (from calcItem); كلفة الوحدة = quantity x الكلفة. Both in the selling currency.
+  const lineValue = (i: number) => {
+    const cur = normalizeCurrency(items?.[i]?.sellingCurrency ?? '') || 'USD';
+    return (computed[i] ?? []).find((a) => a.currency === cur)?.value;
+  };
+  const lineUnitCost = (i: number) => {
+    const it = items?.[i];
+    if (!it || !DEC.test(it.quantity ?? '') || !DEC.test(it.itemCost ?? '')) return undefined;
+    return new Decimal(it.quantity).times(it.itemCost).toFixed(4);
+  };
 
   const save = useMutation({
     mutationFn: (v: FormValues) => {
@@ -123,11 +144,11 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
         paymentLocation: str(v.paymentLocation), deliveryMethod: str(v.deliveryMethod), customerPaymentMethod: str(v.customerPaymentMethod),
         notes: editing ? (str(v.notes) || null) : (str(v.notes) || undefined),
         items: v.items.map((i) => {
-          const cur = normalizeCurrency(i.priceCurrency); // symbols ($, €...) become their code; one currency for price, shipping, customs and cost
+          const cur = normalizeCurrency(i.sellingCurrency); // symbols ($, €...) become their code; the selling currency is also the one for shipping, customs and cost
           return {
-            id: i.id, materialId: i.material!.id, quantity: str(i.quantity), unit: str(i.unit), unitPrice: str(i.unitPrice), priceCurrency: cur,
-            sellingPrice: str(i.sellingPrice) || null,
-            sellingCurrency: str(i.sellingCurrency) ? normalizeCurrency(i.sellingCurrency) : null,
+            id: i.id, materialId: i.material!.id, quantity: str(i.quantity), unit: str(i.unit), unitPrice: str(i.unitPrice), priceCurrency: normalizeCurrency(i.priceCurrency),
+            sellingPrice: str(i.sellingPrice), sellingCurrency: cur,
+            itemCost: str(i.itemCost) || null,
             shippingCost: str(i.shippingCost), shippingCurrency: cur, customsCost: str(i.customsCost), customsCurrency: cur,
             ...(canCost ? { unitCost: str(i.unitCost), costCurrency: cur } : {}),
             commissionPercentage: str(i.commissionPercentage), taxEnabled: i.taxEnabled, ...(i.taxEnabled ? { taxPercentage: str(i.taxPercentage) } : {}), notes: str(i.notes) || undefined,
@@ -246,14 +267,21 @@ export function QuotationForm({ initial }: { initial?: QuotationView }) {
                           {...register(`items.${i}.quantity`, { ...req, validate: (v) => (DEC.test(String(v).trim()) && Number(v) > 0) || t('common.invalid') })} />
                       </Field>
                       <Field label={t('quotations.unit')} required error={e?.unit?.message}><Input maxLength={30} {...register(`items.${i}.unit`, reqText)} /></Field>
-                      <Field label={t('quotations.unitPrice')} required error={e?.unitPrice?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.unitPrice`, decRule(true))} /></Field>
+                      <Field label={t('materials.unitPrice')} required error={e?.unitPrice?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.unitPrice`, decRule(true))} /></Field>
                       <Field label={t('quotations.currency')} required hint={t('materials.currencyHint')} error={e?.priceCurrency?.message}><Input list="currencies" dir="ltr" maxLength={20} {...register(`items.${i}.priceCurrency`, { ...req, validate: (v: string) => isCurrency(v) || t('common.invalid'), onBlur: () => setValue(`items.${i}.priceCurrency`, normalizeCurrency(getValues(`items.${i}.priceCurrency`))) })} /></Field>
-                      <Field label={t('materials.sellingPrice')} error={e?.sellingPrice?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.sellingPrice`, decRule(false))} /></Field>
-                      <Field label={t('materials.sellingCurrency')} hint={t('materials.currencyHint')} error={e?.sellingCurrency?.message}><Input list="currencies" dir="ltr" maxLength={20} {...register(`items.${i}.sellingCurrency`, { validate: (v: string) => !v || isCurrency(v) || t('common.invalid'), onBlur: () => { const value = getValues(`items.${i}.sellingCurrency`); if (value) setValue(`items.${i}.sellingCurrency`, normalizeCurrency(value)); } })} /></Field>
+                      <Field label={t('materials.sellingPrice')} required error={e?.sellingPrice?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.sellingPrice`, decRule(true))} /></Field>
+                      <Field label={t('materials.sellingCurrency')} required hint={t('materials.currencyHint')} error={e?.sellingCurrency?.message}><Input list="currencies" dir="ltr" maxLength={20} {...register(`items.${i}.sellingCurrency`, { ...req, validate: (v: string) => isCurrency(v) || t('common.invalid'), onBlur: () => { const value = getValues(`items.${i}.sellingCurrency`); if (value) setValue(`items.${i}.sellingCurrency`, normalizeCurrency(value)); } })} /></Field>
+                      <Field label={t('quotations.value')} hint={`${t('quotations.quantity')} × ${t('materials.sellingPrice')}`}>
+                        <ReadOnlyAmount amount={lineValue(i)} currency={items?.[i]?.sellingCurrency} />
+                      </Field>
 
                       <Field label={t('quotations.shipping')} required error={e?.shippingCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.shippingCost`, decRule(true))} /></Field>
                       <Field label={t('quotations.customs')} required error={e?.customsCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.customsCost`, decRule(true))} /></Field>
                       {canCost && <Field label={t('quotations.cost')} required error={e?.unitCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.unitCost`, decRule(true))} /></Field>}
+                      <Field label={t('quotations.itemCost')} error={e?.itemCost?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.itemCost`, decRule(false))} /></Field>
+                      <Field label={t('quotations.unitCostTotal')} hint={`${t('quotations.quantity')} × ${t('quotations.itemCost')}`}>
+                        <ReadOnlyAmount amount={lineUnitCost(i)} currency={items?.[i]?.sellingCurrency} />
+                      </Field>
                       <Field label={t('quotations.commission')} required error={e?.commissionPercentage?.message}><Input inputMode="decimal" dir="ltr" {...register(`items.${i}.commissionPercentage`, decRule(true))} /></Field>
                       <div className="col-span-2 flex flex-col justify-end gap-1.5 md:col-span-2">
                         <label className="flex h-10 items-center gap-2 text-sm font-bold">
