@@ -56,7 +56,7 @@ const en = {
     deliveryMethod: 'Delivery method', customerPayment: 'How the customer pays', customerPaymentPh: 'e.g. 50% advance, rest on delivery',
     tax: 'Tax %', taxEnabled: 'Apply tax', internalNotes: 'Internal notes (never printed)', itemNotes: 'Item note (never printed)',
     material: 'Material', materialPh: 'Search by code or name', customerPh: 'Search customers', quantity: 'Quantity', unit: 'Unit', unitPrice: 'Unit price',
-    currency: 'Currency', shipping: 'Shipping', customs: 'Customs', cost: 'Unit cost', itemCost: 'Cost', unitCostTotal: 'Line unit cost', totalCost: 'Cost', summary: 'Summary', itemsCount: 'Items', currenciesCount: 'Currencies', commission: 'Commission %', value: 'Value', required: 'Required',
+    currency: 'Currency', shipping: 'Shipping', customs: 'Customs', cost: 'Unit cost', itemCost: 'Cost', totalCost: 'Cost', summary: 'Summary', itemsCount: 'Items', currenciesCount: 'Currencies', commission: 'Commission %', value: 'Value', required: 'Required',
     perCurrency: 'Totals by currency', noItems: 'Add at least one item', issuingCompany: 'Issued from', changeInSettings: 'Change in settings', companyDraftHint: 'You can change the company while the quotation is a draft.',
     companyMissing: 'Choose the issuing company below before saving this quotation.', printAr: 'Print Arabic', printEn: 'Print English',
     pdfFallback: 'PDF engine is not installed on the server. The print page opened: choose "Save as PDF" as the printer.', pdfAr: 'PDF Arabic', pdfEn: 'PDF English', includeCost: 'Include cost', readOnly: 'This quotation is read-only.', notOwner: 'You can only edit the quotations you created.', mineOnly: 'View only', duplicated: 'Copy created: {number}',

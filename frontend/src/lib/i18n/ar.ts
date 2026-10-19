@@ -61,7 +61,7 @@ const ar: Shape<typeof en> = {
     deliveryMethod: 'طريقة التسليم', customerPayment: 'طريقة دفع العميل', customerPaymentPh: 'مثال: دفعة مقدمة 50٪ والباقي عند التسليم',
     tax: 'نسبة الضريبة %', taxEnabled: 'تطبيق الضريبة', internalNotes: 'ملاحظات داخلية (لا تُطبع)', itemNotes: 'ملاحظة البند (لا تُطبع)',
     material: 'المادة', materialPh: 'ابحث بالرمز أو الاسم', customerPh: 'ابحث عن عميل', quantity: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة',
-    currency: 'العملة', shipping: 'الشحن', customs: 'التخليص الجمركي', cost: 'تكلفة الوحدة', itemCost: 'الكلفة', unitCostTotal: 'كلفة الوحدة', totalCost: 'التكلفة', summary: 'الملخص', itemsCount: 'البنود', currenciesCount: 'العملات', commission: 'العمولة %', value: 'القيمة', required: 'المطلوب',
+    currency: 'العملة', shipping: 'الشحن', customs: 'التخليص الجمركي', cost: 'تكلفة الوحدة', itemCost: 'الكلفة', totalCost: 'التكلفة', summary: 'الملخص', itemsCount: 'البنود', currenciesCount: 'العملات', commission: 'العمولة %', value: 'القيمة', required: 'المطلوب',
     perCurrency: 'الإجماليات حسب العملة', noItems: 'أضف بنداً واحداً على الأقل', issuingCompany: 'تصدر باسم', changeInSettings: 'تغيير من الإعدادات', companyDraftHint: 'يمكنك تغيير الشركة طالما أن العرض مسودة.',
     companyMissing: 'اختر الشركة المُصدِرة أدناه قبل حفظ العرض.', printAr: 'طباعة عربي', printEn: 'طباعة إنجليزي',
     pdfFallback: 'محرك PDF غير مثبّت على الخادم. فُتحت صفحة الطباعة: اختر "حفظ كـ PDF" كطابعة.', pdfAr: 'PDF عربي', pdfEn: 'PDF إنجليزي', includeCost: 'مع التكلفة', readOnly: 'هذا العرض للقراءة فقط.', notOwner: 'يمكنك تعديل العروض التي أنشأتها فقط.', mineOnly: 'للعرض فقط', duplicated: 'تم إنشاء النسخة: {number}',
