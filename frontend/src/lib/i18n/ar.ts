@@ -134,6 +134,7 @@ const ar: Shape<typeof en> = {
 currency: 'العملة', link: 'الرابط', print: 'طباعة', page: 'صفحة',
     oneDayRemaining: 'متبقي يوم واحد', daysRemaining: 'متبقي {days} يوم', expired: 'منتهي الصلاحية',
     item: 'البند', catalog: 'الكتالوج', catalogTitle: 'الكتالوجات المرفقة', catalogEyebrow: 'ملف الكتالوج', catalogMaterial: 'المادة', catalogFile: 'الملف', catalogType: 'النوع',
+    kindPdf: 'PDF', kindWord: 'Word', kindImage: 'صورة', catalogRef: 'مرفق بعد العرض تحت «البند {n}»',
     catalogPdfNote: 'ملفات PDF المرفقة تُضاف إلى ملف PDF المُحمَّل فقط، ولا تظهر في الطباعة من المتصفح.',
   },
   audit: {

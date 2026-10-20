@@ -280,7 +280,7 @@ export function Modal({ open, title, onClose, children, footer, wide }: { open: 
           <h2 id={id} className="text-base font-bold">{title}</h2>
           <button onClick={onClose} aria-label={t('common.close')} className="grid size-8 place-items-center rounded-full hover:bg-cocoa"><X className="size-4" /></button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto p-5">{children}</div>
+        <div className="max-h-[70vh] max-h-[70dvh] overflow-y-auto p-4 sm:p-5">{children}</div>
         {footer && <div className="flex flex-wrap items-center justify-end gap-2 border-t border-stone/50 bg-sand/40 px-5 py-3">{footer}</div>}
       </div>
     </div>

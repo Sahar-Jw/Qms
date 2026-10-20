@@ -19,7 +19,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   if (!me.data) {
     const failed = me.error && !(me.error instanceof ApiError && me.error.status === 401);
     return (
-      <div className="grid min-h-screen place-items-center">
+      <div className="grid min-h-dvh place-items-center">
         {failed ? (
           <div className="flex flex-col items-center gap-3 text-sm text-cocoa">
             {t('err.NETWORK')}

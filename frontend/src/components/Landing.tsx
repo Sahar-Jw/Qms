@@ -82,7 +82,7 @@ export function Landing({ initial }: { initial: Panel }) {
   useEffect(() => { if (me.data) router.replace('/dashboard'); }, [me.data, router]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <header className="sticky top-0 z-30 border-b border-stone/40 bg-sand/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">

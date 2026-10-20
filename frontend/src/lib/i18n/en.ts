@@ -132,6 +132,7 @@ const en = {
 currency: 'Currency', link: 'Link', print: 'Print', page: 'Page',
     oneDayRemaining: '1 day remaining', daysRemaining: '{days} days remaining', expired: 'Expired',
     item: 'Item', catalog: 'Catalog', catalogTitle: 'Attached catalogs', catalogEyebrow: 'Material catalog', catalogMaterial: 'Material', catalogFile: 'File', catalogType: 'Type',
+    kindPdf: 'PDF', kindWord: 'Word', kindImage: 'Image', catalogRef: 'attached after the quotation under “Item {n}”',
     catalogPdfNote: 'Attached PDF files are added to the downloaded PDF only; they do not appear when printing from the browser.',
   },
   audit: {

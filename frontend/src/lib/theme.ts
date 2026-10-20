@@ -37,9 +37,9 @@ export const useTheme = (enabled = true) =>
   useQuery({
     queryKey: ['theme'],
     enabled,
-    // Always ask the server: another manager may have changed the colours since this tab last looked.
-    staleTime: 0,
-    refetchOnMount: 'always',
+    // Another manager may have changed the colours: ask again once the saved copy is a minute old (on mount and when the tab is focused).
+    staleTime: 60_000,
+    refetchOnMount: true,
     refetchOnWindowFocus: true,
     queryFn: () => api.get<{ colors: ThemeColors }>('/settings/theme'),
   });

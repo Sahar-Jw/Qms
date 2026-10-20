@@ -132,7 +132,7 @@ export const PART_LABELS: Record<string, Pair> = {
   // printed quotation columns
   link: ['الرابط', 'Link / product link'], attn: ['عناية', 'Attention'], desc: ['البيان', 'Description'], qty: ['الكمية', 'Quantity'],
   item: ['كلمة البند', 'Word "Item"'], catalog: ['كلمة الكتالوج تحت البند', 'Word "Catalog" under an item'], catalogTitle: ['عنوان الكتالوجات المرفقة', 'Attached catalogs title'], catalogEyebrow: ['النص الصغير فوق عنوان الكتالوج', 'Small text above the catalog title'],
-  catalogMaterial: ['عمود المادة', 'Material column'], catalogFile: ['عمود الملف', 'File column'], catalogType: ['عمود النوع', 'Type column'], catalogPdfNote: ['ملاحظة ملفات PDF المرفقة', 'Attached PDF files note'],
+  catalogMaterial: ['عمود المادة', 'Material column'], catalogFile: ['عمود الملف', 'File column'], catalogType: ['عمود النوع', 'Type column'], kindPdf: ['نوع الملف: PDF', 'File type: PDF'], kindWord: ['نوع الملف: Word', 'File type: Word'], kindImage: ['نوع الملف: صورة', 'File type: Image'], catalogRef: ['إشارة الكتالوج تحت كل بند', 'Catalog pointer under each item'], catalogPdfNote: ['ملاحظة ملفات PDF المرفقة', 'Attached PDF files note'],
   // accessibility labels
   openMenu: ['زر فتح القائمة', 'Open menu button'], clearValue: ['زر مسح الاختيار', 'Clear selection button'],
   // audit log, branding and materials screens

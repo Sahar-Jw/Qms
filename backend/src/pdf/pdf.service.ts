@@ -56,6 +56,7 @@ const T = {
     shipping: 'الشحن', customs: 'التخليص الجمركي', required: 'المطلوب', cost: 'التكلفة', totals: 'الإجماليات حسب العملة',
     currency: 'العملة', link: 'الرابط', print: 'طباعة', page: 'صفحة', item: 'البند', catalog: 'الكتالوج',
     catalogTitle: 'الكتالوجات المرفقة', catalogEyebrow: 'ملف الكتالوج', catalogMaterial: 'المادة', catalogFile: 'الملف', catalogType: 'النوع',
+    kindPdf: 'PDF', kindWord: 'Word', kindImage: 'صورة', catalogRef: 'مرفق بعد العرض تحت «البند {n}»',
     catalogPdfNote: 'ملفات PDF المرفقة تُضاف إلى ملف PDF المُحمَّل فقط، ولا تظهر في الطباعة من المتصفح.',
   },
   en: {
@@ -66,6 +67,7 @@ const T = {
     shipping: 'Shipping', customs: 'Customs', required: 'Required', cost: 'Cost', totals: 'Totals by currency',
     currency: 'Currency', link: 'Link', print: 'Print', page: 'Page', item: 'Item', catalog: 'Catalog',
     catalogTitle: 'Attached catalogs', catalogEyebrow: 'Material catalog', catalogMaterial: 'Material', catalogFile: 'File', catalogType: 'Type',
+    kindPdf: 'PDF', kindWord: 'Word', kindImage: 'Image', catalogRef: 'attached after the quotation under “Item {n}”',
     catalogPdfNote: 'Attached PDF files are added to the downloaded PDF only; they do not appear when printing from the browser.',
   },
 } as const;
@@ -197,8 +199,8 @@ export class PdfService implements OnModuleDestroy {
       });
   }
 
-  private kindLabel(file: MaterialCatalogFile): string {
-    return file.mimeType === 'application/pdf' ? 'PDF' : file.mimeType === DOCX_MIME ? 'Word' : 'Image';
+  private kindLabel(file: MaterialCatalogFile, t: Labels): string {
+    return file.mimeType === 'application/pdf' ? t.kindPdf : file.mimeType === DOCX_MIME ? t.kindWord : t.kindImage;
   }
 
   /**
@@ -227,7 +229,7 @@ export class PdfService implements OnModuleDestroy {
   /** The list of attached catalog files (one page of the appendix), each tied to its item number. */
   private catalogIndexHtml(entries: CatalogEntry[], t: Labels, withPdfNote: boolean): string {
     const rows = entries
-      .map((e, i) => `<tr><td class="c">${i + 1}</td><td class="c">${this.itemTag(e, t)}</td><td dir="ltr" style="white-space:nowrap">${this.esc(e.code)}</td><td>${e.name ? `<bdi dir="auto">${this.esc(e.name)}</bdi>` : ''}</td><td>${this.fileNameHtml(e.file.name)}</td><td class="c">${this.kindLabel(e.file)}</td></tr>`)
+      .map((e, i) => `<tr><td class="c">${i + 1}</td><td class="c">${this.itemTag(e, t)}</td><td dir="ltr" style="white-space:nowrap">${this.esc(e.code)}</td><td>${e.name ? `<bdi dir="auto">${this.esc(e.name)}</bdi>` : ''}</td><td>${this.fileNameHtml(e.file.name)}</td><td class="c">${this.esc(this.kindLabel(e.file, t))}</td></tr>`)
       .join('');
     return `<section class="catalog-index">
   <h2 class="catalog-title">${this.esc(t.catalogTitle)}</h2>
@@ -243,7 +245,7 @@ export class PdfService implements OnModuleDestroy {
   private async catalogPageHtml(entry: CatalogEntry, t: Labels, link = false, headingOnly = false): Promise<string> {
     const content = headingOnly ? '' : await this.catalogContentHtml(entry.file, link);
     return `<section class="catalog-page">
-  <header class="catalog-heading"><p class="eyebrow">${this.esc(t.catalogEyebrow)}</p><h2 class="catalog-h"><span class="tag">${this.itemTag(entry, t)}</span>${this.materialHtml(entry)}</h2><p class="catalog-file">${this.fileNameHtml(entry.file.name)} · ${this.kindLabel(entry.file)}</p></header>
+  <header class="catalog-heading"><p class="eyebrow">${this.esc(t.catalogEyebrow)}</p><h2 class="catalog-h"><span class="tag">${this.itemTag(entry, t)}</span>${this.materialHtml(entry)}</h2><p class="catalog-file">${this.fileNameHtml(entry.file.name)} · ${this.esc(this.kindLabel(entry.file, t))}</p></header>
   ${headingOnly ? '' : `<div class="catalog-document">${content}</div>`}
 </section>`;
   }
@@ -438,7 +440,7 @@ ${o.script ?? ''}
         return `<tr>
           <td class="c">${nf(String(idx + 1), 0)}</td>
           <td class="code" dir="ltr">${this.esc(i.materialCode)}</td>
-          <td class="desc">${itemName ? `<div class="material-name"><bdi dir="auto">${this.esc(itemName)}</bdi></div>` : ''}${materialLink ? `<a class="lnk" dir="ltr" href="${this.esc(materialLink)}">${this.esc(materialLink)}</a>` : ''}${files.length ? `<div class="cat-line"><span class="k">${this.esc(t.catalog)}:</span> ${files.join(' · ')}</div>` : ''}</td>
+          <td class="desc">${itemName ? `<div class="material-name"><bdi dir="auto">${this.esc(itemName)}</bdi></div>` : ''}${materialLink ? `<a class="lnk" dir="ltr" href="${this.esc(materialLink)}">${this.esc(materialLink)}</a>` : ''}${files.length ? `<div class="cat-line"><span class="k">${this.esc(t.catalog)}:</span> ${files.join(' · ')}${opts.includeCatalog === false ? '' : ` <span class="k">(${this.esc(t.catalogRef.replace('{n}', nf(String(idx + 1), 0)))})</span>`}</div>` : ''}</td>
           <td class="n" dir="ltr">${nf(i.quantity)}</td>
           <td class="c">${this.esc(i.unit ?? '')}</td>
           <td class="n" dir="ltr">${money(i.sellingPrice ?? i.unitPrice, i.sellingCurrency ?? i.priceCurrency)}</td>

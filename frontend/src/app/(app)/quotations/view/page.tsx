@@ -4,7 +4,7 @@ import { uploadUrl } from '@/lib/urls';
 import { Copy, Eye, FileDown, Lock, Pencil, Printer, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState, type ReactNode } from 'react';
+import { Suspense, useRef, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/confirm';
 import { MaterialThumb } from '@/components/MaterialThumb';
@@ -51,6 +51,9 @@ function QuotationDetail() {
   const router = useRouter();
   const confirm = useConfirm();
   const [cost, setCost] = useState(false);
+  /** A PDF build takes seconds and a lot of memory: while one runs, the print / PDF buttons are off (the ref stops a fast double click). */
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const pdfLock = useRef(false);
   const canCost = true; // cost is open to every role
 
   const query = useQuery({ queryKey: ['quotation', Number(id)], queryFn: () => api.get<QuotationView>(`/quotations/${id}`) });
@@ -119,6 +122,9 @@ function QuotationDetail() {
     toast.error(code && has(`err.${code}`) ? t(`err.${code}`) : (e as Error).message);
   };
   async function downloadPdf(lang: 'ar' | 'en') {
+    if (pdfLock.current) return;
+    pdfLock.current = true;
+    setPdfBusy(true);
     const done = trackRequest();
     try {
       const url = URL.createObjectURL(await buildPdf(lang));
@@ -129,6 +135,8 @@ function QuotationDetail() {
       reportPdfError(e, lang);
     } finally {
       done();
+      pdfLock.current = false;
+      setPdfBusy(false);
     }
   }
   /**
@@ -139,6 +147,9 @@ function QuotationDetail() {
   async function printQuotation(lang: 'ar' | 'en') {
     const hasCatalogPdf = q!.items.some((item) => (item.catalogFiles ?? []).some((file) => file.mimeType === 'application/pdf'));
     if (!hasCatalogPdf) { window.open(printUrl(lang), '_blank'); return; }
+    if (pdfLock.current) return;
+    pdfLock.current = true;
+    setPdfBusy(true);
     const tab = window.open('', '_blank'); // opened now, in the click, or the browser blocks it after the wait
     const done = trackRequest();
     try {
@@ -150,6 +161,8 @@ function QuotationDetail() {
       reportPdfError(e, lang);
     } finally {
       done();
+      pdfLock.current = false;
+      setPdfBusy(false);
     }
   }
 
@@ -165,7 +178,7 @@ function QuotationDetail() {
   return (
     <div className="space-y-4">
       {/* banner */}
-      <section className="rounded-3xl bg-gradient-to-br from-ink via-cocoa to-clay p-6 text-sand shadow-lift">
+      <section className="rounded-3xl bg-gradient-to-br from-ink via-cocoa to-clay p-4 text-sand shadow-lift sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             {co.logo
@@ -174,7 +187,7 @@ function QuotationDetail() {
               : <span className="grid size-16 place-items-center rounded-2xl bg-sand text-2xl font-bold text-ink">{co.name.charAt(0)}</span>}
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-3xl font-bold text-white" dir="ltr">{q.quotationNumber}</h1>
+                <h1 className="break-all text-2xl font-bold text-white sm:text-3xl" dir="ltr">{q.quotationNumber}</h1>
                 <StatusBadge status={q.status} />
               </div>
               <p className="mt-1 text-sm text-sand/90">{co.name} · <span dir="ltr" className="tabular-nums">{q.quotationDate}</span></p>
@@ -205,8 +218,8 @@ function QuotationDetail() {
           )}
           {(['ar', 'en'] as const).map((l) => (
             <span key={l} className="inline-flex overflow-hidden rounded-full ring-1 ring-sand/40">
-              <button onClick={() => printQuotation(l)} className="flex items-center gap-1.5 bg-ink/40 px-3.5 py-1.5 text-xs font-bold hover:bg-ink"><Printer className="size-3.5" />{t(l === 'ar' ? 'quotations.printAr' : 'quotations.printEn')}</button>
-              <button onClick={() => downloadPdf(l)} className="flex items-center gap-1.5 border-s border-sand/30 bg-ink/40 px-3 py-1.5 text-xs font-bold hover:bg-ink" title={t(l === 'ar' ? 'quotations.pdfAr' : 'quotations.pdfEn')}><FileDown className="size-3.5" />PDF</button>
+              <button onClick={() => printQuotation(l)} disabled={pdfBusy} className="flex items-center gap-1.5 bg-ink/40 px-3.5 py-1.5 text-xs font-bold hover:bg-ink disabled:cursor-wait disabled:opacity-60"><Printer className="size-3.5" />{t(l === 'ar' ? 'quotations.printAr' : 'quotations.printEn')}</button>
+              <button onClick={() => downloadPdf(l)} disabled={pdfBusy} className="flex items-center gap-1.5 border-s border-sand/30 bg-ink/40 px-3 py-1.5 text-xs font-bold hover:bg-ink disabled:cursor-wait disabled:opacity-60" title={t(l === 'ar' ? 'quotations.pdfAr' : 'quotations.pdfEn')}><FileDown className="size-3.5" />PDF</button>
             </span>
           ))}
         </div>

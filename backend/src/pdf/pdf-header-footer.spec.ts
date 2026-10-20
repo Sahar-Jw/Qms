@@ -326,4 +326,19 @@ describe('printed quotation: company header and footer images', () => {
       }
     });
   });
+  it.each([
+    ['en', 'attached after the quotation under “Item 2”', 'Image'],
+    ['ar', 'مرفق بعد العرض تحت «البند 2»', 'صورة'],
+  ] as const)('points from each item to its catalog and translates the file type (%s)', async (lang, pointer, kind) => {
+    const file = { id: 'a'.repeat(32), name: 'photo.png', path: `materials/catalog-${'a'.repeat(32)}.png`, mimeType: 'image/png' };
+    const html = await svc.renderHtml(quotation({}, [
+      { materialCode: 'M-1', materialName: 'Pump', catalogFiles: [], amounts: [] },
+      { materialCode: 'M-2', materialName: 'Valve', catalogFiles: [file], amounts: [] },
+    ]), { lang, includeCost: false });
+    expect(html).toContain(pointer); // the line under the item names its catalog and where it is attached
+    expect(html).toContain(`<td class=\"c\">${kind}</td>`); // file type is printed in the document language
+    expect(html).toContain("font-family:'Cairo'"); // Arabic is drawn with the embedded font, never a system fallback
+    const without = await svc.renderHtml(quotation({}, [{ materialCode: 'M-2', materialName: 'Valve', catalogFiles: [file], amounts: [] }]), { lang, includeCost: false, includeCatalog: false });
+    expect(without).not.toContain(pointer); // no pointer when the catalog pages are not printed
+  });
 });

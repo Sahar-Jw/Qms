@@ -13,7 +13,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   const brand = useBrandSettings();
   const { name: siteName } = useSiteBrand();
   return (
-    <div className="grid min-h-screen lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+    <div className="grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
       <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-b from-sand via-clay to-cocoa p-12 lg:flex">
         <div className="flex items-center gap-3">
           {brand.data?.logo ? <img src={uploadUrl(brand.data.logo)} alt="" className="size-12 rounded-full bg-ink/10 object-contain p-1" /> : brand.data?.icon ? <img src={uploadUrl(brand.data.icon)} alt="" className="size-12 rounded-full bg-ink/10 object-cover" /> : <span className="grid size-12 place-items-center rounded-full bg-ink text-sand"><Receipt className="size-6" /></span>}

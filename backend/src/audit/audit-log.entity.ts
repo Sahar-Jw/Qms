@@ -7,6 +7,7 @@ import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 
 @Entity('audit_logs')
 @Index('IDX_audit_logs_created_at', ['createdAt'])
 @Index('IDX_audit_logs_user_id', ['userId'])
+@Index('IDX_audit_logs_entity_action', ['entity', 'action'])
 export class AuditLog {
   @PrimaryGeneratedColumn()
   id: number;

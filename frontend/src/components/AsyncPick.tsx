@@ -61,7 +61,7 @@ export function AsyncPick<T extends { id: number }>({ value, onChange, fetcher, 
         <button type="button" onClick={() => onChange(null)} className="absolute end-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-cocoa hover:bg-sand" aria-label={t('common.clearValue')}><X className="size-3.5" /></button>
       )}
       {open && (
-        <div className="absolute z-30 mt-1 max-h-72 w-full min-w-64 overflow-y-auto rounded-2xl border border-stone bg-white p-1.5 shadow-xl">
+        <div className="absolute z-30 mt-1 max-h-72 w-full min-w-64 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-2xl border border-stone bg-white p-1.5 shadow-xl">
           {res.isFetching && !res.data ? (
             <div className="flex items-center gap-2 p-3 text-sm text-cocoa"><Loader2 className="size-4 animate-spin" />{t('common.loading')}</div>
           ) : res.data?.length ? (

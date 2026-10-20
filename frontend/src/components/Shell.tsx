@@ -98,7 +98,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       {open && <div className="fixed inset-0 z-30 bg-ink/50 lg:hidden" onClick={() => setOpen(false)} />}
 
       <aside className={cn(
@@ -120,7 +120,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
               <div className="truncate text-[11px] text-stone">{siteTagline}</div>
             </div>
           </Link>
-          <button className="ms-auto grid size-8 place-items-center rounded-full hover:bg-cocoa lg:hidden" onClick={() => setOpen(false)}><X className="size-4" /></button>
+          <button className="ms-auto grid size-8 place-items-center rounded-full hover:bg-cocoa lg:hidden" onClick={() => setOpen(false)} aria-label={t('common.close')}><X className="size-4" /></button>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
@@ -150,7 +150,7 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
       <div className="lg:ms-64">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 bg-sand/75 px-4 backdrop-blur-md lg:px-6">
           <button className="grid size-10 place-items-center rounded-full bg-white/80 ring-1 ring-stone/60 lg:hidden" onClick={() => setOpen(true)} aria-label={t('nav.openMenu')}><Menu className="size-5" /></button>
-          <form className="relative max-w-xl flex-1" onSubmit={(e) => { e.preventDefault(); if (timer.current) clearTimeout(timer.current); runSearch(q); }}>
+          <form className="relative min-w-0 max-w-xl flex-1" onSubmit={(e) => { e.preventDefault(); if (timer.current) clearTimeout(timer.current); runSearch(q); }}>
             <Search className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-clay" />
             <input ref={inputRef} value={q} onChange={(e) => onSearchChange(e.target.value)} placeholder={t('nav.search')}
               className="h-11 w-full rounded-full border border-stone/70 bg-white/85 ps-11 pe-10 text-sm placeholder:text-clay focus:border-cocoa focus:outline-none focus:ring-4 focus:ring-clay/30" />
