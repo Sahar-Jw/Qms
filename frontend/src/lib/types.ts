@@ -39,7 +39,7 @@ export interface CatalogSettings { maxFileSizeMb: number; maxFileSizeBytes: numb
 export interface AuditLogEntry {
   id: number; userId: number | null; userName: string | null; userRole: RoleCode | null;
   action: string; entity: string; entityId: string | null; entityLabel: string | null;
-  method: string; path: string; ip: string | null; details: Record<string, unknown> | null; createdAt: string;
+  method: string; path: string; ip: string | null; details: Record<string, unknown>; createdAt: string;
 }
 
 export interface Customer {

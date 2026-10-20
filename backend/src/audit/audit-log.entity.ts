@@ -45,9 +45,12 @@ export class AuditLog {
   @Column({ type: 'varchar', length: 64, nullable: true })
   ip: string | null;
 
-  /** The submitted fields, with passwords / tokens removed. */
-  @Column({ type: 'json', nullable: true })
-  details: Record<string, unknown> | null;
+  /**
+   * What happened, as a JSON object: the submitted fields (passwords / tokens removed), or { before, after } for an edit.
+   * Never null: an entry that has nothing else to say still records the request (see AuditService.ensureDetails).
+   */
+  @Column({ type: 'json' })
+  details: Record<string, unknown>;
 
   @CreateDateColumn({ type: 'datetime', precision: 6 })
   createdAt: Date;

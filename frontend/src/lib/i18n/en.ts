@@ -131,14 +131,15 @@ const en = {
     shipping: 'Shipping', customs: 'Customs', required: 'Required', cost: 'Cost', totals: 'Totals by currency',
 currency: 'Currency', link: 'Link', print: 'Print', page: 'Page',
     oneDayRemaining: '1 day remaining', daysRemaining: '{days} days remaining', expired: 'Expired',
-    catalogTitle: 'Attached catalogs', catalogEyebrow: 'Material catalog', catalogMaterial: 'Material', catalogFile: 'File', catalogType: 'Type',
+    item: 'Item', catalog: 'Catalog', catalogTitle: 'Attached catalogs', catalogEyebrow: 'Material catalog', catalogMaterial: 'Material', catalogFile: 'File', catalogType: 'Type',
     catalogPdfNote: 'Attached PDF files are added to the downloaded PDF only; they do not appear when printing from the browser.',
   },
   audit: {
     title: 'Audit log', sub: 'Every change made in the system, newest first.', when: 'When', user: 'User', action: 'Action', record: 'Record', details: 'Details',
     ip: 'IP address', searchPh: 'Search by user or record', allActions: 'All actions', allEntities: 'All records', none: 'No activity found',
     submitted: 'Submitted data', changes: 'Changes', before: 'Before', after: 'After', sideBySide: 'Side by side', inline: 'Old → new', beforeUnavailable: 'Previous value not recorded',
-    trueValue: 'Yes', falseValue: 'No', noDetails: 'No extra data was recorded for this action.',
+    trueValue: 'Yes', falseValue: 'No', noDetails: 'No extra data was recorded for this action.', item: 'Item {n}', removedItem: 'Removed item {n}', more: 'and {n} more',
+    fields: { request: 'Request', record: 'Record', recordId: 'Record ID', ip: 'IP address', userAgent: 'Browser', copiedFromId: 'Copied from record', newRecord: 'New record', truncated: 'Too large to store in full', fields: 'Fields' },
     imageAdded: 'New image uploaded', imageReplaced: 'Image replaced with a new one', imageRemoved: 'Image removed',
     assets: { logo: 'Logo', icon: 'Icon', avatar: 'Profile picture', headerImage: 'Print header image', footerImage: 'Print footer image' }, unknownUser: 'Not signed in',
     actions: {

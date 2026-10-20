@@ -7,6 +7,7 @@ import { PDFDocument, rgb, StandardFonts, type PDFImage, type PDFPage } from 'pd
 import { CurrencyAmounts } from '../calc/calc.types';
 import { Lang } from '../common/enums';
 import { uploadsRoot } from '../config/uploads';
+import { repairUploadedName } from '../materials/file-name';
 import { MaterialCatalogFile } from '../materials/material.entity';
 import { ItemView, QuotationView } from '../quotations/quotation-view';
 import { TranslationsService } from '../translations/translations.service';
@@ -53,7 +54,7 @@ const T = {
     deliveryMethod: 'طريقة التسليم', bank: 'المصرف', customerPayment: 'نظام الدفع', responsible: 'المسؤول',
     no: '#', code: 'الرمز', desc: 'البيان', qty: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة', value: 'القيمة',
     shipping: 'الشحن', customs: 'التخليص الجمركي', required: 'المطلوب', cost: 'التكلفة', totals: 'الإجماليات حسب العملة',
-    currency: 'العملة', link: 'الرابط', print: 'طباعة', page: 'صفحة',
+    currency: 'العملة', link: 'الرابط', print: 'طباعة', page: 'صفحة', item: 'البند', catalog: 'الكتالوج',
     catalogTitle: 'الكتالوجات المرفقة', catalogEyebrow: 'ملف الكتالوج', catalogMaterial: 'المادة', catalogFile: 'الملف', catalogType: 'النوع',
     catalogPdfNote: 'ملفات PDF المرفقة تُضاف إلى ملف PDF المُحمَّل فقط، ولا تظهر في الطباعة من المتصفح.',
   },
@@ -63,14 +64,15 @@ const T = {
     deliveryMethod: 'Delivery method', bank: 'Bank', customerPayment: 'Payment terms', responsible: 'Prepared by',
     no: '#', code: 'Code', desc: 'Description', qty: 'Qty', unit: 'Unit', unitPrice: 'Unit price', value: 'Value',
     shipping: 'Shipping', customs: 'Customs', required: 'Required', cost: 'Cost', totals: 'Totals by currency',
-    currency: 'Currency', link: 'Link', print: 'Print', page: 'Page',
+    currency: 'Currency', link: 'Link', print: 'Print', page: 'Page', item: 'Item', catalog: 'Catalog',
     catalogTitle: 'Attached catalogs', catalogEyebrow: 'Material catalog', catalogMaterial: 'Material', catalogFile: 'File', catalogType: 'Type',
     catalogPdfNote: 'Attached PDF files are added to the downloaded PDF only; they do not appear when printing from the browser.',
   },
 } as const;
 
 type Labels = Record<keyof (typeof T)['ar'], string>;
-type CatalogEntry = { file: MaterialCatalogFile; material: string };
+/** One catalog file and the quotation line(s) it belongs to (a material used on two lines has its files shown once, for both). */
+type CatalogEntry = { file: MaterialCatalogFile; code: string; name: string; itemNos: number[] };
 type CompanyPngs = { header?: Buffer; footer?: Buffer };
 
 const AR_RANGE = 'U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC';
@@ -108,18 +110,25 @@ export class PdfService implements OnModuleDestroy {
 
   // ------------------------------------------------------------------ catalog files (appended after the quotation)
 
-  /** Every catalog file of the quotation's materials, once each, in the order of the items. */
+  /** Every catalog file of the quotation's materials, once each, in the order of the items - each one knows which item(s) it belongs to. */
   private catalogEntries(q: QuotationView): CatalogEntry[] {
-    const seen = new Set<string>();
-    const files: CatalogEntry[] = [];
-    for (const item of q.items) {
+    const byId = new Map<string, CatalogEntry>();
+    q.items.forEach((item, index) => {
       for (const file of item.catalogFiles ?? []) {
-        if (seen.has(file.id)) continue;
-        seen.add(file.id);
-        files.push({ file, material: `${item.materialCode}${item.materialName ? ` - ${item.materialName}` : ''}` });
+        const known = byId.get(file.id);
+        if (known) {
+          if (!known.itemNos.includes(index + 1)) known.itemNos.push(index + 1);
+          continue;
+        }
+        byId.set(file.id, {
+          file: { ...file, name: repairUploadedName(file.name) }, // names saved before the upload fix are repaired here
+          code: item.materialCode,
+          name: item.materialName?.trim() ?? '',
+          itemNos: [index + 1],
+        });
       }
-    }
-    return files;
+    });
+    return [...byId.values()];
   }
 
   private catalogFilePath(file: MaterialCatalogFile): string {
@@ -192,24 +201,50 @@ export class PdfService implements OnModuleDestroy {
     return file.mimeType === 'application/pdf' ? 'PDF' : file.mimeType === DOCX_MIME ? 'Word' : 'Image';
   }
 
-  /** The list of attached catalog files (one page of the appendix). */
+  /**
+   * A file name as one readable unit. A Latin name is an isolated left-to-right block ("breaker-manual.pdf" stays in order inside
+   * an Arabic line); an Arabic name keeps its words right-to-left with the extension isolated at the end, otherwise "كتالوج.png"
+   * prints with the dot and the extension on the wrong side of the words.
+   */
+  private fileNameHtml(name: string): string {
+    const clean = repairUploadedName(name);
+    if (!/[\u0600-\u06ff]/.test(clean)) return `<bdi dir="ltr">${this.esc(clean)}</bdi>`;
+    const dot = clean.lastIndexOf('.');
+    if (dot <= 0 || clean.length - dot > 6) return `<bdi dir="rtl">${this.esc(clean)}</bdi>`;
+    return `<bdi dir="rtl">${this.esc(clean.slice(0, dot))}</bdi><bdi dir="ltr">${this.esc(clean.slice(dot))}</bdi>`;
+  }
+
+  /** "Item 2" / "Item 1, 3": the line(s) of the quotation a catalog file belongs to. */
+  private itemTag(e: CatalogEntry, t: Labels): string {
+    return `${this.esc(t.item)} <bdi dir="ltr">${e.itemNos.join(', ')}</bdi>`;
+  }
+
+  /** Code and name as two separate pieces (never one "CODE - name" string, whose mixed Arabic / Latin order breaks). */
+  private materialHtml(e: CatalogEntry): string {
+    return `<bdi dir="ltr" class="code">${this.esc(e.code)}</bdi>${e.name ? ` <bdi dir="auto" class="nm">${this.esc(e.name)}</bdi>` : ''}`;
+  }
+
+  /** The list of attached catalog files (one page of the appendix), each tied to its item number. */
   private catalogIndexHtml(entries: CatalogEntry[], t: Labels, withPdfNote: boolean): string {
     const rows = entries
-      .map(({ file, material }, i) => `<tr><td class="c">${i + 1}</td><td><bdi dir="auto">${this.esc(material)}</bdi></td><td><bdi dir="auto">${this.esc(file.name)}</bdi></td><td class="c">${this.kindLabel(file)}</td></tr>`)
+      .map((e, i) => `<tr><td class="c">${i + 1}</td><td class="c">${this.itemTag(e, t)}</td><td dir="ltr" style="white-space:nowrap">${this.esc(e.code)}</td><td>${e.name ? `<bdi dir="auto">${this.esc(e.name)}</bdi>` : ''}</td><td>${this.fileNameHtml(e.file.name)}</td><td class="c">${this.kindLabel(e.file)}</td></tr>`)
       .join('');
     return `<section class="catalog-index">
   <h2 class="catalog-title">${this.esc(t.catalogTitle)}</h2>
-  <table class="plain"><thead><tr><th>${t.no}</th><th>${this.esc(t.catalogMaterial)}</th><th>${this.esc(t.catalogFile)}</th><th>${this.esc(t.catalogType)}</th></tr></thead><tbody>${rows}</tbody></table>
+  <table class="plain"><thead><tr><th>${t.no}</th><th>${this.esc(t.item)}</th><th>${this.esc(t.code)}</th><th>${this.esc(t.catalogMaterial)}</th><th>${this.esc(t.catalogFile)}</th><th>${this.esc(t.catalogType)}</th></tr></thead><tbody>${rows}</tbody></table>
   ${withPdfNote ? `<p class="note pdf-note">${this.esc(t.catalogPdfNote)}</p>` : ''}
 </section>`;
   }
 
-  /** One Word / picture catalog file: its own page(s), headed by the material and the file name. */
-  private async catalogPageHtml({ file, material }: CatalogEntry, t: Labels, link = false): Promise<string> {
-    const content = await this.catalogContentHtml(file, link);
+  /**
+   * One catalog file: its own page(s), headed by the item number, the material and the file name. A PDF file has only the heading
+   * here (its real pages are placed right after it by the PDF builders), so every attached page can be traced back to its item.
+   */
+  private async catalogPageHtml(entry: CatalogEntry, t: Labels, link = false, headingOnly = false): Promise<string> {
+    const content = headingOnly ? '' : await this.catalogContentHtml(entry.file, link);
     return `<section class="catalog-page">
-  <header class="catalog-heading"><p class="eyebrow">${this.esc(t.catalogEyebrow)}</p><h2><bdi dir="auto">${this.esc(material)}</bdi></h2><p class="catalog-file"><bdi dir="auto">${this.esc(file.name)}</bdi></p></header>
-  <div class="catalog-document">${content}</div>
+  <header class="catalog-heading"><p class="eyebrow">${this.esc(t.catalogEyebrow)}</p><h2 class="catalog-h"><span class="tag">${this.itemTag(entry, t)}</span>${this.materialHtml(entry)}</h2><p class="catalog-file">${this.fileNameHtml(entry.file.name)} · ${this.kindLabel(entry.file)}</p></header>
+  ${headingOnly ? '' : `<div class="catalog-document">${content}</div>`}
 </section>`;
   }
 
@@ -270,8 +305,12 @@ table.items tbody tr:nth-child(even) td { background: #f6f8fb; }
 tr { page-break-inside: avoid; break-inside: avoid; }
 td.c { text-align: center; }
 td.n { text-align: end; white-space: nowrap; }
-td.desc { width: 22%; }
-td.link-cell { width: 16%; overflow-wrap: anywhere; word-break: break-all; }
+table.items td { font-size: 10.5px; }
+table.items td.desc { width: 100%; min-width: 38mm; }
+table.items td.c, table.items td.code, table.items td.n { white-space: nowrap; }
+table.items td.n .m { white-space: nowrap; }
+.cat-line { margin-top: 2px; font-size: 9.5px; color: #1f3a5f; }
+.cat-line .k { color: #555; }
 .material-name { display: block; text-align: start; unicode-bidi: plaintext; }
 .b { font-weight: 700; }
 .lnk { display: block; margin-top: 2px; font-size: 9px; color: #1f3a5f; text-decoration: underline; overflow-wrap: anywhere; word-break: break-all; }
@@ -290,6 +329,9 @@ table.plain td, table.plain th { font-size: 10.5px; }
 .catalog-heading { border-bottom: 1px solid #d7dee8; padding-bottom: 3mm; margin-bottom: 5mm; }
 .catalog-heading .eyebrow { color: #718096; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 0 0 1.5mm; }
 .catalog-heading h2 { font-size: 15px; line-height: 1.3; color: #1f3a5f; margin: 0 0 1.5mm; overflow-wrap: anywhere; }
+.catalog-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1mm 3mm; }
+.catalog-h .tag { background: #1f3a5f; color: #fff; border-radius: 3px; padding: 0 6px; font-size: 12px; white-space: nowrap; }
+.catalog-h .code { font-weight: 700; }
 .catalog-file { color: #667085; font-size: 9px; margin: 0; overflow-wrap: anywhere; }
 .catalog-document { overflow-wrap: anywhere; color: #202a36; font-size: 11.5px; }
 .catalog-document p { margin: 0 0 3mm; }
@@ -348,7 +390,8 @@ ${o.script ?? ''}
       const parts = await Promise.all(entries.map(async (entry) => {
         if (entry.file.mimeType === 'application/pdf') {
           await this.assertCatalogFile(entry.file); // fail early when the stored file is missing
-          return `<div class="pdf-slot" data-pdf-name="${this.esc(entry.file.name)}"></div>`; // the browser PDF puts the real pages here
+          // heading page (which item it belongs to), then the marker where the browser PDF puts the real pages
+          return `${await this.catalogPageHtml(entry, t, false, true)}<div class="pdf-slot" data-pdf-name="${this.esc(entry.file.name)}"></div>`;
         }
         return this.catalogPageHtml(entry, t, opts.linkCatalogImages);
       }));
@@ -382,21 +425,26 @@ ${o.script ?? ''}
       .map(([k, v]) => `<div class="term"><span class="k">${this.esc(k)}:</span> <bdi dir="auto">${this.esc(v!)}</bdi></div>`)
       .join('');
 
+    // A column that is empty on every line (no shipping, no customs) is left out: it only wasted room and printed a column of dashes.
+    const used = (key: 'shipping' | 'customs') => q.items.some((i) => pick(i.amounts, key).length > 0) || q.totals.some((tt) => Number(tt[key]) !== 0);
+    const showShipping = used('shipping');
+    const showCustoms = used('customs');
+
     const rows = q.items
       .map((i: ItemView, idx: number) => {
         const itemName = i.materialName?.trim();
         const materialLink = this.safeLink(i.materialLink);
+        const files = (i.catalogFiles ?? []).map((f) => this.fileNameHtml(f.name));
         return `<tr>
           <td class="c">${nf(String(idx + 1), 0)}</td>
-          <td dir="ltr" style="white-space:nowrap">${this.esc(i.materialCode)}</td>
-          <td class="desc">${itemName ? `<div class="material-name"><bdi dir="auto">${this.esc(itemName)}</bdi></div>` : ''}</td>
-          <td class="link-cell">${materialLink ? `<a class="lnk" dir="ltr" href="${this.esc(materialLink)}">${this.esc(materialLink)}</a>` : ''}</td>
+          <td class="code" dir="ltr">${this.esc(i.materialCode)}</td>
+          <td class="desc">${itemName ? `<div class="material-name"><bdi dir="auto">${this.esc(itemName)}</bdi></div>` : ''}${materialLink ? `<a class="lnk" dir="ltr" href="${this.esc(materialLink)}">${this.esc(materialLink)}</a>` : ''}${files.length ? `<div class="cat-line"><span class="k">${this.esc(t.catalog)}:</span> ${files.join(' · ')}</div>` : ''}</td>
           <td class="n" dir="ltr">${nf(i.quantity)}</td>
-          <td>${this.esc(i.unit ?? '')}</td>
+          <td class="c">${this.esc(i.unit ?? '')}</td>
           <td class="n" dir="ltr">${money(i.sellingPrice ?? i.unitPrice, i.sellingCurrency ?? i.priceCurrency)}</td>
           <td class="n">${lines(pick(i.amounts, 'value', i.sellingCurrency ?? i.priceCurrency))}</td>
-          <td class="n">${lines(pick(i.amounts, 'shipping'))}</td>
-          <td class="n">${lines(pick(i.amounts, 'customs'))}</td>
+          ${showShipping ? `<td class="n">${lines(pick(i.amounts, 'shipping'))}</td>` : ''}
+          ${showCustoms ? `<td class="n">${lines(pick(i.amounts, 'customs'))}</td>` : ''}
           <td class="n b">${lines(pick(i.amounts, 'required', i.sellingCurrency ?? i.priceCurrency))}</td>
           ${opts.includeCost ? `<td class="n">${lines(pick(i.amounts, 'cost'))}</td>` : ''}
         </tr>`;
@@ -408,15 +456,20 @@ ${o.script ?? ''}
         (tt) => `<tr>
           <td class="c b" dir="ltr">${this.esc(tt.currency)}</td>
           <td class="n" dir="ltr">${nf(tt.value)}</td>
-          <td class="n" dir="ltr">${nf(tt.shipping)}</td>
-          <td class="n" dir="ltr">${nf(tt.customs)}</td>
+          ${showShipping ? `<td class="n" dir="ltr">${nf(tt.shipping)}</td>` : ''}
+          ${showCustoms ? `<td class="n" dir="ltr">${nf(tt.customs)}</td>` : ''}
           <td class="n b" dir="ltr">${nf(tt.required)}</td>
           ${opts.includeCost ? `<td class="n" dir="ltr">${nf(tt.cost)}</td>` : ''}
         </tr>`,
       )
       .join('');
 
-    const contact = [co.phone && `${t.phone}: ${co.phone}`, co.email, co.website].filter(Boolean).map((x) => `<bdi dir="ltr">${this.esc(String(x))}</bdi>`).join(' &nbsp;|&nbsp; ');
+    // The label sits OUTSIDE the isolated number: "+218 91 1234567" inside an Arabic sentence otherwise prints as "1234567 91 218+".
+    const contact = [
+      co.phone && `<span class="k">${this.esc(t.phone)}:</span> <bdi dir="ltr">${this.esc(co.phone)}</bdi>`,
+      co.email && `<bdi dir="ltr">${this.esc(co.email)}</bdi>`,
+      co.website && `<bdi dir="ltr">${this.esc(co.website)}</bdi>`,
+    ].filter(Boolean).join(' &nbsp;|&nbsp; ');
     const custName = cu.companyName ?? '';
 
     // NOTE: internal notes (quotation.notes / item.notes) are intentionally never rendered.
@@ -446,14 +499,14 @@ ${o.script ?? ''}
 ${termsHtml ? `<div class="terms">${termsHtml}</div>` : ''}
 <table class="items">
   <thead><tr>
-    <th>${t.no}</th><th>${t.code}</th><th>${t.desc}</th><th>${t.link}</th><th>${t.qty}</th><th>${t.unit}</th><th>${t.unitPrice}</th>
-    <th>${t.value}</th><th>${t.shipping}</th><th>${t.customs}</th><th>${t.required}</th>${opts.includeCost ? `<th>${t.cost}</th>` : ''}
+    <th>${t.no}</th><th>${t.code}</th><th>${t.desc}</th><th>${t.qty}</th><th>${t.unit}</th><th>${t.unitPrice}</th>
+    <th>${t.value}</th>${showShipping ? `<th>${t.shipping}</th>` : ''}${showCustoms ? `<th>${t.customs}</th>` : ''}<th>${t.required}</th>${opts.includeCost ? `<th>${t.cost}</th>` : ''}
   </tr></thead>
   <tbody>${rows}</tbody>
 </table>
 <h3>${this.esc(t.totals)}</h3>
 <table class="totals">
-  <thead><tr><th>${t.currency}</th><th>${t.value}</th><th>${t.shipping}</th><th>${t.customs}</th><th>${t.required}</th>${opts.includeCost ? `<th>${t.cost}</th>` : ''}</tr></thead>
+  <thead><tr><th>${t.currency}</th><th>${t.value}</th>${showShipping ? `<th>${t.shipping}</th>` : ''}${showCustoms ? `<th>${t.customs}</th>` : ''}<th>${t.required}</th>${opts.includeCost ? `<th>${t.cost}</th>` : ''}</tr></thead>
   <tbody>${totalsRows}</tbody>
 </table>
 ${catalogHtml}`;
@@ -522,6 +575,7 @@ ${catalogHtml}`;
         };
         for (const entry of entries) {
           if (entry.file.mimeType === 'application/pdf') {
+            run.push(await this.catalogPageHtml(entry, t, false, true)); // heading page: which item this PDF belongs to
             await flush();
             await this.appendCatalogPdf(output, await this.readCatalogFile(entry.file), head, foot);
           } else {

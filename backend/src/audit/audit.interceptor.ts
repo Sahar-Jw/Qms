@@ -60,7 +60,59 @@ const NO_DETAILS = new Set(['login', 'login_failed', 'logout', 'change_password'
 const SNAPSHOT_SKIP = new Set(['id', 'createdAt', 'updatedAt', 'createdById', 'updatedById']);
 /** Dates and the like become plain JSON values, so they survive sanitizing. */
 const jsonSafe = (value: unknown): unknown => (value === undefined ? null : JSON.parse(JSON.stringify(value)));
-const sameValue = (a: unknown, b: unknown) => JSON.stringify(jsonSafe(a)) === JSON.stringify(jsonSafe(b));
+/**
+ * Values as they are compared: "" and null are the same (a cleared field), and decimal strings equal the numbers they spell
+ * ('10.0000' = 10), because the database returns decimals as strings while forms send numbers. Without this every save of
+ * a priced record was logged as "changed" even when nothing was.
+ */
+const normalize = (value: unknown): unknown => {
+  if (value === '' || value === undefined) return null;
+  if (typeof value === 'string' && /^-?(0|[1-9]\d*)(\.\d+)?$/.test(value.trim())) return Number(value);
+  if (Array.isArray(value)) return value.map(normalize);
+  if (isRecord(value)) return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, normalize(v)]));
+  return value;
+};
+const sameValue = (a: unknown, b: unknown) => JSON.stringify(normalize(jsonSafe(a))) === JSON.stringify(normalize(jsonSafe(b)));
+
+/** Quotation lines: columns that are not part of what the user edits. */
+const LINE_SKIP = new Set(['id', 'quotationId', 'quotation', 'material', 'amounts', 'sortOrder']);
+
+/**
+ * Compares the saved lines of a quotation with the lines that were just submitted. Keys are positions in the NEW list
+ * (`items[2]` = the 2nd line, as printed); lines that no longer exist are `removedItems[<old position>]`. A changed line lists
+ * only the fields that changed (plus its material code, for context); a new line lists what it was created with.
+ */
+function diffLines(beforeLines: Record<string, unknown>[], submitted: unknown[], response: unknown) {
+  const before: Record<string, unknown> = {};
+  const after: Record<string, unknown> = {};
+  const printed = isRecord(response) && Array.isArray(response.items) ? (response.items as Record<string, unknown>[]) : [];
+  const byId = new Map(beforeLines.map((line, index) => [Number(line.id), { line, index }]));
+  const kept = new Set<number>();
+
+  submitted.forEach((raw, index) => {
+    if (!isRecord(raw)) return;
+    const key = `items[${index + 1}]`;
+    const old = raw.id != null ? byId.get(Number(raw.id)) : undefined;
+    const code = old?.line.materialCode ?? printed[index]?.materialCode ?? raw.materialCode ?? (raw.materialId != null ? `#${raw.materialId}` : null);
+    if (!old) {
+      after[key] = { materialCode: code, ...Object.fromEntries(Object.entries(raw).filter(([k, v]) => !LINE_SKIP.has(k) && v !== null && v !== '' && v !== undefined)) };
+      return;
+    }
+    kept.add(old.index);
+    const changedKeys = Object.keys(raw).filter((k) => !LINE_SKIP.has(k) && k in old.line && !sameValue(old.line[k], raw[k]));
+    if (!changedKeys.length) return;
+    before[key] = { materialCode: code, ...Object.fromEntries(changedKeys.map((k) => [k, jsonSafe(old.line[k])])) };
+    after[key] = { materialCode: code, ...Object.fromEntries(changedKeys.map((k) => [k, raw[k]])) };
+  });
+
+  beforeLines.forEach((line, index) => {
+    if (kept.has(index)) return;
+    before[`removedItems[${index + 1}]`] = Object.fromEntries(
+      Object.entries(line).filter(([k, v]) => !LINE_SKIP.has(k) && v !== null && v !== '' && v !== undefined),
+    );
+  });
+  return { before, after };
+}
 
 /**
  * Records every successful create / update / delete / sign-in in the audit log, plus failed sign-ins.
@@ -87,9 +139,12 @@ export class AuditInterceptor implements NestInterceptor {
     if (!metadata?.primaryColumns.some((column) => column.propertyName === 'id')) return null;
 
     const repository = this.dataSource.getRepository(metadata.target as EntityTarget<ObjectLiteral>);
-    return repository.createQueryBuilder('record')
-      .where('record.id = :id', { id: Number(id) })
-      .getOne();
+    const query = repository.createQueryBuilder('record').where('record.id = :id', { id: Number(id) });
+    // A quotation is its lines too: without them an edit of the lines could not be shown as old -> new.
+    if (normalizedResource === 'quotations' && metadata.relations.some((relation) => relation.propertyName === 'items')) {
+      query.leftJoinAndSelect('record.items', 'items').addOrderBy('items.sortOrder', 'ASC').addOrderBy('items.id', 'ASC');
+    }
+    return query.getOne();
   }
 
   private async brandValue(): Promise<Record<string, unknown>> {
@@ -127,8 +182,11 @@ export class AuditInterceptor implements NestInterceptor {
     if (CHANGE_ACTIONS.has(action)) {
       if (!before) return sanitizeDetails(submitted);
 
-      const fields = Object.keys(submitted);
-      if (!fields.length && (action === 'activate' || action === 'deactivate')) {
+      const lines = Array.isArray(submitted.items) && Array.isArray(before.items)
+        ? diffLines(before.items as Record<string, unknown>[], submitted.items, response)
+        : null;
+      const fields = Object.keys(submitted).filter((field) => !(lines && field === 'items'));
+      if (!fields.length && !lines && (action === 'activate' || action === 'deactivate')) {
         const activeField = 'isActive' in before ? 'isActive' : 'active' in before ? 'active' : null;
         if (activeField) {
           const target = action === 'activate';
@@ -146,10 +204,11 @@ export class AuditInterceptor implements NestInterceptor {
       const nested = fields.filter((field) => !(field in before));
       const changed = columns.filter((field) => !sameValue(before[field], valueAfter(field)));
       const shown = [...changed, ...nested];
-      if (!shown.length) return NOTHING_CHANGED; // saved without touching anything: not worth a log row
+      const lineChanged = !!lines && (Object.keys(lines.before).length > 0 || Object.keys(lines.after).length > 0);
+      if (!shown.length && !lineChanged) return NOTHING_CHANGED; // saved without touching anything: not worth a log row
       return {
-        before: sanitizeDetails(Object.fromEntries(changed.map((field) => [field, jsonSafe(before[field])]))),
-        after: sanitizeDetails(Object.fromEntries(shown.map((field) => [field, valueAfter(field)]))),
+        before: sanitizeDetails({ ...Object.fromEntries(changed.map((field) => [field, jsonSafe(before[field])])), ...lines?.before }) ?? {},
+        after: sanitizeDetails({ ...Object.fromEntries(shown.map((field) => [field, valueAfter(field)])), ...lines?.after }) ?? {},
       };
     }
 
@@ -214,8 +273,12 @@ export class AuditInterceptor implements NestInterceptor {
             const loggedIn = isLogin ? (res as any)?.user : undefined; // no req.user yet on the sign-in request
             const who = req.user ?? (loggedIn ? { id: loggedIn.id, fullName: loggedIn.fullName, role: loggedIn.role } : undefined);
             const role = (who as any)?.role;
-            const details = this.detailsFor(action, req.body, previous, res, assetField);
+            let details = this.detailsFor(action, req.body, previous, res, assetField);
             if (details === NOTHING_CHANGED) return;
+            if (action === 'duplicate') {
+              // the request body is empty (or just a customer): say what was copied and what it became
+              details = { ...(details ?? {}), copiedFromId: hasId ? Number(segs[1]) : null, newRecord: pickLabel(res) };
+            }
             void this.audit.record({
               ...base,
               action,
@@ -225,13 +288,17 @@ export class AuditInterceptor implements NestInterceptor {
               userRole: typeof role === 'string' ? role : role?.code ?? null,
               entityId: hasId ? segs[1] : res && typeof res === 'object' && (res as any).id != null ? String((res as any).id) : null,
               entityLabel: pickLabel(res),
+              userAgent: (req.headers?.['user-agent'] as string | undefined) ?? null,
             });
           },
           error: () => {
             // Wrong password / locked / inactive account: worth keeping. Other failures changed nothing.
             if (!isLogin) return;
             const email = (req.body as any)?.email;
-            void this.audit.record({ ...base, action: 'login_failed', userName: typeof email === 'string' ? email : null });
+            void this.audit.record({
+              ...base, action: 'login_failed', userName: typeof email === 'string' ? email : null,
+              userAgent: (req.headers?.['user-agent'] as string | undefined) ?? null,
+            });
           },
         }),
       )),

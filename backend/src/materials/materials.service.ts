@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { StatusSearchPaginationDto, paginated } from '../common/dto/pagination.dto';
 import { uploadsRoot } from '../config/uploads';
 import { CreateMaterialDto, UpdateMaterialDto } from './dto/material.dto';
+import { repairUploadedName } from './file-name';
 import { Material, MaterialCatalogFile } from './material.entity';
 
 @Injectable()
@@ -85,7 +86,7 @@ export class MaterialsService {
 
     const additions: MaterialCatalogFile[] = files.map((file) => ({
       id: path.parse(file.filename).name.replace(/^catalog-/, ''),
-      name: path.basename(file.originalname).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 255),
+      name: path.basename(repairUploadedName(file.originalname)).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 255),
       path: `materials/${file.filename}`,
       mimeType: file.mimetype,
     }));

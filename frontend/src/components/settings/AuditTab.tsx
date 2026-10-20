@@ -16,14 +16,19 @@ const LIMIT = 20;
 const when = (d: string) => new Date(d).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'medium' });
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
-const fieldName = (key: string) => key
-  .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-  .replace(/[_-]/g, ' ')
-  .replace(/\b\w/g, (letter) => letter.toUpperCase());
+/** Technical names (quantityInStock, price_currency) become words; anything else (already readable) is left alone. */
+const fieldName = (key: string) => (/^[A-Za-z0-9_-]+$/.test(key)
+  ? key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+  : key);
+/** Rows of a quotation edit are stored as items[2] / removedItems[1]: shown as "Item 2" / "Removed item 1". */
+const ITEM_KEY = /^(items|removedItems)\[(\d+)\]$/;
 const valueText = (value: unknown, yes: string, no: string): string => {
   if (value === null || value === undefined || value === '') return '—';
   if (typeof value === 'boolean') return value ? yes : no;
-  if (Array.isArray(value)) return value.map((item) => valueText(item, yes, no)).join(', ') || '—';
+  // a list of records (the lines of a quotation) is one record per line, so long lists stay readable
+  if (Array.isArray(value)) return value.some(isRecord)
+    ? value.map((item, i) => `${i + 1}. ${valueText(item, yes, no)}`).join('\n') || '—'
+    : value.map((item) => valueText(item, yes, no)).join(', ') || '—';
   if (isRecord(value)) {
     return Object.entries(value).map(([key, item]) => `${fieldName(key)}: ${valueText(item, yes, no)}`).join(' · ') || '—';
   }
@@ -72,6 +77,20 @@ export function AuditTab() {
   const imageChange = (before: unknown, after: unknown) =>
     t(!after ? 'audit.imageRemoved' : before ? 'audit.imageReplaced' : 'audit.imageAdded');
   const label = (group: 'actions' | 'entities', key: string) => (has(`audit.${group}.${key}`) ? t(`audit.${group}.${key}`) : key);
+  const fieldLabel = (key: string) => {
+    const item = ITEM_KEY.exec(key);
+    if (item) return t(item[1] === 'items' ? 'audit.item' : 'audit.removedItem', { n: item[2] });
+    return has(`audit.fields.${key}`) ? t(`audit.fields.${key}`) : fieldName(key);
+  };
+  /** One line under the record in the table: which fields an edit touched, so most rows need no click at all. */
+  const summary = (details: AuditLogEntry['details']) => {
+    const keys = ('before' in details || 'after' in details)
+      ? Array.from(new Set([...Object.keys(isRecord(details.before) ? details.before : {}), ...Object.keys(isRecord(details.after) ? details.after : {})]))
+      : Object.keys(details);
+    if (!keys.length) return '';
+    const shown = keys.slice(0, 3).map(fieldLabel).join('، ');
+    return keys.length > 3 ? `${shown} … ${t('audit.more', { n: keys.length - 3 })}` : shown;
+  };
   const filtered = !!(q || action || entity || from || to);
   const clear = () => { setQ(''); setAction(''); setEntity(''); setFrom(''); setTo(''); };
 
@@ -129,6 +148,7 @@ export function AuditTab() {
                           <bdi className="truncate">{r.entityLabel}</bdi>
                         </div>
                       )}
+                      {r.details && summary(r.details) && <div className="max-w-64 truncate text-xs text-clay" title={summary(r.details)}>{summary(r.details)}</div>}
                     </td>
                     <td className={cn(td, 'text-end')}>
                       <Button size="sm" variant="ghost" onClick={() => setOpen(r)} aria-label={`${t('audit.details')} #${r.id}`} title={t('audit.details')}><Eye className="size-4" /></Button>
@@ -177,40 +197,53 @@ export function AuditTab() {
                 ) : !hasChangeSet ? (
                   // Created records and similar: there is no "before", so just the value.
                   <div key={field} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl bg-sand/60 p-3">
-                    <span className="text-xs font-semibold text-cocoa">{fieldName(field)}</span>
-                    <span className="min-w-0 break-words">{afterValues && field in afterValues
+                    <span className="text-xs font-semibold text-cocoa">{fieldLabel(field)}</span>
+                    <span className="min-w-0 whitespace-pre-line break-words">{afterValues && field in afterValues
                       ? valueText(afterValues[field], t('audit.trueValue'), t('audit.falseValue'))
                       : '—'}</span>
                   </div>
                 ) : changeView === 'sideBySide' ? (
                   <div key={field} className="grid gap-3 rounded-xl bg-sand/60 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                     <div className="min-w-0">
-                      <div className="mb-1 text-xs font-semibold text-cocoa">{fieldName(field)} · {t('audit.before')}</div>
-                      <div className="break-words">{beforeValues && field in beforeValues
+                      <div className="mb-1 text-xs font-semibold text-cocoa">{fieldLabel(field)} · {t('audit.before')}</div>
+                      <div className="whitespace-pre-line break-words">{beforeValues && field in beforeValues
                         ? valueText(beforeValues[field], t('audit.trueValue'), t('audit.falseValue'))
                         : '—'}</div>
                     </div>
                     <div className="min-w-0">
-                      <div className="mb-1 text-xs font-semibold text-cocoa">{fieldName(field)} · {t('audit.after')}</div>
-                      <div className="break-words">{afterValues && field in afterValues
+                      <div className="mb-1 text-xs font-semibold text-cocoa">{fieldLabel(field)} · {t('audit.after')}</div>
+                      <div className="whitespace-pre-line break-words">{afterValues && field in afterValues
                         ? valueText(afterValues[field], t('audit.trueValue'), t('audit.falseValue'))
                         : '—'}</div>
                     </div>
                   </div>
                 ) : (
                   <div key={field} className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-sand/60 p-3">
-                    <span className="w-full text-xs font-semibold text-cocoa">{fieldName(field)}</span>
-                    <span className="min-w-0 break-words">{beforeValues && field in beforeValues
+                    <span className="w-full text-xs font-semibold text-cocoa">{fieldLabel(field)}</span>
+                    <span className="min-w-0 whitespace-pre-line break-words">{beforeValues && field in beforeValues
                       ? valueText(beforeValues[field], t('audit.trueValue'), t('audit.falseValue'))
                       : '—'}</span>
                     <ArrowRight className="size-4 shrink-0 text-cocoa rtl:rotate-180" aria-hidden="true" />
-                    <span className="min-w-0 break-words font-semibold">{afterValues && field in afterValues
+                    <span className="min-w-0 whitespace-pre-line break-words font-semibold">{afterValues && field in afterValues
                       ? valueText(afterValues[field], t('audit.trueValue'), t('audit.falseValue'))
                       : '—'}</span>
                   </div>
                 )
               ))}
             </div>}
+            {changedFields.length === 0 && (
+              // Never leave the modal blank: show whatever was stored, or say plainly that there is nothing more.
+              Object.keys(open.details ?? {}).length > 0 ? (
+                <div className="space-y-2">
+                  {Object.entries(open.details).map(([key, value]) => (
+                    <div key={key} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl bg-sand/60 p-3">
+                      <span className="text-xs font-semibold text-cocoa">{fieldLabel(key)}</span>
+                      <span className="min-w-0 whitespace-pre-line break-words" dir="auto">{valueText(value, t('audit.trueValue'), t('audit.falseValue'))}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="rounded-xl bg-sand/60 p-3 text-cocoa">{t('audit.noDetails')}</p>
+            )}
           </div>
         )}
       </Modal>

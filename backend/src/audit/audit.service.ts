@@ -6,27 +6,66 @@ import { AuditLog } from './audit-log.entity';
 import { ListAuditDto } from './dto/audit.dto';
 
 export type AuditEntry = Pick<AuditLog, 'action' | 'entity' | 'method' | 'path'> &
-  Partial<Pick<AuditLog, 'userId' | 'userName' | 'userRole' | 'entityId' | 'entityLabel' | 'ip' | 'details'>>;
+  Partial<Pick<AuditLog, 'userId' | 'userName' | 'userRole' | 'entityId' | 'entityLabel' | 'ip'>> & {
+    /** May be empty: the service then fills in what it knows about the request, so a row is never stored without details. */
+    details?: Record<string, unknown> | null;
+    /** Browser / client of the request (only used to fill in details when nothing else was captured). */
+    userAgent?: string | null;
+  };
 
 const SENSITIVE = /pass(word)?|token|secret|otp/i;
-const MAX_DETAILS_CHARS = 6000;
+/** A row's details may be long (a quotation with many lines), but never unbounded. */
+const MAX_DETAILS_CHARS = 30000;
+const MAX_STRING_CHARS = 500;
 /** The same user doing the exact same thing to the same record inside this window is one event (double click, retry). */
 const DUPLICATE_WINDOW_MS = 5000;
 
-/** Copy of the request body that is safe to store: secrets removed, size capped. */
+const sizeOf = (value: unknown) => JSON.stringify(value).length;
+
+/**
+ * Copy of the request body that is safe to store: secrets removed, uploaded file data replaced by a marker, long text
+ * shortened and the whole thing kept under MAX_DETAILS_CHARS. It shrinks the content step by step instead of throwing it
+ * all away, so a big save (a quotation with many lines) still shows what was saved.
+ */
 export function sanitizeDetails(body: unknown): Record<string, unknown> | null {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
-  const clean = (v: unknown, depth: number): unknown => {
-    if (v === null || typeof v !== 'object') return v;
-    if (depth > 4) return '[…]';
-    if (Array.isArray(v)) return v.slice(0, 100).map((x) => clean(x, depth + 1));
-    const out: Record<string, unknown> = {};
-    for (const [k, val] of Object.entries(v as Record<string, unknown>)) out[k] = SENSITIVE.test(k) ? '[hidden]' : clean(val, depth + 1);
-    return out;
+  const build = (maxArray: number, maxString: number) => {
+    const clean = (v: unknown, depth: number): unknown => {
+      if (typeof v === 'string') {
+        if (/^data:[a-z]+\/[\w.+-]+;base64,/i.test(v)) return '[file data]';
+        return v.length > maxString ? `${v.slice(0, maxString)}…` : v;
+      }
+      if (v === null || typeof v !== 'object') return v;
+      if (depth > 4) return '[…]';
+      if (Array.isArray(v)) {
+        const kept = v.slice(0, maxArray).map((x) => clean(x, depth + 1));
+        return v.length > maxArray ? [...kept, `… +${v.length - maxArray}`] : kept;
+      }
+      const out: Record<string, unknown> = {};
+      for (const [k, val] of Object.entries(v as Record<string, unknown>)) out[k] = SENSITIVE.test(k) ? '[hidden]' : clean(val, depth + 1);
+      return out;
+    };
+    return clean(body, 0) as Record<string, unknown>;
   };
-  const cleaned = clean(body, 0) as Record<string, unknown>;
+  let cleaned = build(500, MAX_STRING_CHARS);
   if (!Object.keys(cleaned).length) return null;
-  return JSON.stringify(cleaned).length > MAX_DETAILS_CHARS ? { truncated: true, fields: Object.keys(cleaned) } : cleaned;
+  for (const [maxArray, maxString] of [[100, 200], [40, 100], [15, 60]] as const) {
+    if (sizeOf(cleaned) <= MAX_DETAILS_CHARS) break;
+    cleaned = build(maxArray, maxString);
+  }
+  return sizeOf(cleaned) > MAX_DETAILS_CHARS ? { truncated: true, fields: Object.keys(cleaned) } : cleaned;
+}
+
+/** Details that are never empty: what the entry has, else what is known about the request itself. */
+export function ensureDetails(entry: AuditEntry): Record<string, unknown> {
+  if (entry.details && typeof entry.details === 'object' && Object.keys(entry.details).length) return entry.details;
+  const info: Record<string, unknown> = {};
+  if (entry.entityLabel) info.record = entry.entityLabel;
+  if (entry.entityId) info.recordId = entry.entityId;
+  if (entry.userAgent) info.userAgent = entry.userAgent.slice(0, 200);
+  if (entry.ip) info.ip = entry.ip;
+  info.request = `${entry.method} ${entry.path}`.slice(0, 255);
+  return info;
 }
 
 @Injectable()
@@ -52,7 +91,7 @@ export class AuditService {
           method: entry.method,
           path: entry.path.slice(0, 255),
           ip: entry.ip?.slice(0, 64) ?? null,
-          details: entry.details ?? null,
+          details: ensureDetails(entry),
         }),
       );
     } catch (e) {

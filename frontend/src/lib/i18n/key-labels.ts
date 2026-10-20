@@ -131,7 +131,7 @@ export const PART_LABELS: Record<string, Pair> = {
   translations: ['نصوص الموقع', 'Website texts'], auth: ['الحساب', 'Account'], nothing: ['رسالة لا نتائج', 'No matches message'],
   // printed quotation columns
   link: ['الرابط', 'Link / product link'], attn: ['عناية', 'Attention'], desc: ['البيان', 'Description'], qty: ['الكمية', 'Quantity'],
-  catalogTitle: ['عنوان الكتالوجات المرفقة', 'Attached catalogs title'], catalogEyebrow: ['النص الصغير فوق عنوان الكتالوج', 'Small text above the catalog title'],
+  item: ['كلمة البند', 'Word "Item"'], catalog: ['كلمة الكتالوج تحت البند', 'Word "Catalog" under an item'], catalogTitle: ['عنوان الكتالوجات المرفقة', 'Attached catalogs title'], catalogEyebrow: ['النص الصغير فوق عنوان الكتالوج', 'Small text above the catalog title'],
   catalogMaterial: ['عمود المادة', 'Material column'], catalogFile: ['عمود الملف', 'File column'], catalogType: ['عمود النوع', 'Type column'], catalogPdfNote: ['ملاحظة ملفات PDF المرفقة', 'Attached PDF files note'],
   // accessibility labels
   openMenu: ['زر فتح القائمة', 'Open menu button'], clearValue: ['زر مسح الاختيار', 'Clear selection button'],

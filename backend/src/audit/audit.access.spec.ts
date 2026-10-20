@@ -141,8 +141,13 @@ describe('audit helpers', () => {
   it('keeps nothing for an empty body, and caps very large ones', () => {
     expect(sanitizeDetails({})).toBeNull();
     expect(sanitizeDetails(undefined)).toBeNull();
-    const big = sanitizeDetails({ items: Array.from({ length: 100 }, (_, i) => ({ note: 'x'.repeat(200), i })) });
-    expect(big).toEqual({ truncated: true, fields: ['items'] });
+    // a big save (100 lines) is shortened but still shows what was saved ...
+    const big = sanitizeDetails({ items: Array.from({ length: 100 }, (_, i) => ({ note: 'x'.repeat(200), i })) }) as any;
+    expect(big.truncated).toBeUndefined();
+    expect(big.items).toHaveLength(100);
+    // ... only a body that stays huge after shortening is reduced to the names of its fields
+    const huge = Object.fromEntries(Array.from({ length: 3000 }, (_, i) => [`field${i}`, 'x'.repeat(50)]));
+    expect(sanitizeDetails(huge)).toMatchObject({ truncated: true });
   });
 
   it('theme colours: bad or missing values fall back to the defaults', () => {

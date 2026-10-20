@@ -133,14 +133,15 @@ const ar: Shape<typeof en> = {
     shipping: 'الشحن', customs: 'التخليص الجمركي', required: 'المطلوب', cost: 'التكلفة', totals: 'الإجماليات حسب العملة',
 currency: 'العملة', link: 'الرابط', print: 'طباعة', page: 'صفحة',
     oneDayRemaining: 'متبقي يوم واحد', daysRemaining: 'متبقي {days} يوم', expired: 'منتهي الصلاحية',
-    catalogTitle: 'الكتالوجات المرفقة', catalogEyebrow: 'ملف الكتالوج', catalogMaterial: 'المادة', catalogFile: 'الملف', catalogType: 'النوع',
+    item: 'البند', catalog: 'الكتالوج', catalogTitle: 'الكتالوجات المرفقة', catalogEyebrow: 'ملف الكتالوج', catalogMaterial: 'المادة', catalogFile: 'الملف', catalogType: 'النوع',
     catalogPdfNote: 'ملفات PDF المرفقة تُضاف إلى ملف PDF المُحمَّل فقط، ولا تظهر في الطباعة من المتصفح.',
   },
   audit: {
     title: 'سجل التدقيق', sub: 'كل تغيير تم في النظام، الأحدث أولاً.', when: 'الوقت', user: 'المستخدم', action: 'الإجراء', record: 'السجل', details: 'التفاصيل',
     ip: 'عنوان IP', searchPh: 'ابحث باسم المستخدم أو السجل', allActions: 'كل الإجراءات', allEntities: 'كل السجلات', none: 'لا يوجد نشاط',
     submitted: 'البيانات المُرسلة', changes: 'التغييرات', before: 'قبل', after: 'بعد', sideBySide: 'جنباً إلى جنب', inline: 'قديم ← جديد', beforeUnavailable: 'القيمة السابقة غير مسجّلة',
-    trueValue: 'نعم', falseValue: 'لا', noDetails: 'لم تُسجَّل بيانات إضافية لهذا الإجراء.',
+    trueValue: 'نعم', falseValue: 'لا', noDetails: 'لم تُسجَّل بيانات إضافية لهذا الإجراء.', item: 'البند {n}', removedItem: 'البند المحذوف {n}', more: 'و{n} أخرى',
+    fields: { request: 'الطلب', record: 'السجل', recordId: 'رقم السجل', ip: 'عنوان IP', userAgent: 'المتصفح', copiedFromId: 'نُسخ من السجل', newRecord: 'السجل الجديد', truncated: 'كبير جداً ولم يُحفظ كاملاً', fields: 'الحقول' },
     imageAdded: 'تم رفع صورة جديدة', imageReplaced: 'تم استبدال الصورة بصورة جديدة', imageRemoved: 'تم حذف الصورة',
     assets: { logo: 'الشعار', icon: 'الأيقونة', avatar: 'الصورة الشخصية', headerImage: 'صورة رأس الطباعة', footerImage: 'صورة تذييل الطباعة' }, unknownUser: 'غير مسجّل الدخول',
     actions: {

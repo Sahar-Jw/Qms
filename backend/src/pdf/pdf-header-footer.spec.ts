@@ -156,8 +156,9 @@ describe('printed quotation: company header and footer images', () => {
 
     expect(html).toContain('class="catalog-index"');
     expect(html).toContain('Attached catalogs');
-    expect(html).toContain('M-1 - Pump');
-    expect(html).toContain('<bdi dir="auto">photo.png</bdi>');
+    expect(html).toContain('<bdi dir="ltr" class="code">M-1</bdi> <bdi dir="auto" class="nm">Pump</bdi>'); // code and name are separate pieces, never "M-1 - Pump"
+    expect(html).toContain('Item <bdi dir="ltr">1</bdi>'); // every catalog page says which item it belongs to
+    expect(html).toContain('<bdi dir="ltr">photo.png</bdi>');
     expect(html).toContain('class="catalog-image" src="data:image/png;base64,');
     expect(html).toContain('class="pdf-slot" data-pdf-name="datasheet.pdf"'); // the PDF pages go here (browser PDF) - an <iframe> never prints
     expect(html).not.toContain('<iframe');
@@ -280,7 +281,7 @@ describe('printed quotation: company header and footer images', () => {
       expect(rendered[1]).toContain('class="catalog-index"');
       expect(rendered[1]).toContain('photo.png');
       expect(rendered[1]).toContain('two.png');
-      expect(rendered[1].match(/class="catalog-page"/g)).toHaveLength(2);
+      expect(rendered[1].match(/class="catalog-page"/g)).toHaveLength(3); // two pictures + the heading page of the catalog PDF
       expect(rendered[2]).not.toContain('class="catalog-index"');
       expect(rendered[2].match(/class="catalog-page"/g)).toHaveLength(1);
       expect(rendered[2]).toContain('three.png');
@@ -312,10 +313,10 @@ describe('printed quotation: company header and footer images', () => {
       expect(rule).not.toMatch(/color:\s*#fff/);
     });
 
-    it('prints the material link in its own table column', async () => {
+    it('prints the material link under the description (no separate, cramped column)', async () => {
       const html = await svc.renderHtml(quotation({}, [item('https://example.com/p?a=1&b=2')]), { lang: 'en', includeCost: false });
-      expect(html).toContain('<th>Link</th>');
-      expect(html).toContain('<td class="desc"><div class="material-name"><bdi dir="auto">Pipe</bdi></div></td>\n          <td class="link-cell"><a class="lnk" dir="ltr" href="https://example.com/p?a=1&amp;b=2">https://example.com/p?a=1&amp;b=2</a></td>');
+      expect(html).not.toContain('<th>Link</th>');
+      expect(html).toContain('<td class="desc"><div class="material-name"><bdi dir="auto">Pipe</bdi></div><a class="lnk" dir="ltr" href="https://example.com/p?a=1&amp;b=2">https://example.com/p?a=1&amp;b=2</a></td>');
     });
 
     it('prints no link when there is none or it is not http(s)', async () => {
