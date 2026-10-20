@@ -13,7 +13,7 @@ const ACTIONS = ['create', 'update', 'delete', 'activate', 'deactivate', 'status
 const ENTITIES = ['quotations', 'customers', 'materials', 'companies', 'users', 'settings', 'theme', 'translations', 'auth'];
 const LIMIT = 20;
 
-const when = (d: string) => new Date(d).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'medium' });
+const when = (d: string, lang: string) => new Date(d).toLocaleString(lang === 'ar' ? 'ar-SY-u-nu-latn' : 'en-GB', { dateStyle: 'medium', timeStyle: 'medium' });
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 /** Technical names (quantityInStock, price_currency) become words; anything else (already readable) is left alone. */
@@ -47,7 +47,7 @@ function actionStyle(a: string) {
 
 /** Settings > Audit log (manager and above): who did what, and when. */
 export function AuditTab() {
-  const { t, has } = useI18n();
+  const { t, has, lang } = useI18n();
   const [q, setQ] = useState('');
   const [action, setAction] = useState('');
   const [entity, setEntity] = useState('');
@@ -88,7 +88,7 @@ export function AuditTab() {
       ? Array.from(new Set([...Object.keys(isRecord(details.before) ? details.before : {}), ...Object.keys(isRecord(details.after) ? details.after : {})]))
       : Object.keys(details);
     if (!keys.length) return '';
-    const shown = keys.slice(0, 3).map(fieldLabel).join('، ');
+    const shown = keys.slice(0, 3).map(fieldLabel).join(lang === 'ar' ? '، ' : ', ');
     return keys.length > 3 ? `${shown} … ${t('audit.more', { n: keys.length - 3 })}` : shown;
   };
   const filtered = !!(q || action || entity || from || to);
@@ -134,7 +134,7 @@ export function AuditTab() {
               <tbody>
                 {list.data.data.map((r) => (
                   <tr key={r.id} className={tr}>
-                    <td className={cn(td, 'whitespace-nowrap tabular-nums')} dir="ltr">{when(r.createdAt)}</td>
+                    <td className={cn(td, 'whitespace-nowrap tabular-nums')} dir="ltr">{when(r.createdAt, lang)}</td>
                     <td className={td}>
                       {r.userName
                         ? <><div className="truncate font-bold"><bdi>{r.userName}</bdi></div>{r.userRole && <div className="text-xs text-cocoa">{t(`roles.${r.userRole}`)}</div>}</>
@@ -166,7 +166,7 @@ export function AuditTab() {
         {open && (
           <div className="space-y-4 text-sm">
             <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2">
-              <dt className="font-semibold text-cocoa">{t('audit.when')}</dt><dd dir="ltr" className="text-start tabular-nums">{when(open.createdAt)}</dd>
+              <dt className="font-semibold text-cocoa">{t('audit.when')}</dt><dd dir="ltr" className="text-start tabular-nums">{when(open.createdAt, lang)}</dd>
               <dt className="font-semibold text-cocoa">{t('audit.user')}</dt><dd><bdi>{open.userName ?? t('audit.unknownUser')}</bdi>{open.userRole ? ` · ${t(`roles.${open.userRole}`)}` : ''}</dd>
               <dt className="font-semibold text-cocoa">{t('audit.record')}</dt>
               <dd>{open.entityLabel ? <bdi>{open.entityLabel}</bdi> : '—'}</dd>

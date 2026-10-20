@@ -167,6 +167,7 @@ currency: 'العملة', link: 'الرابط', print: 'طباعة', page: 'صف
     REFERENCE_CONFLICT: 'هذا السجل مستخدم في بيانات أخرى، لذلك لا يمكن تعديله أو حذفه', INSUFFICIENT_STOCK: 'المخزون غير كافٍ لتحويل هذا العرض إلى فاتورة',
     CATALOG_LIMIT_EXCEEDED: 'يمكن أن تحتوي المادة على 10 ملفات كتالوج كحد أقصى', CATALOG_FILE_NOT_FOUND: 'ملف الكتالوج غير موجود', INVALID_CATALOG_FILE: 'تعذّرت قراءة ملف الكتالوج هذا',
     CATALOG_FILE_UNAVAILABLE: 'تعذّر تحميل أحد ملفات الكتالوج للطباعة', CATALOG_FILE_TOO_LARGE: 'يمكن أن يصل حجم ملف الكتالوج إلى {maxFileSizeMb} ميغابايت كحد أقصى',
+    SELLING_CURRENCY_REQUIRED: 'اختر عملة لسعر البيع', ISSUING_COMPANY_NOT_FOUND: 'الشركة المُصدِرة غير موجودة', USER_INACTIVE: 'هذا المستخدم غير مفعّل', NOT_FOUND: 'غير موجود', BAD_REQUEST: 'الطلب غير صالح', CONFLICT: 'هذا الإجراء يتعارض مع البيانات الحالية',
     TOO_MANY_REQUESTS: 'طلبات كثيرة جداً. انتظر قليلاً ثم أعد المحاولة.', PAYLOAD_TOO_LARGE: 'حجم الملف كبير جداً', INTERNAL_SERVER_ERROR: 'حدث خطأ في الخادم',
   },
 };

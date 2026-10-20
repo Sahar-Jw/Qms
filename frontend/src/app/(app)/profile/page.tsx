@@ -12,10 +12,10 @@ import type { User } from '@/lib/types';
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-const fmt = (d: string | null) => (d ? new Date(d).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
+const fmt = (d: string | null, lang: string) => (d ? new Date(d).toLocaleString(lang === 'ar' ? 'ar-SY-u-nu-latn' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
 
 export default function ProfilePage() {
-  const { t, has } = useI18n();
+  const { t, has, lang } = useI18n();
   const me = useMe().data!;
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -93,8 +93,8 @@ export default function ProfilePage() {
               {row(t('auth.email'), <bdi dir="ltr">{me.email}</bdi>)}
               {row(t('profile.role'), t(`roles.${me.role}`))}
               {row(t('common.status'), me.isActive ? t('common.active') : t('common.inactive'))}
-              {row(t('profile.lastLogin'), <bdi dir="ltr">{fmt(me.lastLoginAt)}</bdi>)}
-              {row(t('profile.memberSince'), <bdi dir="ltr">{fmt(me.createdAt)}</bdi>)}
+              {row(t('profile.lastLogin'), <bdi dir="ltr">{fmt(me.lastLoginAt, lang)}</bdi>)}
+              {row(t('profile.memberSince'), <bdi dir="ltr">{fmt(me.createdAt, lang)}</bdi>)}
             </div>
           </Card>
         </div>

@@ -165,6 +165,7 @@ currency: 'Currency', link: 'Link', print: 'Print', page: 'Page',
     REFERENCE_CONFLICT: 'This record is used by other data, so it cannot be changed or removed', INSUFFICIENT_STOCK: 'There is not enough stock to convert this quotation to an invoice',
     CATALOG_LIMIT_EXCEEDED: 'A material can have at most 10 catalog files', CATALOG_FILE_NOT_FOUND: 'Catalog file not found', INVALID_CATALOG_FILE: 'This catalog file could not be read',
     CATALOG_FILE_UNAVAILABLE: 'A catalog file could not be loaded for printing', CATALOG_FILE_TOO_LARGE: 'A catalog file can be at most {maxFileSizeMb} MB',
+    SELLING_CURRENCY_REQUIRED: 'Choose a currency for the selling price', ISSUING_COMPANY_NOT_FOUND: 'The issuing company was not found', USER_INACTIVE: 'This user is inactive', NOT_FOUND: 'Not found', BAD_REQUEST: 'The request is not valid', CONFLICT: 'This action conflicts with the current data',
     TOO_MANY_REQUESTS: 'Too many requests. Please wait a moment and try again.', PAYLOAD_TOO_LARGE: 'The file is too large', INTERNAL_SERVER_ERROR: 'Something went wrong on the server',
   },
 };
