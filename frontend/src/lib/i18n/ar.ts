@@ -141,7 +141,7 @@ currency: 'العملة', link: 'الرابط', print: 'طباعة', page: 'صف
     ip: 'عنوان IP', searchPh: 'ابحث باسم المستخدم أو السجل', allActions: 'كل الإجراءات', allEntities: 'كل السجلات', none: 'لا يوجد نشاط',
     submitted: 'البيانات المُرسلة', changes: 'التغييرات', before: 'قبل', after: 'بعد', sideBySide: 'جنباً إلى جنب', inline: 'قديم ← جديد', beforeUnavailable: 'القيمة السابقة غير مسجّلة',
     trueValue: 'نعم', falseValue: 'لا', noDetails: 'لم تُسجَّل بيانات إضافية لهذا الإجراء.', item: 'البند {n}', removedItem: 'البند المحذوف {n}', more: 'و{n} أخرى',
-    fields: { request: 'الطلب', record: 'السجل', recordId: 'رقم السجل', ip: 'عنوان IP', userAgent: 'المتصفح', copiedFromId: 'نُسخ من السجل', newRecord: 'السجل الجديد', truncated: 'كبير جداً ولم يُحفظ كاملاً', fields: 'الحقول' },
+    fields: { request: 'الطلب', record: 'السجل', recordId: 'رقم السجل', userAgent: 'المتصفح', copiedFromId: 'نُسخ من السجل', newRecord: 'السجل الجديد', truncated: 'كبير جداً ولم يُحفظ كاملاً', fields: 'الحقول' },
     imageAdded: 'تم رفع صورة جديدة', imageReplaced: 'تم استبدال الصورة بصورة جديدة', imageRemoved: 'تم حذف الصورة',
     assets: { logo: 'الشعار', icon: 'الأيقونة', avatar: 'الصورة الشخصية', headerImage: 'صورة رأس الطباعة', footerImage: 'صورة تذييل الطباعة' }, unknownUser: 'غير مسجّل الدخول',
     actions: {

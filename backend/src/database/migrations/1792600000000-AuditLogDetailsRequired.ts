@@ -12,7 +12,7 @@ export class AuditLogDetailsRequired1792600000000 implements MigrationInterface 
     await queryRunner.query(
       'UPDATE `audit_logs` SET `details` = JSON_MERGE_PATCH(' +
         "JSON_OBJECT('request', CONCAT(`method`, ' ', `path`)), " +
-        "JSON_OBJECT('record', `entity_label`, 'recordId', `entity_id`, 'ip', `ip`)) " +
+        "JSON_OBJECT('record', `entity_label`, 'recordId', `entity_id`)) " +
         "WHERE `details` IS NULL OR JSON_TYPE(`details`) = 'NULL' OR (JSON_TYPE(`details`) = 'OBJECT' AND JSON_LENGTH(`details`) = 0)",
     );
     await queryRunner.query('ALTER TABLE `audit_logs` MODIFY `details` json NOT NULL');

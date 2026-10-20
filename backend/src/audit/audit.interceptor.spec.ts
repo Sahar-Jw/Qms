@@ -124,7 +124,7 @@ describe('audit log details are never empty', () => {
     const service = new AuditService({ create: (x: unknown) => x, save } as any);
     await service.record({ action: 'logout', entity: 'auth', method: 'POST', path: '/api/auth/logout', userId: 1, ip: '::1', userAgent: 'jest', details: null });
     const saved = save.mock.calls[0][0].details;
-    expect(saved).toEqual({ userAgent: 'jest', ip: '::1', request: 'POST /api/auth/logout' });
+    expect(saved).toEqual({ userAgent: 'jest', request: 'POST /api/auth/logout' });
     expect(ensureDetails({ action: 'x', entity: 'y', method: 'GET', path: '/p', details: {} })).toEqual({ request: 'GET /p' });
   });
 });

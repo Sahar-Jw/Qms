@@ -63,7 +63,6 @@ export function ensureDetails(entry: AuditEntry): Record<string, unknown> {
   if (entry.entityLabel) info.record = entry.entityLabel;
   if (entry.entityId) info.recordId = entry.entityId;
   if (entry.userAgent) info.userAgent = entry.userAgent.slice(0, 200);
-  if (entry.ip) info.ip = entry.ip;
   info.request = `${entry.method} ${entry.path}`.slice(0, 255);
   return info;
 }

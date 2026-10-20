@@ -139,7 +139,7 @@ currency: 'Currency', link: 'Link', print: 'Print', page: 'Page',
     ip: 'IP address', searchPh: 'Search by user or record', allActions: 'All actions', allEntities: 'All records', none: 'No activity found',
     submitted: 'Submitted data', changes: 'Changes', before: 'Before', after: 'After', sideBySide: 'Side by side', inline: 'Old → new', beforeUnavailable: 'Previous value not recorded',
     trueValue: 'Yes', falseValue: 'No', noDetails: 'No extra data was recorded for this action.', item: 'Item {n}', removedItem: 'Removed item {n}', more: 'and {n} more',
-    fields: { request: 'Request', record: 'Record', recordId: 'Record ID', ip: 'IP address', userAgent: 'Browser', copiedFromId: 'Copied from record', newRecord: 'New record', truncated: 'Too large to store in full', fields: 'Fields' },
+    fields: { request: 'Request', record: 'Record', recordId: 'Record ID', userAgent: 'Browser', copiedFromId: 'Copied from record', newRecord: 'New record', truncated: 'Too large to store in full', fields: 'Fields' },
     imageAdded: 'New image uploaded', imageReplaced: 'Image replaced with a new one', imageRemoved: 'Image removed',
     assets: { logo: 'Logo', icon: 'Icon', avatar: 'Profile picture', headerImage: 'Print header image', footerImage: 'Print footer image' }, unknownUser: 'Not signed in',
     actions: {

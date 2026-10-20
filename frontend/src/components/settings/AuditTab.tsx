@@ -113,12 +113,12 @@ export function AuditTab() {
               <option value="">{t('audit.allEntities')}</option>
               {ENTITIES.map((e) => <option key={e} value={e}>{label('entities', e)}</option>)}
             </Select>
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-xs font-semibold text-cocoa">{t('common.from')}
-                <Input type="date" dir="ltr" className="w-40" max={to || undefined} value={from} onChange={(e) => setFrom(e.target.value)} />
+            <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+              <label className="flex min-w-0 flex-1 items-center gap-2 text-xs font-semibold text-cocoa sm:flex-none">{t('common.from')}
+                <Input type="date" dir="ltr" className="w-full min-w-0 sm:w-40" max={to || undefined} value={from} onChange={(e) => setFrom(e.target.value)} />
               </label>
-              <label className="flex items-center gap-2 text-xs font-semibold text-cocoa">{t('common.to')}
-                <Input type="date" dir="ltr" className="w-40" min={from || undefined} value={to} onChange={(e) => setTo(e.target.value)} />
+              <label className="flex min-w-0 flex-1 items-center gap-2 text-xs font-semibold text-cocoa sm:flex-none">{t('common.to')}
+                <Input type="date" dir="ltr" className="w-full min-w-0 sm:w-40" min={from || undefined} value={to} onChange={(e) => setTo(e.target.value)} />
               </label>
             </div>
             {filtered && <Button variant="ghost" size="sm" onClick={clear}>{t('common.clear')}</Button>}

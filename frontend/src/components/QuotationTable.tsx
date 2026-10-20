@@ -31,7 +31,7 @@ export function QuotationTable({ rows, compact }: { rows: QuotationListItem[]; c
             <tr key={q.id} className={`${tr} cursor-pointer`} tabIndex={0}
               onClick={(e) => { if (!(e.target as HTMLElement).closest('a,button')) router.push(quotationHref(q.id)); }}
               onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) router.push(quotationHref(q.id)); }}>
-              <td className={td}><Link href={quotationHref(q.id)} className="font-bold text-cocoa underline decoration-clay/60 underline-offset-4 hover:text-ink" dir="ltr">{q.quotationNumber}</Link></td>
+              <td className={td}><Link href={quotationHref(q.id)} className="whitespace-nowrap font-bold text-cocoa underline decoration-clay/60 underline-offset-4 hover:text-ink" dir="ltr">{q.quotationNumber}</Link></td>
               <td className={`${td} max-w-56 truncate`}>{q.customer.companyName ?? ''}</td>
               {!compact && <td className={`${td} max-w-44 truncate`}>{q.company.name}</td>}
               {!compact && <td className={td}>{q.responsibleUser?.fullName ?? '—'}</td>}
