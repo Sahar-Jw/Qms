@@ -1,5 +1,10 @@
 const en = {
   app: { name: 'Quotations', tagline: 'Prices, customers and materials in one place' },
+  notFound: {
+    title: 'Page not found',
+    description: 'The page you are looking for may have been moved, removed, or never existed.',
+    home: 'Back to home',
+  },
   nav: { profile: 'My profile', dashboard: 'Dashboard', quotations: 'Quotations', customers: 'Customers', materials: 'Materials', companies: 'Companies', users: 'Users', settings: 'Settings', search: 'Search quotations, customers, materials', openMenu: 'Open menu' },
   common: {
     save: 'Save', cancel: 'Cancel', edit: 'Edit', add: 'Add', new: 'New', search: 'Search', all: 'All', status: 'Status', actions: 'Actions',

@@ -4,6 +4,11 @@ type Shape<T> = { [K in keyof T]: T[K] extends string ? string : Shape<T[K]> };
 
 const ar: Shape<typeof en> = {
   app: { name: 'عروض الأسعار', tagline: 'الأسعار والعملاء والمواد في مكان واحد' },
+  notFound: {
+    title: 'الصفحة غير موجودة',
+    description: 'قد تكون الصفحة التي تبحث عنها قد نُقلت أو حُذفت أو لم تكن موجودة من الأساس.',
+    home: 'العودة إلى الرئيسية',
+  },
   nav: { profile: 'ملفي الشخصي', dashboard: 'لوحة التحكم', quotations: 'عروض الأسعار', customers: 'العملاء', materials: 'المواد', companies: 'الشركات', users: 'المستخدمون', settings: 'الإعدادات', search: 'ابحث في العروض والعملاء والمواد', openMenu: 'فتح القائمة' },
   common: {
     save: 'حفظ', cancel: 'إلغاء', edit: 'تعديل', add: 'إضافة', new: 'جديد', search: 'بحث', all: 'الكل', status: 'الحالة', actions: 'إجراءات',
