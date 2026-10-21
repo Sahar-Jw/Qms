@@ -112,10 +112,16 @@ describe('printed quotation: company header and footer images', () => {
     const html = await svc.renderHtml(quotation(withImages), { lang: 'en', includeCost: false });
     expect(html).toContain('@page { size: A4; margin: 0; }'); // the page frame (spacer head / foot) keeps the content away from them
     expect(html).toMatch(/img\.cohead\s*\{[^}]*position:\s*fixed;[^}]*top:\s*5mm;[^}]*height:\s*13mm/);
-    expect(html).toMatch(/img\.cofoot\s*\{[^}]*position:\s*fixed;[^}]*bottom:\s*7mm;[^}]*height:\s*10mm/);
+    expect(html).toMatch(/img\.cofoot\s*\{[^}]*position:\s*fixed;[^}]*bottom:\s*7mm;[^}]*height:\s*15mm/);
+    // on screen the pictures scroll with the page instead of floating over it
+    expect(html).toMatch(/@media screen\s*\{[^@]*img\.cohead\s*\{\s*position:\s*absolute;/);
+    // the footer is as wide as the header (full width between the page margins)
+    expect(html).toMatch(/img\.cofoot\s*\{[^}]*width:\s*calc\(100% - 20mm\)/);
+    // the browser PDF builder keeps Arabic letters joined: no letter-spacing / forced word breaks there
+    expect(html).toMatch(/html\.client \* \{[^}]*letter-spacing:\s*normal !important;[^}]*overflow-wrap:\s*normal !important/);
     expect(html).not.toMatch(/(top|bottom):\s*-\d/); // no negative offsets: they land on the wrong page in Chromium
     expect(html).toContain('<thead><tr><td><div class="hs"></div></td></tr></thead><tfoot><tr><td><div class="fs"></div></td></tr></tfoot>');
-    expect(html).toContain('data-top="21" data-bottom="19"');
+    expect(html).toContain('data-top="21" data-bottom="24"');
   });
 
   it.each([['ar', 'rtl'], ['en', 'ltr']] as const)('the %s file is %s and carries the Cairo font (Arabic letters never fall back to ?)', async (lang, dir) => {

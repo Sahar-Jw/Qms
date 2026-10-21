@@ -12,7 +12,7 @@ import { useDebounced } from '@/lib/hooks';
 import { useI18n } from '@/lib/i18n';
 import { hasRole, type AuditLogEntry, type Paginated } from '@/lib/types';
 
-const ACTIONS = ['create', 'update', 'delete', 'activate', 'deactivate', 'status_change', 'duplicate', 'login', 'login_failed', 'logout', 'register', 'change_password', 'forgot_password', 'reset_password', 'reset', 'denied', 'change_password_failed', 'reset_password_failed', 'print', 'export_pdf', 'view', 'export'];
+const ACTIONS = ['create', 'update', 'delete', 'activate', 'deactivate', 'status_change', 'duplicate', 'login', 'login_failed', 'logout', 'register', 'change_password', 'forgot_password', 'reset_password', 'reset', 'denied', 'change_password_failed', 'reset_password_failed', 'print', 'export_pdf', 'email', 'view', 'export'];
 const ENTITIES = ['quotations', 'customers', 'materials', 'companies', 'users', 'settings', 'theme', 'translations', 'auth', 'audit'];
 const LIMIT = 20;
 
@@ -25,17 +25,19 @@ const fieldName = (key: string) => (/^[A-Za-z0-9_-]+$/.test(key)
   : key);
 /** Rows of a quotation edit are stored as items[2] / removedItems[1]: shown as "Item 2" / "Removed item 1". */
 const ITEM_KEY = /^(items|removedItems)\[(\d+)\]$/;
-const valueText = (value: unknown, yes: string, no: string): string => {
+/** Names a field ("validity" -> "مدة الصلاحية") and writes the value of a known list field (status, role, language) in the user's language. */
+type Loc = { yes: string; no: string; label: (key: string) => string; enumText: (key: string | undefined, value: string) => string | null };
+const valueText = (value: unknown, loc: Loc, key?: string): string => {
   if (value === null || value === undefined || value === '') return '—';
-  if (typeof value === 'boolean') return value ? yes : no;
+  if (typeof value === 'boolean') return value ? loc.yes : loc.no;
   // a list of records (the lines of a quotation) is one record per line, so long lists stay readable
   if (Array.isArray(value)) return value.some(isRecord)
-    ? value.map((item, i) => `${i + 1}. ${valueText(item, yes, no)}`).join('\n') || '—'
-    : value.map((item) => valueText(item, yes, no)).join(', ') || '—';
+    ? value.map((item, i) => `${i + 1}. ${valueText(item, loc)}`).join('\n') || '—'
+    : value.map((item) => valueText(item, loc, key)).join(', ') || '—';
   if (isRecord(value)) {
-    return Object.entries(value).map(([key, item]) => `${fieldName(key)}: ${valueText(item, yes, no)}`).join(' · ') || '—';
+    return Object.entries(value).map(([k, item]) => `${loc.label(k)}: ${valueText(item, loc, k)}`).join(' · ') || '—';
   }
-  return String(value);
+  return typeof value === 'string' ? loc.enumText(key, value) ?? value : String(value);
 };
 
 /** Fields that hold an uploaded picture. */
@@ -90,6 +92,18 @@ export function AuditTab() {
     if (item) return t(item[1] === 'items' ? 'audit.item' : 'audit.removedItem', { n: item[2] });
     return has(`audit.fields.${key}`) ? t(`audit.fields.${key}`) : fieldName(key);
   };
+  const loc: Loc = {
+    yes: t('audit.trueValue'),
+    no: t('audit.falseValue'),
+    label: (key) => (has(`audit.fields.${key}`) ? t(`audit.fields.${key}`) : fieldName(key)),
+    enumText: (key, value) => {
+      if (key === 'status' && has(`status.${value}`)) return t(`status.${value}`);
+      if (key === 'roleCode' && has(`roles.${value}`)) return t(`roles.${value}`);
+      if (key === 'lang' && (value === 'ar' || value === 'en')) return value === 'ar' ? 'العربية' : 'English';
+      return null;
+    },
+  };
+  const val = (value: unknown, key?: string) => valueText(value, loc, key);
   /** One line under the record in the table: which fields an edit touched, so most rows need no click at all. */
   const summary = (details: AuditLogEntry['details']) => {
     const keys = ('before' in details || 'after' in details)
@@ -253,7 +267,7 @@ export function AuditTab() {
                   <div key={field} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl bg-sand/60 p-3">
                     <span className="text-xs font-semibold text-cocoa">{fieldLabel(field)}</span>
                     <span className="min-w-0 whitespace-pre-line break-words">{afterValues && field in afterValues
-                      ? valueText(afterValues[field], t('audit.trueValue'), t('audit.falseValue'))
+                      ? val(afterValues[field], field)
                       : '—'}</span>
                   </div>
                 ) : changeView === 'sideBySide' ? (
@@ -261,13 +275,13 @@ export function AuditTab() {
                     <div className="min-w-0">
                       <div className="mb-1 text-xs font-semibold text-cocoa">{fieldLabel(field)} · {t('audit.before')}</div>
                       <div className="whitespace-pre-line break-words">{beforeValues && field in beforeValues
-                        ? valueText(beforeValues[field], t('audit.trueValue'), t('audit.falseValue'))
+                        ? val(beforeValues[field], field)
                         : '—'}</div>
                     </div>
                     <div className="min-w-0">
                       <div className="mb-1 text-xs font-semibold text-cocoa">{fieldLabel(field)} · {t('audit.after')}</div>
                       <div className="whitespace-pre-line break-words">{afterValues && field in afterValues
-                        ? valueText(afterValues[field], t('audit.trueValue'), t('audit.falseValue'))
+                        ? val(afterValues[field], field)
                         : '—'}</div>
                     </div>
                   </div>
@@ -275,11 +289,11 @@ export function AuditTab() {
                   <div key={field} className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-sand/60 p-3">
                     <span className="w-full text-xs font-semibold text-cocoa">{fieldLabel(field)}</span>
                     <span className="min-w-0 whitespace-pre-line break-words">{beforeValues && field in beforeValues
-                      ? valueText(beforeValues[field], t('audit.trueValue'), t('audit.falseValue'))
+                      ? val(beforeValues[field], field)
                       : '—'}</span>
                     <ArrowRight className="size-4 shrink-0 text-cocoa rtl:rotate-180" aria-hidden="true" />
                     <span className="min-w-0 whitespace-pre-line break-words font-semibold">{afterValues && field in afterValues
-                      ? valueText(afterValues[field], t('audit.trueValue'), t('audit.falseValue'))
+                      ? val(afterValues[field], field)
                       : '—'}</span>
                   </div>
                 )
@@ -292,7 +306,7 @@ export function AuditTab() {
                   {Object.entries(open.details).map(([key, value]) => (
                     <div key={key} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl bg-sand/60 p-3">
                       <span className="text-xs font-semibold text-cocoa">{fieldLabel(key)}</span>
-                      <span className="min-w-0 whitespace-pre-line break-words" dir="auto">{valueText(value, t('audit.trueValue'), t('audit.falseValue'))}</span>
+                      <span className="min-w-0 whitespace-pre-line break-words" dir="auto">{val(value, key)}</span>
                     </div>
                   ))}
                 </div>

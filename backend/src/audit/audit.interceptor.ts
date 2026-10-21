@@ -19,6 +19,7 @@ const SUB_ACTION: Record<string, string> = {
   deactivate: 'deactivate',
   status: 'status_change',
   duplicate: 'duplicate',
+  email: 'email', // quotation sent to the customer by e-mail
   'change-password': 'change_password',
   'forgot-password': 'forgot_password',
   'reset-password': 'reset_password',

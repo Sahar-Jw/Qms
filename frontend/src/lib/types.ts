@@ -84,6 +84,6 @@ export interface QuotationView {
   customerPaymentMethod: string | null;
   bankName: string | null; validity: string | null; deliveryTime: string | null; paymentMethod: string | null;
   paymentLocation: string | null; deliveryMethod: string | null; notes: string | null;
-  items: ItemView[]; totals: Amounts[]; createdById: number | null; editable: boolean; readOnlyReason: 'status' | 'not_owner' | null; allowedStatuses: QStatus[];
+  items: ItemView[]; totals: Amounts[]; createdById: number | null; editable: boolean; readOnlyReason: 'status' | 'not_owner' | null; allowedStatuses: QStatus[]; emailable: boolean;
   createdAt: string; updatedAt: string;
 }

@@ -63,6 +63,8 @@ export interface QuotationView {
   readOnlyReason: 'status' | 'not_owner' | null;
   /** Statuses the CURRENT user may move this quotation to. */
   allowedStatuses: QuotationStatus[];
+  /** A draft or an invoiced quotation can be e-mailed to the customer. */
+  emailable: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

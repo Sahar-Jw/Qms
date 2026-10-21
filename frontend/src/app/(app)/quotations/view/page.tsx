@@ -1,7 +1,7 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { uploadUrl } from '@/lib/urls';
-import { Copy, Eye, FileDown, Lock, Pencil, Printer, Receipt } from 'lucide-react';
+import { Copy, Eye, FileDown, Lock, Mail, Pencil, Printer, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useRef, useState, type ReactNode } from 'react';
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { useConfirm } from '@/components/confirm';
 import { MaterialThumb } from '@/components/MaterialThumb';
 import { Ledger } from '@/components/Totals';
-import { Button, Card, CardHeader, Empty, Loading, StatusBadge, td, th, tr } from '@/components/ui';
+import { Button, Card, CardHeader, Empty, Field, Input, Loading, Modal, Select, StatusBadge, Textarea, td, th, tr } from '@/components/ui';
 import { api } from '@/lib/api';
 import { apiUrl, FETCH_CREDENTIALS, quotationEditHref, quotationHref } from '@/lib/urls';
 import { trackRequest } from '@/lib/activity';
@@ -23,7 +23,7 @@ import { type Amounts, type QStatus, type QuotationView } from '@/lib/types';
 function Money({ amounts, field }: { amounts: Amounts[]; field: 'value' | 'shipping' | 'customs' | 'required' | 'cost' }) {
   const rows = amounts.filter((a) => !isZero(a[field]));
   if (!rows.length) return <span className="text-clay">—</span>;
-  return <>{rows.map((a) => <div key={a.currency} className="whitespace-nowrap tabular-nums" dir="ltr">{fmt(a[field])} <span className="text-xs text-cocoa">{a.currency}</span></div>)}</>;
+  return <>{rows.map((a) => <div key={a.currency} className="whitespace-nowrap tabular-nums"><bdi dir="ltr">{fmt(a[field])} <span className="text-xs text-cocoa">{a.currency}</span></bdi></div>)}</>;
 }
 
 function Info({ label, value }: { label: string; value?: ReactNode }) {
@@ -55,6 +55,11 @@ function QuotationDetail() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const pdfLock = useRef(false);
   const canCost = true; // cost is open to every role
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState('');
+  const [emailLang, setEmailLang] = useState<'ar' | 'en'>(lang === 'en' ? 'en' : 'ar');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
 
   const query = useQuery({ queryKey: ['quotation', Number(id)], queryFn: () => api.get<QuotationView>(`/quotations/${id}`) });
   const q = query.data;
@@ -166,6 +171,38 @@ function QuotationDetail() {
     }
   }
 
+  /** E-mail: the same PDF as the download (built by the server, or in the browser on hosting without Chromium) is sent as an attachment. */
+  async function sendEmail() {
+    const to = emailTo.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) { toast.error(t('quotations.email.invalid')); return; }
+    if (pdfLock.current) return;
+    pdfLock.current = true;
+    setPdfBusy(true);
+    const done = trackRequest();
+    try {
+      const blob = await buildPdf(emailLang);
+      const form = new FormData();
+      form.append('to', to);
+      form.append('lang', emailLang);
+      if (cost) form.append('includeCost', 'true');
+      if (emailSubject.trim()) form.append('subject', emailSubject.trim());
+      if (emailMessage.trim()) form.append('message', emailMessage.trim());
+      form.append('file', blob, `${q!.quotationNumber}-${emailLang}.pdf`);
+      await api.upload(`/quotations/${q!.id}/email`, form);
+      toast.success(t('quotations.email.sent', { to }));
+      setEmailOpen(false);
+      setEmailSubject('');
+      setEmailMessage('');
+    } catch (e) {
+      if ((e as { code?: string }).code === 'CLIENT_PDF_FAILED') toast.error(t('quotations.pdfFallback'));
+      else toastError(e, t, has);
+    } finally {
+      done();
+      pdfLock.current = false;
+      setPdfBusy(false);
+    }
+  }
+
   const statusIcon = (to: QStatus) => {
     if (to === 'locked') return <Lock className="size-4" />;
     if (to === 'invoiced') return <Receipt className="size-4" />;
@@ -211,6 +248,9 @@ function QuotationDetail() {
             </Button>
           ))}
           <span className="ms-auto" />
+          {q.emailable && (
+            <button onClick={() => { setEmailTo(q.customer.email ?? ''); setEmailOpen(true); }} disabled={pdfBusy} className="flex items-center gap-1.5 rounded-full bg-ink/40 px-3.5 py-1.5 text-xs font-bold ring-1 ring-sand/40 hover:bg-ink disabled:cursor-wait disabled:opacity-60"><Mail className="size-3.5" />{t('quotations.email.button')}</button>
+          )}
           {canCost && (
             <label className="flex cursor-pointer items-center gap-2 rounded-full bg-ink/40 px-3.5 py-1.5 text-xs font-semibold">
               <input type="checkbox" checked={cost} onChange={(e) => setCost(e.target.checked)} className="size-4 accent-sand" />{t('quotations.includeCost')}
@@ -238,18 +278,18 @@ function QuotationDetail() {
                   {q.items.map((i) => (
                     <tr key={i.id} className={tr}>
                       <td className={td}><MaterialThumb image={i.materialImage} size="size-20" zoom /></td>
-                      <td className={`${td} font-semibold`} dir="ltr">{i.materialCode}</td>
-                      <td className={td}>{i.materialName ?? ''}
+                      <td className={`${td} font-semibold`}><bdi dir="ltr">{i.materialCode}</bdi></td>
+                      <td className={td}><bdi dir="auto">{i.materialName ?? ''}</bdi>
                         {i.notes && <div className="text-xs text-clay">{i.notes}</div>}</td>
                       <td className={td}>{i.materialLink && /^https?:\/\/[^\s<>"']+$/i.test(i.materialLink)
-                        ? <a href={i.materialLink} target="_blank" rel="noreferrer" dir="ltr" className="break-all text-xs underline">{i.materialLink}</a>
+                        ? <a href={i.materialLink} target="_blank" rel="noreferrer" className="break-all text-xs underline"><bdi dir="ltr">{i.materialLink}</bdi></a>
                         : '—'}</td>
-                      <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.quantity)} <span className="text-xs text-cocoa">{i.unit}</span></td>
-                      <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(i.sellingPrice ?? i.unitPrice)} <span className="text-xs text-cocoa">{i.sellingCurrency ?? i.priceCurrency}</span></td>
+                      <td className={`${td} whitespace-nowrap tabular-nums`}><bdi dir="ltr">{fmt(i.quantity)}</bdi> <span className="text-xs text-cocoa">{i.unit}</span></td>
+                      <td className={`${td} whitespace-nowrap tabular-nums`}><bdi dir="ltr">{fmt(i.sellingPrice ?? i.unitPrice)} <span className="text-xs text-cocoa">{i.sellingCurrency ?? i.priceCurrency}</span></bdi></td>
                       <td className={td}><Money amounts={i.amounts} field="value" /></td>
                       <td className={td}><Money amounts={i.amounts} field="shipping" /></td>
                       <td className={td}><Money amounts={i.amounts} field="customs" /></td>
-                      {hasTax && <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{i.taxEnabled ? `${fmt(i.taxPercentage)}%` : '—'}</td>}
+                      {hasTax && <td className={`${td} whitespace-nowrap tabular-nums`}><bdi dir="ltr">{i.taxEnabled ? `${fmt(i.taxPercentage)}%` : '—'}</bdi></td>}
                       <td className={`${td} font-bold`}><Money amounts={i.amounts} field="required" /></td>
                       {canCost && <td className={`${td} text-cocoa`}><Money amounts={i.amounts} field="cost" /></td>}
                     </tr>
@@ -292,6 +332,31 @@ function QuotationDetail() {
           </section>
         </aside>
       </div>
+
+      <Modal open={emailOpen} onClose={() => { if (!pdfBusy) setEmailOpen(false); }} title={t('quotations.email.title')}
+        footer={<>
+          <Button variant="soft" onClick={() => setEmailOpen(false)} disabled={pdfBusy}>{t('common.cancel')}</Button>
+          <Button loading={pdfBusy} onClick={sendEmail}><Mail className="size-4" />{pdfBusy ? t('quotations.email.sending') : t('quotations.email.send')}</Button>
+        </>}>
+        <div className="space-y-3">
+          <Field label={t('quotations.email.to')} required>
+            <Input type="email" dir="ltr" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder={t('quotations.email.toPh')} className="text-start" />
+          </Field>
+          <Field label={t('quotations.email.lang')}>
+            <Select value={emailLang} onChange={(e) => setEmailLang(e.target.value as 'ar' | 'en')}>
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </Select>
+          </Field>
+          <Field label={t('quotations.email.subject')}>
+            <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} maxLength={200} />
+          </Field>
+          <Field label={t('quotations.email.message')}>
+            <Textarea rows={5} value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} placeholder={t('quotations.email.messagePh')} maxLength={5000} />
+          </Field>
+          <p className="text-xs text-cocoa">{t('quotations.email.attachment', { number: q.quotationNumber })}</p>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,10 +1,13 @@
-import { Body, Controller, Get, Header, Param, ParseIntPipe, Patch, Post, Query, StreamableFile } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Get, Header, Param, ParseIntPipe, Patch, Post, Query, ServiceUnavailableException, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthUser } from '../common/auth-user';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { MinRole } from '../common/decorators/min-role.decorator';
+import { MailService } from '../mail/mail.service';
 import { PdfService } from '../pdf/pdf.service';
-import { ChangeStatusDto, CreateQuotationDto, DuplicateQuotationDto, ListQuotationsDto, PrintQueryDto, UpdateQuotationDto } from './dto/quotation.dto';
+import { ChangeStatusDto, CreateQuotationDto, DuplicateQuotationDto, ListQuotationsDto, PrintQueryDto, SendQuotationEmailDto, UpdateQuotationDto } from './dto/quotation.dto';
 import { QuotationsService } from './quotations.service';
 
 @ApiTags('quotations')
@@ -13,6 +16,7 @@ export class QuotationsController {
   constructor(
     private readonly quotations: QuotationsService,
     private readonly pdf: PdfService,
+    private readonly mail: MailService,
   ) {}
 
   @Get()
@@ -62,6 +66,48 @@ export class QuotationsController {
     const view = await this.quotations.findOne(id, me);
     const buf = await this.pdf.renderPdf(view, { lang: q.lang, includeCost: this.costAllowed(q, me) });
     return new StreamableFile(buf, { type: 'application/pdf', disposition: `inline; filename="${view.quotationNumber}-${q.lang}.pdf"` });
+  }
+
+  /**
+   * Sends the quotation as a PDF attachment to the customer (draft or invoiced quotations only).
+   * The browser sends the PDF it already built in `file` (works on hosting without Chromium); without it the server builds one.
+   */
+  @Post(':id/email')
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 25 * 1024 * 1024, files: 1 } }))
+  async email(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SendQuotationEmailDto,
+    @UploadedFile() file: { buffer: Buffer } | undefined,
+    @CurrentUser() me: AuthUser,
+  ) {
+    const view = await this.quotations.findOne(id, me);
+    if (!view.emailable) {
+      throw new ConflictException({ code: 'QUOTATION_NOT_EMAILABLE', message: 'Only a draft or an invoiced quotation can be sent by e-mail' });
+    }
+    if (!this.mail.isConfigured()) {
+      throw new ServiceUnavailableException({ code: 'MAIL_NOT_CONFIGURED', message: 'E-mail sending is not set up on the server (MAIL_HOST / MAIL_USER / MAIL_PASS)' });
+    }
+    let pdf: Buffer;
+    if (file?.buffer?.length) {
+      if (file.buffer.subarray(0, 5).toString('latin1') !== '%PDF-') {
+        throw new BadRequestException({ code: 'INVALID_FILE_TYPE', message: 'The attachment must be a PDF file' });
+      }
+      pdf = file.buffer;
+    } else {
+      pdf = await this.pdf.renderPdf(view, { lang: dto.lang, includeCost: !!dto.includeCost });
+    }
+    const ar = dto.lang === 'ar';
+    const company = view.company.name ?? '';
+    const subject = dto.subject?.trim() || (ar ? `عرض سعر ${view.quotationNumber}` : `Quotation ${view.quotationNumber}`);
+    const message = dto.message?.trim() || (ar
+      ? `السادة ${view.customer.companyName ?? ''} المحترمين،\n\nتجدون في المرفق عرض السعر رقم ${view.quotationNumber}.\n\nمع التحية،\n${company}`
+      : `Dear ${view.customer.companyName ?? 'Sir / Madam'},\n\nPlease find attached quotation ${view.quotationNumber}.\n\nBest regards,\n${company}`);
+    try {
+      await this.mail.sendQuotation({ to: dto.to, subject, message, lang: dto.lang, filename: `${view.quotationNumber}-${dto.lang}.pdf`, pdf, replyTo: view.company.email ?? undefined });
+    } catch (e) {
+      throw new ServiceUnavailableException({ code: 'MAIL_SEND_FAILED', message: `The e-mail could not be sent: ${(e as Error).message}` });
+    }
+    return { sent: true, to: dto.to, quotationNumber: view.quotationNumber };
   }
 
   private costAllowed(q: PrintQueryDto, _me: AuthUser): boolean {

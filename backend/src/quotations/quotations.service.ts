@@ -27,6 +27,8 @@ const NEXT_STATUSES: Record<QuotationStatus, QuotationStatus[]> = {
 };
 
 const EDITABLE = new Set([QuotationStatus.DRAFT, QuotationStatus.EXPIRED]);
+/** Only a draft or an invoiced quotation can be sent to the customer by e-mail (not an expired or cancelled one). */
+const EMAILABLE = new Set([QuotationStatus.DRAFT, QuotationStatus.INVOICED]);
 
 @Injectable()
 export class QuotationsService {
@@ -474,6 +476,7 @@ export class QuotationsService {
       editable: EDITABLE.has(q.status) && canEditQuotation(user, q.createdById),
       readOnlyReason: !EDITABLE.has(q.status) ? 'status' : !canEditQuotation(user, q.createdById) ? 'not_owner' : null,
       allowedStatuses: this.allowedStatuses(q.status, isTopTier(user.role) || q.createdById === user.id),
+      emailable: EMAILABLE.has(q.status),
       createdAt: q.createdAt,
       updatedAt: q.updatedAt,
     };

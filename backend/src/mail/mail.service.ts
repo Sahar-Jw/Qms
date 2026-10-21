@@ -68,4 +68,21 @@ export class MailService {
       html,
     });
   }
+
+  /** A quotation PDF to a customer, from the company's mail account (Gmail: smtp.gmail.com + an app password). */
+  async sendQuotation(o: { to: string; subject: string; message: string; lang: 'ar' | 'en'; filename: string; pdf: Buffer; replyTo?: string }) {
+    const from = this.get('MAIL_FROM') || this.get('MAIL_USER');
+    const rtl = o.lang === 'ar';
+    const body = esc(o.message).replace(/\r?\n/g, '<br>');
+    const html = `<div dir="${rtl ? 'rtl' : 'ltr'}" style="font-family:Tahoma,Arial,sans-serif;max-width:560px;color:#291C0E;text-align:${rtl ? 'right' : 'left'}">${body}</div>`;
+    await this.getTransporter().sendMail({
+      from,
+      to: o.to,
+      replyTo: o.replyTo,
+      subject: o.subject,
+      text: o.message,
+      html,
+      attachments: [{ filename: o.filename, content: o.pdf, contentType: 'application/pdf' }],
+    });
+  }
 }

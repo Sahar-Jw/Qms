@@ -31,13 +31,13 @@ export function QuotationTable({ rows, compact }: { rows: QuotationListItem[]; c
             <tr key={q.id} className={`${tr} cursor-pointer`} tabIndex={0}
               onClick={(e) => { if (!(e.target as HTMLElement).closest('a,button')) router.push(quotationHref(q.id)); }}
               onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) router.push(quotationHref(q.id)); }}>
-              <td className={td}><Link href={quotationHref(q.id)} className="whitespace-nowrap font-bold text-cocoa underline decoration-clay/60 underline-offset-4 hover:text-ink" dir="ltr">{q.quotationNumber}</Link></td>
+              <td className={td}><Link href={quotationHref(q.id)} className="whitespace-nowrap font-bold text-cocoa underline decoration-clay/60 underline-offset-4 hover:text-ink"><bdi dir="ltr">{q.quotationNumber}</bdi></Link></td>
               <td className={`${td} max-w-56 truncate`}>{q.customer.companyName ?? ''}</td>
               {!compact && <td className={`${td} max-w-44 truncate`}>{q.company.name}</td>}
               {!compact && <td className={td}>{q.responsibleUser?.fullName ?? '—'}</td>}
-              <td className={`${td} tabular-nums`} dir="ltr">{q.quotationDate}</td>
-              <td className={`${td} tabular-nums`} dir="ltr">
-                {q.totals.length ? q.totals.map((x) => <div key={x.currency} className="whitespace-nowrap font-semibold">{fmt(x.required)} <span className="text-xs text-cocoa">{x.currency}</span></div>) : '—'}
+              <td className={`${td} tabular-nums`}><bdi dir="ltr">{q.quotationDate}</bdi></td>
+              <td className={`${td} tabular-nums`}>
+                {q.totals.length ? q.totals.map((x) => <div key={x.currency} className="whitespace-nowrap font-semibold"><bdi dir="ltr">{fmt(x.required)} <span className="text-xs text-cocoa">{x.currency}</span></bdi></div>) : '—'}
               </td>
               <td className={td}><StatusBadge status={q.status} /></td>
             </tr>

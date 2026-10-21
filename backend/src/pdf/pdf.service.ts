@@ -38,7 +38,7 @@ const UPLOADS_FROM_PRINT_PAGE = '../../../uploads/';
 export const PAGE = {
   side: 10, // left / right margin
   headTop: 5, headMax: 13, headBand: 21, // header picture: 5 mm from the top edge, at most 13 mm tall, content starts 21 mm from the top
-  footBottom: 7, footMax: 10, footBand: 19, // footer picture: 7 mm above the bottom edge, at most 10 mm tall, content ends 19 mm from the bottom
+  footBottom: 7, footMax: 15, footBand: 24, // footer picture: 7 mm above the bottom edge, at most 15 mm tall (so it can use the full width like the header), content ends 24 mm from the bottom
   plainTop: 12, plainBottom: 14, // margins when there is no header / footer picture
   numberY: 3, // page number baseline, mm from the bottom edge (below the footer picture)
 } as const;
@@ -288,6 +288,12 @@ table.pg > thead > tr, table.pg > tbody > tr, table.pg > tfoot > tr { break-insi
 img.cohead { position: fixed; z-index: 2; top: ${PAGE.headTop}mm; left: ${PAGE.side}mm; width: calc(100% - ${PAGE.side * 2}mm); height: ${PAGE.headMax}mm; object-fit: contain; }
 img.cofoot { position: fixed; z-index: 2; bottom: ${PAGE.footBottom}mm; left: ${PAGE.side}mm; width: calc(100% - ${PAGE.side * 2}mm); height: ${PAGE.footMax}mm; object-fit: contain; }
 html.stamp img.cohead, html.stamp img.cofoot { display: none; }
+/* on screen (not printing) the pictures are part of the page: header at the top of the document, footer at its end - they no longer float while scrolling */
+@media screen {
+  body { position: relative; }
+  img.cohead { position: absolute; }
+  img.cofoot { position: absolute; top: auto; bottom: ${PAGE.footBottom}mm; }
+}
 /* quotation */
 .head { display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #1f3a5f; padding-bottom: 8px; margin-bottom: 10px; }
 .head img { max-height: 70px; max-width: 150px; object-fit: contain; }
@@ -329,7 +335,7 @@ h3 { margin: 14px 0 4px; font-size: 12px; color: #1f3a5f; }
 table.plain td, table.plain th { font-size: 10.5px; }
 .note { color: #667085; font-size: 9.5px; margin: 4mm 0 0; }
 .catalog-heading { border-bottom: 1px solid #d7dee8; padding-bottom: 3mm; margin-bottom: 5mm; }
-.catalog-heading .eyebrow { color: #718096; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 0 0 1.5mm; }
+.catalog-heading .eyebrow { color: #718096; font-size: 9px; font-weight: 700; letter-spacing: ${rtl ? 'normal' : '1px'}; text-transform: ${rtl ? 'none' : 'uppercase'}; margin: 0 0 1.5mm; }
 .catalog-heading h2 { font-size: 15px; line-height: 1.3; color: #1f3a5f; margin: 0 0 1.5mm; overflow-wrap: anywhere; }
 .catalog-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1mm 3mm; }
 .catalog-h .tag { background: #1f3a5f; color: #fff; border-radius: 3px; padding: 0 6px; font-size: 12px; white-space: nowrap; }
@@ -343,6 +349,11 @@ table.plain td, table.plain th { font-size: 10.5px; }
 .catalog-image { display: block; width: auto; height: auto; max-width: 100%; max-height: 195mm; margin: 4mm auto; object-fit: contain; }
 .pdf-slot { height: 0; overflow: hidden; }
 /* the browser-side PDF builder lays the page out itself: the frame turns into plain blocks and the pictures are stamped afterwards */
+html.client, html.client * { letter-spacing: normal !important; overflow-wrap: normal !important; word-break: normal !important; text-transform: none !important; }
+html.client .catalog-h { display: block; line-height: 1.8; }
+html.client .catalog-h .tag { display: inline-block; line-height: 1.9; padding: 1px 8px; margin-inline-end: 3mm; vertical-align: middle; }
+html.client .catalog-heading h2, html.client .catalog-heading .eyebrow, html.client .catalog-file { overflow: visible; }
+html.client .catalog-heading .eyebrow { line-height: 1.8; }
 html.client table.pg, html.client table.pg > tbody, html.client table.pg > tbody > tr, html.client table.pg > tbody > tr > td.pgbody { display: block; width: auto; padding: 0; border: 0; }
 html.client table.pg > thead, html.client table.pg > tfoot, html.client img.cohead, html.client img.cofoot { display: none; }
 </style>

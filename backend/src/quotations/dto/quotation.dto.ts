@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
-  ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEnum, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min, ValidateIf, ValidateNested,
+  ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsEmail, IsEnum, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min, ValidateIf, ValidateNested,
 } from 'class-validator';
 import { CurrencyCode, DateOnly, DecimalString, TrimOptional } from '../../common/decorators/validators';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -183,4 +183,23 @@ export class PrintQueryDto {
 export class DuplicateQuotationDto {
   @IsOptional() @IsInt()
   customerId?: number;
+}
+
+/** POST /quotations/:id/email (multipart: these fields + the PDF in `file`). */
+export class SendQuotationEmailDto {
+  @IsEmail() @MaxLength(254)
+  to: string;
+
+  @IsOptional() @TrimOptional() @IsString() @MaxLength(200)
+  subject?: string;
+
+  @IsOptional() @IsString() @MaxLength(5000)
+  message?: string;
+
+  @IsOptional() @IsIn(['ar', 'en'])
+  lang: 'ar' | 'en' = 'ar';
+
+  /** Only used when no PDF file is sent and the server builds the PDF itself. */
+  @IsOptional() @Transform(({ value }) => value === 'true' || value === true) @IsBoolean()
+  includeCost?: boolean;
 }
