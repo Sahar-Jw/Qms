@@ -1,16 +1,19 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Eye, Image as ImageIcon, Search } from 'lucide-react';
+import { ArrowRight, Download, Eye, Image as ImageIcon, Search, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Button, Card, CardHeader, Empty, Input, Loading, Modal, Pagination, Select, td, th, tr } from '@/components/ui';
+import { useMe } from '@/lib/auth';
 import { api } from '@/lib/api';
+import { toastError } from '@/lib/errors';
 import { cn } from '@/lib/cn';
 import { useDebounced } from '@/lib/hooks';
 import { useI18n } from '@/lib/i18n';
-import type { AuditLogEntry, Paginated } from '@/lib/types';
+import { hasRole, type AuditLogEntry, type Paginated } from '@/lib/types';
 
-const ACTIONS = ['create', 'update', 'delete', 'activate', 'deactivate', 'status_change', 'duplicate', 'login', 'login_failed', 'logout', 'register', 'change_password', 'forgot_password', 'reset_password', 'reset'];
-const ENTITIES = ['quotations', 'customers', 'materials', 'companies', 'users', 'settings', 'theme', 'translations', 'auth'];
+const ACTIONS = ['create', 'update', 'delete', 'activate', 'deactivate', 'status_change', 'duplicate', 'login', 'login_failed', 'logout', 'register', 'change_password', 'forgot_password', 'reset_password', 'reset', 'denied', 'change_password_failed', 'reset_password_failed', 'print', 'export_pdf', 'view', 'export'];
+const ENTITIES = ['quotations', 'customers', 'materials', 'companies', 'users', 'settings', 'theme', 'translations', 'auth', 'audit'];
 const LIMIT = 20;
 
 const when = (d: string, lang: string) => new Date(d).toLocaleString(lang === 'ar' ? 'ar-SY-u-nu-latn' : 'en-GB', { dateStyle: 'medium', timeStyle: 'medium' });
@@ -39,7 +42,7 @@ const valueText = (value: unknown, yes: string, no: string): string => {
 const IMAGE_FIELDS = new Set(['avatar', 'logo', 'icon', 'headerImage', 'footerImage']);
 
 function actionStyle(a: string) {
-  if (a === 'delete' || a === 'login_failed') return 'bg-red-50 text-red-800 ring-1 ring-inset ring-red-800/30';
+  if (a === 'delete' || a === 'login_failed' || a === 'denied' || a.endsWith('_failed')) return 'bg-red-50 text-red-800 ring-1 ring-inset ring-red-800/30';
   if (a === 'create' || a === 'register') return 'bg-cocoa text-white';
   if (a === 'update' || a === 'status_change' || a === 'reset' || a === 'duplicate') return 'bg-stone text-ink';
   return 'bg-sand text-ink ring-1 ring-inset ring-stone';
@@ -48,6 +51,10 @@ function actionStyle(a: string) {
 /** Settings > Audit log (manager and above): who did what, and when. */
 export function AuditTab() {
   const { t, has, lang } = useI18n();
+  const me = useMe();
+  const canExport = hasRole(me.data?.role, 'general_manager'); // the export and the integrity check are general manager and above
+  const [busy, setBusy] = useState<'' | 'export' | 'verify'>('');
+  const [userId, setUserId] = useState('');
   const [q, setQ] = useState('');
   const [action, setAction] = useState('');
   const [entity, setEntity] = useState('');
@@ -57,7 +64,8 @@ export function AuditTab() {
   const [open, setOpen] = useState<AuditLogEntry | null>(null);
   const [changeView, setChangeView] = useState<'sideBySide' | 'inline'>('sideBySide');
   const dq = useDebounced(q);
-  useEffect(() => setPage(1), [dq, action, entity, from, to]);
+  useEffect(() => setPage(1), [dq, action, entity, userId, from, to]);
+  const users = useQuery({ queryKey: ['audit-users'], queryFn: () => api.get<{ id: number; name: string }[]>('/audit-log/users'), staleTime: 60_000 });
   const hasChangeSet = !!open?.details && ('before' in open.details || 'after' in open.details);
   const beforeValues = hasChangeSet && isRecord(open?.details?.before) ? open.details.before : null;
   const afterValues = hasChangeSet
@@ -69,8 +77,8 @@ export function AuditTab() {
   ]));
 
   const list = useQuery({
-    queryKey: ['audit-log', dq, action, entity, from, to, page],
-    queryFn: () => api.get<Paginated<AuditLogEntry>>('/audit-log', { q: dq, action, entity, from, to, page, limit: LIMIT }),
+    queryKey: ['audit-log', dq, action, entity, userId, from, to, page],
+    queryFn: () => api.get<Paginated<AuditLogEntry>>('/audit-log', { q: dq, action, entity, userId, from, to, page, limit: LIMIT }),
     placeholderData: (p) => p,
   });
 
@@ -91,8 +99,43 @@ export function AuditTab() {
     const shown = keys.slice(0, 3).map(fieldLabel).join(lang === 'ar' ? '، ' : ', ');
     return keys.length > 3 ? `${shown} … ${t('audit.more', { n: keys.length - 3 })}` : shown;
   };
-  const filtered = !!(q || action || entity || from || to);
-  const clear = () => { setQ(''); setAction(''); setEntity(''); setFrom(''); setTo(''); };
+  const filtered = !!(q || action || entity || userId || from || to);
+  const clear = () => { setQ(''); setAction(''); setEntity(''); setUserId(''); setFrom(''); setTo(''); };
+
+  /** Downloads the filtered log as CSV (up to 10,000 rows, newest first). */
+  async function exportCsv() {
+    setBusy('export');
+    try {
+      const blob = await api.download('/audit-log/export', { q: dq, action, entity, userId, from, to });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toastError(e, t, has);
+    } finally {
+      setBusy('');
+    }
+  }
+
+  /** Asks the server to check every row against its signature (rows edited directly in the database fail). */
+  async function verify() {
+    setBusy('verify');
+    try {
+      const r = await api.get<{ configured: boolean; total: number; valid: number; unsigned: number; invalid: number; invalidIds: number[] }>('/audit-log/verify');
+      if (!r.configured) toast.info(t('audit.verifyOff'));
+      else if (r.invalid > 0) toast.error(t('audit.verifyBad', { n: r.invalid, ids: r.invalidIds.map((id) => `#${id}`).join(', ') }), { duration: 15000 });
+      else toast.success(`${t('audit.verifyOk', { n: r.valid })}${r.unsigned ? ` ${t('audit.verifyUnsigned', { n: r.unsigned })}` : ''}`, { duration: 8000 });
+    } catch (e) {
+      toastError(e, t, has);
+    } finally {
+      setBusy('');
+    }
+  }
 
   return (
     <>
@@ -113,6 +156,10 @@ export function AuditTab() {
               <option value="">{t('audit.allEntities')}</option>
               {ENTITIES.map((e) => <option key={e} value={e}>{label('entities', e)}</option>)}
             </Select>
+            <Select wrapperClassName="w-44" aria-label={t('audit.user')} value={userId} onChange={(e) => setUserId(e.target.value)}>
+              <option value="">{t('audit.allUsers')}</option>
+              {users.data?.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+            </Select>
             <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
               <label className="flex min-w-0 flex-1 items-center gap-2 text-xs font-semibold text-cocoa sm:flex-none">{t('common.from')}
                 <Input type="date" dir="ltr" className="w-full min-w-0 sm:w-40" max={to || undefined} value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -122,6 +169,12 @@ export function AuditTab() {
               </label>
             </div>
             {filtered && <Button variant="ghost" size="sm" onClick={clear}>{t('common.clear')}</Button>}
+            {canExport && (
+              <div className="ms-auto flex flex-wrap gap-2">
+                <Button variant="soft" size="sm" onClick={exportCsv} disabled={busy !== ''}><Download className="size-4" />{t('audit.exportCsv')}</Button>
+                <Button variant="soft" size="sm" onClick={verify} disabled={busy !== ''}><ShieldCheck className="size-4" />{t('audit.verify')}</Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -170,6 +223,7 @@ export function AuditTab() {
               <dt className="font-semibold text-cocoa">{t('audit.user')}</dt><dd><bdi>{open.userName ?? t('audit.unknownUser')}</bdi>{open.userRole ? ` · ${t(`roles.${open.userRole}`)}` : ''}</dd>
               <dt className="font-semibold text-cocoa">{t('audit.record')}</dt>
               <dd>{open.entityLabel ? <bdi>{open.entityLabel}</bdi> : '—'}</dd>
+              <dt className="font-semibold text-cocoa">{t('audit.ip')}</dt><dd dir="ltr" className="text-start tabular-nums">{open.ip ?? '—'}</dd>
             </dl>
             {changedFields.length > 0 && <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">

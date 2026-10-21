@@ -104,6 +104,11 @@ follow the frontend README to upload `frontend/out/` to the web document root.
    (include both `www` and non-`www` origins if both are used). Set
    `COOKIE_DOMAIN=.your-domain.com` only when the frontend and API use sibling
    subdomains. Ensure the cPanel account's database user has migration permissions.
+   Optional, audit log: `AUDIT_SIGNING_KEY` (32+ random characters) signs every new
+   audit row so edits made directly in the database can be found with
+   *Settings > Audit log > Verify*; keep it safe and never change it (old rows would
+   then fail verification). `AUDIT_RETENTION_DAYS` (30 or more) removes audit rows
+   older than that once a day; leave it unset to keep the log forever.
 3. Set `UPLOADS_DIR` to a writable, persistent absolute directory for the Node app.
    Keep it outside folders replaced on deployment, and back up the directory: it
    stores logos, material pictures, catalog documents, and other uploaded files.

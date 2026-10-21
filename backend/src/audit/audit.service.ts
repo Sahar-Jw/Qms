@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { paginated, Paginated } from '../common/dto/pagination.dto';
 import { AuditLog } from './audit-log.entity';
 import { ListAuditDto } from './dto/audit.dto';
@@ -67,32 +68,145 @@ export function ensureDetails(entry: AuditEntry): Record<string, unknown> {
   return info;
 }
 
+/** JSON with sorted keys: MySQL's JSON column may store object keys in another order, the signature must not care. */
+export function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  const keys = Object.keys(value as object).filter((k) => (value as Record<string, unknown>)[k] !== undefined).sort();
+  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`).join(',')}}`;
+}
+
+/** The part of a row the signature covers. */
+type Signable = Pick<AuditLog, 'userId' | 'userName' | 'userRole' | 'action' | 'entity' | 'entityId' | 'entityLabel' | 'method' | 'path' | 'ip' | 'details' | 'createdAt'>;
+
+/** Signing key: AUDIT_SIGNING_KEY (at least 32 characters). Without it nothing is signed. Read per call so a restart is the only step to change it. */
+const signingKey = () => {
+  const k = process.env.AUDIT_SIGNING_KEY ?? '';
+  return k.length >= 32 ? k : null;
+};
+
+/** Spreadsheet programs run cells that start with = + - @ as formulas: such text is prefixed so an exported name can never execute. */
+const csvCell = (v: unknown): string => {
+  let t = v === null || v === undefined ? '' : String(v);
+  if (/^[=+\-@\t\r]/.test(t)) t = `'${t}`;
+  return /[",\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+};
+
+const EXPORT_LIMIT = 10_000;
+const PURGE_BATCH = 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export interface AuditVerifyResult {
+  /** false when AUDIT_SIGNING_KEY is not set on the server */
+  configured: boolean;
+  total: number;
+  valid: number;
+  /** rows written before signing was turned on (or while it was off) */
+  unsigned: number;
+  /** rows whose content no longer matches their signature */
+  invalid: number;
+  invalidIds: number[];
+}
+
 @Injectable()
-export class AuditService {
+export class AuditService implements OnModuleInit, OnModuleDestroy {
   private readonly log = new Logger(AuditService.name);
   private readonly recent = new Map<string, number>();
+  private purgeTimer?: NodeJS.Timeout;
+  private purgeStart?: NodeJS.Timeout;
 
   constructor(@InjectRepository(AuditLog) private readonly repo: Repository<AuditLog>) {}
+
+  // ---------------------------------------------------------------- retention
+
+  /** AUDIT_RETENTION_DAYS (30 or more) turns on a daily purge of older rows. Not set = nothing is ever deleted. */
+  onModuleInit() {
+    const days = Number(process.env.AUDIT_RETENTION_DAYS ?? '');
+    if (!Number.isInteger(days) || days < 30) return;
+    this.purgeStart = setTimeout(() => void this.purgeOlderThan(days), 60_000);
+    this.purgeTimer = setInterval(() => void this.purgeOlderThan(days), DAY_MS);
+    this.purgeStart.unref();
+    this.purgeTimer.unref();
+    this.log.log(`Audit log retention: rows older than ${days} days are removed once a day`);
+  }
+
+  onModuleDestroy() {
+    if (this.purgeStart) clearTimeout(this.purgeStart);
+    if (this.purgeTimer) clearInterval(this.purgeTimer);
+  }
+
+  /** Deletes in small batches so a big backlog never locks the table. Returns how many rows were removed. */
+  async purgeOlderThan(days: number, now = new Date()): Promise<number> {
+    const cutoff = new Date(now.getTime() - days * DAY_MS);
+    let removed = 0;
+    try {
+      for (;;) {
+        const result = await this.repo.query('DELETE FROM audit_logs WHERE created_at < ? ORDER BY id LIMIT ?', [cutoff, PURGE_BATCH]);
+        const n: number = result?.affectedRows ?? 0;
+        removed += n;
+        if (n < PURGE_BATCH) break;
+      }
+      if (removed) this.log.log(`Audit log retention removed ${removed} rows older than ${days} days`);
+    } catch (e) {
+      this.log.error(`Audit log retention failed: ${(e as Error).message}`);
+    }
+    return removed;
+  }
+
+  // ---------------------------------------------------------------- signing
+
+  sign(row: Signable): string | null {
+    const key = signingKey();
+    if (!key) return null;
+    const body = stableStringify([
+      row.userId, row.userName, row.userRole, row.action, row.entity, row.entityId, row.entityLabel,
+      row.method, row.path, row.ip, row.details, row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+    ]);
+    return createHmac('sha256', key).update(body).digest('hex');
+  }
+
+  /** Checks every stored row against its signature (editing a row directly in the database is the thing this catches). */
+  async verify(): Promise<AuditVerifyResult> {
+    const out: AuditVerifyResult = { configured: !!signingKey(), total: 0, valid: 0, unsigned: 0, invalid: 0, invalidIds: [] };
+    let lastId = 0;
+    for (;;) {
+      const rows = await this.repo.createQueryBuilder('a').where('a.id > :lastId', { lastId }).orderBy('a.id', 'ASC').take(1000).getMany();
+      if (!rows.length) break;
+      for (const row of rows) {
+        out.total++;
+        if (!row.signature) { out.unsigned++; continue; }
+        const expected = this.sign(row);
+        const same = expected !== null && expected.length === row.signature.length && timingSafeEqual(Buffer.from(expected), Buffer.from(row.signature));
+        if (same) out.valid++;
+        else { out.invalid++; if (out.invalidIds.length < 20) out.invalidIds.push(row.id); }
+      }
+      lastId = rows[rows.length - 1].id;
+    }
+    return out;
+  }
+
+  // ---------------------------------------------------------------- writing
 
   /** Never throws: a problem writing the log must not break the request that was just served. */
   async record(entry: AuditEntry): Promise<void> {
     if (this.isDuplicate(entry)) return;
     try {
-      await this.repo.save(
-        this.repo.create({
-          userId: entry.userId ?? null,
-          userName: entry.userName?.slice(0, 190) ?? null,
-          userRole: entry.userRole ?? null,
-          action: entry.action,
-          entity: entry.entity,
-          entityId: entry.entityId?.slice(0, 40) ?? null,
-          entityLabel: entry.entityLabel?.slice(0, 190) ?? null,
-          method: entry.method,
-          path: entry.path.slice(0, 255),
-          ip: entry.ip?.slice(0, 64) ?? null,
-          details: ensureDetails(entry),
-        }),
-      );
+      const row = this.repo.create({
+        userId: entry.userId ?? null,
+        userName: entry.userName?.slice(0, 190) ?? null,
+        userRole: entry.userRole ?? null,
+        action: entry.action,
+        entity: entry.entity,
+        entityId: entry.entityId?.slice(0, 40) ?? null,
+        entityLabel: entry.entityLabel?.slice(0, 190) ?? null,
+        method: entry.method,
+        path: entry.path.slice(0, 255),
+        ip: entry.ip?.slice(0, 64) ?? null,
+        details: JSON.parse(JSON.stringify(ensureDetails(entry))), // exactly what the JSON column will hold
+        createdAt: new Date(), // the application clock (UTC), see the entity
+      });
+      row.signature = this.sign(row);
+      await this.repo.save(row);
     } catch (e) {
       this.log.error(`Could not write audit log: ${(e as Error).message}`);
     }
@@ -107,7 +221,9 @@ export class AuditService {
     return last !== undefined && now - last < DUPLICATE_WINDOW_MS;
   }
 
-  async list(q: ListAuditDto): Promise<Paginated<AuditLog>> {
+  // ---------------------------------------------------------------- reading
+
+  private filtered(q: ListAuditDto): SelectQueryBuilder<AuditLog> {
     const qb = this.repo.createQueryBuilder('a');
     if (q.q) qb.andWhere('(a.userName LIKE :s OR a.entityLabel LIKE :s OR a.entityId LIKE :s)', { s: `%${q.q}%` });
     if (q.action) qb.andWhere('a.action = :action', { action: q.action });
@@ -115,12 +231,40 @@ export class AuditService {
     if (q.userId) qb.andWhere('a.userId = :uid', { uid: q.userId });
     if (q.from) qb.andWhere('a.createdAt >= :from', { from: new Date(`${q.from}T00:00:00.000Z`) });
     if (q.to) qb.andWhere('a.createdAt <= :to', { to: new Date(`${q.to}T23:59:59.999Z`) });
-    const [rows, total] = await qb
+    return qb;
+  }
+
+  async list(q: ListAuditDto): Promise<Paginated<AuditLog>> {
+    const [rows, total] = await this.filtered(q)
       .orderBy('a.createdAt', 'DESC')
       .addOrderBy('a.id', 'DESC')
       .skip((q.page - 1) * q.limit)
       .take(q.limit)
       .getManyAndCount();
     return paginated(rows, total, q.page, q.limit);
+  }
+
+  /** The people who appear in the log (for the user filter), including accounts that were renamed since. */
+  async users(): Promise<{ id: number; name: string }[]> {
+    const rows = await this.repo
+      .createQueryBuilder('a')
+      .select('a.userId', 'id')
+      .addSelect('MAX(a.userName)', 'name')
+      .where('a.userId IS NOT NULL')
+      .groupBy('a.userId')
+      .orderBy('name', 'ASC')
+      .getRawMany<{ id: number | string; name: string | null }>();
+    return rows.map((r) => ({ id: Number(r.id), name: r.name ?? `#${r.id}` }));
+  }
+
+  /** CSV of the filtered log (newest first, at most EXPORT_LIMIT rows). A BOM first, so Excel reads Arabic correctly. */
+  async exportCsv(q: ListAuditDto): Promise<string> {
+    const rows = await this.filtered(q).orderBy('a.createdAt', 'DESC').addOrderBy('a.id', 'DESC').take(EXPORT_LIMIT).getMany();
+    const head = ['id', 'time_utc', 'user', 'role', 'action', 'record_type', 'record_id', 'record', 'ip', 'method', 'path', 'details'];
+    const lines = rows.map((r) => [
+      r.id, r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt, r.userName, r.userRole, r.action, r.entity, r.entityId, r.entityLabel,
+      r.ip, r.method, r.path, JSON.stringify(r.details ?? {}),
+    ].map(csvCell).join(','));
+    return `\uFEFF${[head.join(','), ...lines].join('\r\n')}\r\n`;
   }
 }

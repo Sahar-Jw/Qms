@@ -135,6 +135,11 @@ export const PART_LABELS: Record<string, Pair> = {
   catalogMaterial: ['عمود المادة', 'Material column'], catalogFile: ['عمود الملف', 'File column'], catalogType: ['عمود النوع', 'Type column'], kindPdf: ['نوع الملف: PDF', 'File type: PDF'], kindWord: ['نوع الملف: Word', 'File type: Word'], kindImage: ['نوع الملف: صورة', 'File type: Image'], catalogRef: ['إشارة الكتالوج تحت كل بند', 'Catalog pointer under each item'], catalogPdfNote: ['ملاحظة ملفات PDF المرفقة', 'Attached PDF files note'],
   // accessibility labels
   openMenu: ['زر فتح القائمة', 'Open menu button'], clearValue: ['زر مسح الاختيار', 'Clear selection button'],
+  denied: ['رفض صلاحية', 'Permission denied'], change_password_failed: ['محاولة فاشلة لتغيير كلمة المرور', 'Failed password change'], reset_password_failed: ['محاولة فاشلة لإعادة تعيين كلمة المرور', 'Failed password reset'],
+  export_pdf: ['تصدير PDF', 'Exported PDF'], export: ['تصدير', 'Exported'],
+  allUsers: ['كل المستخدمين', 'All users'], exportCsv: ['زر تصدير CSV', 'Export CSV button'], verify: ['زر فحص السلامة', 'Verify integrity button'], verifyOk: ['رسالة السجل سليم', 'Log intact message'],
+  verifyUnsigned: ['رسالة سجلات بلا توقيع', 'Unsigned entries message'], verifyBad: ['رسالة سجلات معدّلة', 'Tampered entries message'], verifyOff: ['رسالة التوقيع غير مفعّل', 'Signing off message'],
+  lang: ['اللغة', 'Language'], userId: ['المستخدم', 'User'],
   // audit log, branding and materials screens
   after: ['بعد', 'After'], before: ['قبل', 'Before'], beforeUnavailable: ['رسالة القيمة السابقة غير مسجّلة', 'Previous value not recorded message'], changes: ['التغييرات', 'Changes'],
   inline: ['عرض قديم ← جديد', 'Old → new view'], sideBySide: ['عرض جنباً إلى جنب', 'Side by side view'], trueValue: ['قيمة «نعم»', '"Yes" value'], falseValue: ['قيمة «لا»', '"No" value'], assets: ['الصور والملفات', 'Pictures and files'],

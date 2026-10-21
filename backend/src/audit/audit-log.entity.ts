@@ -53,6 +53,11 @@ export class AuditLog {
   @Column({ type: 'json' })
   details: Record<string, unknown>;
 
+  /** HMAC-SHA256 of the row (see AuditService.sign), so an edit made directly in the database is detectable. Null when signing is off. */
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  signature: string | null;
+
+  /** Set by the application (UTC), never by the database clock, so it does not depend on the MySQL server time zone. */
   @CreateDateColumn({ type: 'datetime', precision: 6 })
   createdAt: Date;
 }

@@ -6,6 +6,7 @@ import { AuthUser } from '../common/auth-user';
 import { AppSetting } from '../settings/app-setting.entity';
 import { BRAND_SETTING_KEY, normalizeBrand, normalizeTheme, THEME_SETTING_KEY } from '../settings/theme';
 import { AuditService, sanitizeDetails } from './audit.service';
+import { requestInfo } from './request-info';
 
 const METHOD_ACTION: Record<string, string> = { POST: 'create', PUT: 'update', PATCH: 'update', DELETE: 'delete' };
 
@@ -116,11 +117,15 @@ function diffLines(beforeLines: Record<string, unknown>[], submitted: unknown[],
 
 /**
  * Records every successful create / update / delete / sign-in in the audit log, plus failed sign-ins.
- * Reads (GET) are never logged. Registered globally, so new endpoints are covered automatically.
+ * Ordinary reads (GET) are not logged; the sensitive ones are: printing / exporting a quotation as PDF, opening the audit log
+ * and exporting it. Denied requests (403) are logged by the exception filter. Registered globally, so new endpoints are covered
+ * automatically.
  */
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
   private readonly log = new Logger(AuditInterceptor.name);
+  /** user id -> when opening the audit log was last recorded (once per 10 minutes, or every filter change would add a row) */
+  private readonly lastAuditView = new Map<number, number>();
 
   constructor(private readonly audit: AuditService, private readonly dataSource: DataSource) {}
 
@@ -215,10 +220,58 @@ export class AuditInterceptor implements NestInterceptor {
     return sanitizeDetails(submitted);
   }
 
+  /** The reads worth a log row (see the class comment). Everything else passes straight through. */
+  private interceptRead(req: Request & { user?: AuthUser }, next: CallHandler): Observable<unknown> {
+    if (req.method !== 'GET') return next.handle();
+    const { segs } = requestInfo(req);
+    const [resource, second, third] = segs;
+    const q = req.query as Record<string, unknown>;
+    const text = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
+    const filters = Object.fromEntries(
+      ['q', 'action', 'entity', 'userId', 'from', 'to'].map((k) => [k, text(q[k])]).filter(([, v]) => v !== undefined),
+    );
+
+    let event: { action: string; entity: string; entityId: string | null; details: Record<string, unknown> } | null = null;
+    if (resource === 'quotations' && /^\d+$/.test(second ?? '') && (third === 'print' || third === 'pdf')) {
+      // the browser builds its PDF from the print page with ?inline=true: that is a PDF export too
+      const exported = third === 'pdf' || q.inline === 'true';
+      event = { action: exported ? 'export_pdf' : 'print', entity: 'quotations', entityId: second, details: { lang: text(q.lang) ?? 'ar', includeCost: q.includeCost === 'true' } };
+    } else if (resource === 'audit-log' && !second) {
+      const uid = req.user?.id;
+      const now = Date.now();
+      if (uid == null || Number(q.page ?? 1) > 1 || now - (this.lastAuditView.get(uid) ?? 0) < 600_000) return next.handle();
+      this.lastAuditView.set(uid, now);
+      event = { action: 'view', entity: 'audit', entityId: null, details: filters };
+    } else if (resource === 'audit-log' && second === 'export') {
+      event = { action: 'export', entity: 'audit', entityId: null, details: filters };
+    }
+    if (!event) return next.handle();
+    const found = event;
+    return next.handle().pipe(tap({ next: () => void this.recordRead(req, found) }));
+  }
+
+  private async recordRead(req: Request & { user?: AuthUser }, event: { action: string; entity: string; entityId: string | null; details: Record<string, unknown> }) {
+    try {
+      const info = requestInfo(req);
+      let entityLabel: string | null = null;
+      if (event.entity === 'quotations' && event.entityId) {
+        const rows: { n: string }[] = await this.dataSource.query('SELECT quotation_number AS n FROM quotations WHERE id = ? LIMIT 1', [event.entityId]);
+        entityLabel = rows[0]?.n ?? null;
+      }
+      await this.audit.record({
+        userId: info.userId, userName: info.userName, userRole: info.userRole,
+        action: event.action, entity: event.entity, entityId: event.entityId, entityLabel,
+        method: info.method, path: info.path, ip: info.ip, details: event.details,
+      });
+    } catch (e) {
+      this.log.error(`Could not log ${event.action}: ${(e as Error).message}`);
+    }
+  }
+
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     if (context.getType() !== 'http') return next.handle();
     const req = context.switchToHttp().getRequest<Request & { user?: AuthUser }>();
-    if (!(req.method in METHOD_ACTION)) return next.handle();
+    if (!(req.method in METHOD_ACTION)) return this.interceptRead(req, next);
 
     // /api/quotations/12/status?x=1  ->  ['quotations', '12', 'status']
     const segs = req.path.replace(/^\/api\//, '').split('/').filter(Boolean);

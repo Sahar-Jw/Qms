@@ -1,6 +1,14 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { Response } from 'express';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger, Optional } from '@nestjs/common';
+import { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
+import { AuditService } from '../../audit/audit.service';
+import { requestInfo } from '../../audit/request-info';
+
+/** Failures that go in the audit log besides every 403 (permission denied): the error code -> the action name. */
+const AUDITED_FAILURES: Record<string, string> = {
+  WRONG_CURRENT_PASSWORD: 'change_password_failed',
+  INVALID_RESET_TOKEN: 'reset_password_failed',
+};
 
 /**
  * Uniform error body: { statusCode, code, message, details? }.
@@ -9,6 +17,8 @@ import { QueryFailedError } from 'typeorm';
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger('Exceptions');
+
+  constructor(@Optional() private readonly audit?: AuditService) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
     const res = host.switchToHttp().getResponse<Response>();
@@ -55,6 +65,23 @@ export class AllExceptionsFilter implements ExceptionFilter {
       this.logger.error((exception as Error)?.message, (exception as Error)?.stack);
     }
 
+    if (exception instanceof HttpException) this.auditFailure(host.switchToHttp().getRequest<Request>(), status, code);
     res.status(status).json({ statusCode: status, code, message, ...extra, ...(details ? { details } : {}) });
+  }
+
+  /** Permission denied (403) and failed password changes / resets. Fire and forget: logging must never change the answer. */
+  private auditFailure(req: Request | undefined, status: number, code: string) {
+    if (!this.audit || !req?.path) return;
+    const action = status === HttpStatus.FORBIDDEN ? 'denied' : AUDITED_FAILURES[code];
+    if (!action) return;
+    const info = requestInfo(req as any);
+    // a failed sign-in is already recorded (as login_failed) by the audit interceptor
+    if (info.entity === 'auth' && info.segs[1] === 'login') return;
+    void this.audit.record({
+      userId: info.userId, userName: info.userName, userRole: info.userRole,
+      action, entity: info.entity, entityId: info.entityId, entityLabel: null,
+      method: info.method, path: info.path, ip: info.ip,
+      details: { request: `${info.method} ${info.path}`, code, status },
+    });
   }
 }

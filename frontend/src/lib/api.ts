@@ -64,8 +64,25 @@ function uploadWithProgress<T>(url: string, form: FormData, onProgress: (fractio
   });
 }
 
+/** A file (CSV, ...) from the API as a Blob; errors are the same ApiError / NetworkError as everywhere else. */
+async function download(url: string, params?: Params): Promise<Blob> {
+  let res: Response;
+  try {
+    res = await fetch(apiUrl(url + qs(params)), { credentials: FETCH_CREDENTIALS });
+  } catch (e) {
+    throw new NetworkError(e);
+  }
+  if (!res.ok) {
+    const data: any = await res.json().catch(() => null);
+    const { statusCode, code, message, details, ...extra } = data ?? {};
+    throw new ApiError(res.status, code ?? `HTTP_${res.status}`, message ?? res.statusText, details, extra);
+  }
+  return res.blob();
+}
+
 export const api = {
   get: <T>(url: string, params?: Params) => request<T>('GET', url + qs(params)),
+  download,
   post: <T>(url: string, body?: unknown) => request<T>('POST', url, body ?? {}),
   patch: <T>(url: string, body?: unknown) => request<T>('PATCH', url, body ?? {}),
   put: <T>(url: string, body?: unknown) => request<T>('PUT', url, body ?? {}),
