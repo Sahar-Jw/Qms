@@ -80,6 +80,13 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
 
     // from here the page is laid out as one continuous sheet (the page frame and the pictures are handled below)
     root.classList.add('client');
+    // Word catalog text is dir="auto", but html2canvas draws with the COMPUTED direction, which stays the inherited one for such
+    // blocks - so an English paragraph inside an Arabic quotation (or the reverse) was drawn with the wrong direction.
+    // Resolve every dir="auto" to what the browser would pick (first strong letter) before anything is measured.
+    doc.querySelectorAll<HTMLElement>('[dir="auto"]').forEach((el) => {
+      const first = (el.textContent ?? '').match(/[A-Za-zÀ-ɏ֐-ࣿיִ-﷿ﹰ-ﻼ]/)?.[0];
+      if (first) el.dir = /[֐-ࣿיִ-﷿ﹰ-ﻼ]/.test(first) ? 'rtl' : 'ltr';
+    });
     doc.body.style.margin = '0';
     doc.body.style.width = `${contentW}px`;
     await new Promise((r) => setTimeout(r, 50));
@@ -101,9 +108,6 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
     const breaks = [...doc.querySelectorAll('tr, .term, .box, p, h2, h3, .catalog-heading, .catalog-image')].map(bottomOf).sort((a, b) => a - b);
     const forced = [...[...doc.querySelectorAll('.catalog-index, .catalog-page')].map(topOf), ...slotYs].sort((a, b) => a - b);
 
-    const scale = Math.min(2, 14000 / total); // keep the canvas below the browser's size limit
-    const canvas = await html2canvas(doc.body, { scale, width: contentW, windowWidth: contentW, backgroundColor: '#ffffff', useCORS: true });
-
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     const mmPerPx = bodyMm / contentW;
     const pagePx = (297 - topMm - bottomMm) / mmPerPx;
@@ -112,6 +116,7 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
     const pending = slotYs.map((y, index) => ({ y, index }));
     let pageCount = 0;
     let y = 0;
+    // 1) decide where every page starts and ends (geometry only, nothing is drawn yet)
     while (y < total - 2) {
       let end = Math.min(y + pagePx, total);
       const must = forced.find((b) => b > y + 1 && b < end);
@@ -121,19 +126,40 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
         const cut = [...breaks].reverse().find((b) => b > y + pagePx * 0.4 && b <= end);
         if (cut) end = cut;
       }
-      const h = end - y;
-      const slice = document.createElement('canvas');
-      slice.width = canvas.width;
-      slice.height = Math.max(1, Math.round(h * scale));
-      slice.getContext('2d')!.drawImage(canvas, 0, Math.round(y * scale), canvas.width, slice.height, 0, 0, canvas.width, slice.height);
-      if (pageCount > 0) pdf.addPage();
-      pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', side, topMm, bodyMm, h * mmPerPx);
       pageCount++;
       pageRanges.push({ start: y, end });
       while (pending.length && pending[0].y <= end + 1) slotsAfter.push({ page: pageCount, index: pending.shift()!.index });
       y = end;
     }
     pending.forEach((p) => slotsAfter.push({ page: pageCount, index: p.index })); // (a PDF at the very end)
+
+    // 2) rasterise a few pages at a time at a FIXED scale. The whole quotation used to be drawn on ONE canvas whose scale was
+    // reduced (down to well below 1x) to stay under the browser's canvas size limit - on a long quotation with several catalog
+    // files that made the text blurry and mangled the joined Arabic letters and the spaces between words.
+    const SCALE = 2;
+    const CHUNK_PX = 6000; // css px per canvas (x SCALE stays far below the ~16000px canvas limit)
+    for (let first = 0; first < pageRanges.length; ) {
+      let last = first;
+      while (last + 1 < pageRanges.length && pageRanges[last + 1].end - pageRanges[first].start <= CHUNK_PX) last++;
+      const chunkTop = pageRanges[first].start;
+      const chunk = await html2canvas(doc.body, {
+        scale: SCALE, x: 0, y: chunkTop, width: contentW, height: pageRanges[last].end - chunkTop,
+        windowWidth: contentW, windowHeight: total, scrollX: 0, scrollY: 0, backgroundColor: '#ffffff', useCORS: true,
+      });
+      for (let k = first; k <= last; k++) {
+        const { start, end } = pageRanges[k];
+        const h = end - start;
+        const slice = document.createElement('canvas');
+        slice.width = chunk.width;
+        slice.height = Math.max(1, Math.min(chunk.height - Math.round((start - chunkTop) * SCALE), Math.round(h * SCALE)));
+        slice.getContext('2d')!.drawImage(chunk, 0, Math.round((start - chunkTop) * SCALE), chunk.width, slice.height, 0, 0, chunk.width, slice.height);
+        if (k > 0) pdf.addPage();
+        pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', side, topMm, bodyMm, h * mmPerPx);
+        slice.width = slice.height = 0; // release the memory right away
+      }
+      chunk.width = chunk.height = 0;
+      first = last + 1;
+    }
 
     // ---- put everything together
     const base = await PDFDocument.load(await pdf.output('arraybuffer'));

@@ -40,6 +40,13 @@ const valueText = (value: unknown, loc: Loc, key?: string): string => {
   return typeof value === 'string' ? loc.enumText(key, value) ?? value : String(value);
 };
 
+/**
+ * Technical details that are stored with a row (kept for investigations, and in the CSV export) but never shown on screen:
+ * `request` is the raw API call, e.g. "POST /api/auth/logout".
+ */
+const HIDDEN_FIELDS = new Set(['request']);
+const isShown = (key: string) => !HIDDEN_FIELDS.has(key);
+
 /** Fields that hold an uploaded picture. */
 const IMAGE_FIELDS = new Set(['avatar', 'logo', 'icon', 'headerImage', 'footerImage']);
 
@@ -76,7 +83,8 @@ export function AuditTab() {
   const changedFields = Array.from(new Set([
     ...Object.keys(beforeValues ?? {}),
     ...Object.keys(afterValues ?? {}),
-  ]));
+  ])).filter(isShown);
+  const otherDetails = Object.entries(open?.details ?? {}).filter(([key]) => isShown(key));
 
   const list = useQuery({
     queryKey: ['audit-log', dq, action, entity, userId, from, to, page],
@@ -106,9 +114,9 @@ export function AuditTab() {
   const val = (value: unknown, key?: string) => valueText(value, loc, key);
   /** One line under the record in the table: which fields an edit touched, so most rows need no click at all. */
   const summary = (details: AuditLogEntry['details']) => {
-    const keys = ('before' in details || 'after' in details)
+    const keys = (('before' in details || 'after' in details)
       ? Array.from(new Set([...Object.keys(isRecord(details.before) ? details.before : {}), ...Object.keys(isRecord(details.after) ? details.after : {})]))
-      : Object.keys(details);
+      : Object.keys(details)).filter(isShown);
     if (!keys.length) return '';
     const shown = keys.slice(0, 3).map(fieldLabel).join(lang === 'ar' ? '، ' : ', ');
     return keys.length > 3 ? `${shown} … ${t('audit.more', { n: keys.length - 3 })}` : shown;
@@ -301,9 +309,9 @@ export function AuditTab() {
             </div>}
             {changedFields.length === 0 && (
               // Never leave the modal blank: show whatever was stored, or say plainly that there is nothing more.
-              Object.keys(open.details ?? {}).length > 0 ? (
+              otherDetails.length > 0 ? (
                 <div className="space-y-2">
-                  {Object.entries(open.details).map(([key, value]) => (
+                  {otherDetails.map(([key, value]) => (
                     <div key={key} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl bg-sand/60 p-3">
                       <span className="text-xs font-semibold text-cocoa">{fieldLabel(key)}</span>
                       <span className="min-w-0 whitespace-pre-line break-words" dir="auto">{val(value, key)}</span>
