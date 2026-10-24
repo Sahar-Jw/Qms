@@ -12,6 +12,7 @@
 const MM = 72 / 25.4; // PDF points per millimetre
 const A4_W = 595.28;
 const A4_H = 841.89;
+const EDGE_PX = 8; // white safety margin (css px) on the left / right inside every rasterised page
 
 export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = []): Promise<Blob> {
   const [{ default: html2canvas }, { jsPDF }, pdfLib] = await Promise.all([
@@ -92,8 +93,14 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
     });
     doc.body.style.margin = '0';
     doc.body.style.width = `${contentW}px`;
+    // A few pixels of white on each side INSIDE the picture of the page. The browser draws the page into a canvas whose edge sits
+    // exactly on the content edge, so the first / last Arabic letter, the table border and the box border of that edge were cut
+    // off by a pixel or two (more with the joined Arabic glyphs, which reach past their box). The picture keeps the same size.
+    doc.body.style.padding = `0 ${EDGE_PX}px`;
     await new Promise((r) => setTimeout(r, 50));
-    const total = doc.documentElement.scrollHeight;
+    // The height of the CONTENT. documentElement.scrollHeight is never smaller than the (1200px) iframe, so a short quotation got
+    // an extra empty page at the end.
+    const total = Math.max(1, Math.ceil(doc.body.getBoundingClientRect().height));
     iframe.style.height = `${total}px`;
     const scrollY = doc.defaultView!.scrollY;
     const topOf = (el: Element) => Math.round(el.getBoundingClientRect().top + scrollY);
@@ -109,7 +116,7 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
       /^https?:\/\//i.test(a.href) ? [...a.getClientRects()].map((r) => ({ url: a.href, left: r.left, top: Math.round(r.top + scrollY), width: r.width, height: r.height })) : []);
     // y positions where a page may break: bottoms of table rows / blocks. Where a page MUST break: a new catalog part / a catalog PDF.
     const breaks = [...doc.querySelectorAll('tr, .term, .box, p, h2, h3, .catalog-heading, .catalog-image')].map(bottomOf).sort((a, b) => a - b);
-    const forced = [...[...doc.querySelectorAll('.catalog-index, .catalog-page')].map(topOf), ...slotYs].sort((a, b) => a - b);
+    const forced = [...[...doc.querySelectorAll('.catalog-page:not([data-heading-only])')].map(topOf), ...slotYs].sort((a, b) => a - b);
 
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     const mmPerPx = bodyMm / contentW;

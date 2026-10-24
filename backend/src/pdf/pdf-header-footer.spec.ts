@@ -171,6 +171,26 @@ describe('printed quotation: company header and footer images', () => {
     expect(html).toContain('class="note pdf-note"'); // the browser print dialog cannot include PDF files
   });
 
+  it('does not give the attachment list or the heading of an attached PDF a nearly empty page of their own', async () => {
+    const html = await svc.renderHtml(quotation({}, [{
+      materialCode: 'M-1',
+      materialName: 'Pump',
+      catalogFiles: [{ id: 'b'.repeat(32), name: 'datasheet.pdf', path: `materials/catalog-${'b'.repeat(32)}.pdf`, mimeType: 'application/pdf' }],
+      amounts: [],
+    }]), { lang: 'ar', includeCost: false });
+
+    expect(html).toContain('.catalog-page { break-before: page; page-break-before: always; }'); // pictures / Word files still start a page
+    expect(html).toMatch(/\.catalog-index \{[^}]*margin-top:\s*6mm;[^}]*break-inside:\s*avoid;/);
+    expect(html).toMatch(/\.catalog-page\[data-heading-only\] \{[^}]*break-before:\s*auto;/);
+    expect(html).toContain('<section class="catalog-page" data-heading-only="1">'); // the browser PDF builder keys on this marker
+  });
+
+  it('lets codes, amounts and links wrap inside their cell in the browser PDF (they used to run out of the page edge)', async () => {
+    const html = await svc.renderHtml(quotation(), { lang: 'ar', includeCost: false });
+    expect(html).toMatch(/html\.client table\.items td\.code[^{]*\{[^}]*overflow-wrap:\s*anywhere !important/);
+    expect(html).toMatch(/html\.client \.lnk \{[^}]*word-break:\s*break-all !important/);
+  });
+
   it('sanitizes converted Word content before printing', async () => {
     const html = (svc as any).sanitizeDocxHtml(
       '<p>Specs</p><a href="javascript:alert(1)">Link</a><script>alert(2)</script><img src="data:image/png;base64,AAAA" onerror="alert(3)">',

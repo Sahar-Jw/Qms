@@ -244,7 +244,7 @@ export class PdfService implements OnModuleDestroy {
    */
   private async catalogPageHtml(entry: CatalogEntry, t: Labels, link = false, headingOnly = false): Promise<string> {
     const content = headingOnly ? '' : await this.catalogContentHtml(entry.file, link);
-    return `<section class="catalog-page">
+    return `<section class="catalog-page"${headingOnly ? ' data-heading-only="1"' : ''}>
   <header class="catalog-heading"><p class="eyebrow">${this.esc(t.catalogEyebrow)}</p><h2 class="catalog-h"><span class="tag">${this.itemTag(entry, t)}</span>${this.materialHtml(entry)}</h2><p class="catalog-file">${this.fileNameHtml(entry.file.name)} · ${this.esc(this.kindLabel(entry.file, t))}</p></header>
   ${headingOnly ? '' : `<div class="catalog-document">${content}</div>`}
 </section>`;
@@ -332,7 +332,10 @@ h3 { margin: 8px 0 3px; font-size: 11px; color: #1f3a5f; }
 .bar button { font-family: inherit; padding: 6px 18px; font-size: 13px; cursor: pointer; }
 @media print { .bar { display: none; } }
 /* catalog appendix */
-.catalog-index, .catalog-page { break-before: page; page-break-before: always; }
+/* every attached picture / Word file starts on its own page; the list of attachments and the heading of an attached PDF follow the previous content when they fit (they used to take a nearly empty page each) */
+.catalog-page { break-before: page; page-break-before: always; }
+.catalog-index { margin-top: 6mm; break-inside: avoid; page-break-inside: avoid; }
+.catalog-page[data-heading-only] { break-before: auto; page-break-before: auto; break-inside: avoid; page-break-inside: avoid; margin-top: 6mm; }
 .catalog-title { font-size: 16px; color: #1f3a5f; margin: 0 0 4mm; padding-bottom: 3mm; border-bottom: 2px solid #1f3a5f; }
 table.plain td, table.plain th { font-size: 10.5px; }
 .note { color: #667085; font-size: 9.5px; margin: 4mm 0 0; }
@@ -352,6 +355,8 @@ table.plain td, table.plain th { font-size: 10.5px; }
 .pdf-slot { height: 0; overflow: hidden; }
 /* the browser-side PDF builder lays the page out itself: the frame turns into plain blocks and the pictures are stamped afterwards */
 html.client, html.client * { letter-spacing: normal !important; overflow-wrap: normal !important; word-break: normal !important; text-transform: none !important; }
+html.client table.items td.code, html.client table.items td.n, html.client table.items td.n .m { overflow-wrap: anywhere !important; }
+html.client .lnk { overflow-wrap: anywhere !important; word-break: break-all !important; }
 html.client .catalog-h { display: block; line-height: 1.8; }
 html.client .catalog-h .tag { display: inline-block; line-height: 1.9; padding: 1px 8px; margin-inline-end: 3mm; vertical-align: middle; }
 html.client .catalog-heading h2, html.client .catalog-heading .eyebrow, html.client .catalog-file { overflow: visible; }
