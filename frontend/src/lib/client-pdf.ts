@@ -96,7 +96,8 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
     // A few pixels of white on each side INSIDE the picture of the page. The browser draws the page into a canvas whose edge sits
     // exactly on the content edge, so the first / last Arabic letter, the table border and the box border of that edge were cut
     // off by a pixel or two (more with the joined Arabic glyphs, which reach past their box). The picture keeps the same size.
-    doc.body.style.padding = `0 ${EDGE_PX}px`;
+    // (and a few pixels at the bottom, so the descenders of the very last line are not cut off at the end of the sheet)
+    doc.body.style.padding = `0 ${EDGE_PX}px ${EDGE_PX / 2}px`;
     await new Promise((r) => setTimeout(r, 50));
     // The height of the CONTENT. documentElement.scrollHeight is never smaller than the (1200px) iframe, so a short quotation got
     // an extra empty page at the end.
@@ -115,7 +116,21 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
     const linkBoxes = [...doc.querySelectorAll<HTMLAnchorElement>('a.lnk')].flatMap((a) =>
       /^https?:\/\//i.test(a.href) ? [...a.getClientRects()].map((r) => ({ url: a.href, left: r.left, top: Math.round(r.top + scrollY), width: r.width, height: r.height })) : []);
     // y positions where a page may break: bottoms of table rows / blocks. Where a page MUST break: a new catalog part / a catalog PDF.
-    const breaks = [...doc.querySelectorAll('tr, .term, .box, p, h2, h3, .catalog-heading, .catalog-image')].map(bottomOf).sort((a, b) => a - b);
+    // Word catalog files come in as lists (li), headings of every level, quotes, ... - without them as break points a page could be
+    // cut straight through a bullet line: half of the line stayed at the bottom of one page and the other half started the next one.
+    const blockBreaks = [...doc.querySelectorAll('tr, .term, .box, p, li, blockquote, pre, figure, h1, h2, h3, h4, h5, h6, .catalog-heading, .catalog-image')].map(bottomOf);
+    // Inside the text of a Word catalog file (outside its tables, whose rows are break points already) every LINE is a break point
+    // too, so even a paragraph longer than the room left on the page is cut between two lines, never through one.
+    const lineBreaks: number[] = [];
+    const texts = doc.createTreeWalker(doc.body, 4 /* NodeFilter.SHOW_TEXT */);
+    for (let node = texts.nextNode(); node; node = texts.nextNode()) {
+      const parent = node.parentElement;
+      if (!parent || !node.textContent?.trim() || !parent.closest('.catalog-document') || parent.closest('td, th')) continue;
+      const range = doc.createRange();
+      range.selectNodeContents(node);
+      for (const r of range.getClientRects()) if (r.height > 0) lineBreaks.push(Math.round(r.bottom + scrollY));
+    }
+    const breaks = [...blockBreaks, ...lineBreaks].sort((a, b) => a - b);
     const forced = [...[...doc.querySelectorAll('.catalog-page:not([data-heading-only])')].map(topOf), ...slotYs].sort((a, b) => a - b);
 
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });

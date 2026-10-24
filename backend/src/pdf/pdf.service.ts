@@ -361,6 +361,8 @@ html.client .catalog-h { display: block; line-height: 1.8; }
 html.client .catalog-h .tag { display: inline-block; line-height: 1.9; padding: 1px 8px; margin-inline-end: 3mm; vertical-align: middle; }
 html.client .catalog-heading h2, html.client .catalog-heading .eyebrow, html.client .catalog-file { overflow: visible; }
 html.client .catalog-heading .eyebrow { line-height: 1.8; }
+/* Cairo's letters reach past a 1.4 line box (Arabic marks / descenders): a page cut between two lines then left a sliver of the previous line on the next page and clipped the last line of the document. 1.8 keeps all the ink inside its own line. */
+html.client .catalog-document, html.client .catalog-document li, html.client .catalog-document p, html.client .catalog-document td, html.client .catalog-document th { line-height: 1.8; }
 html.client table.pg, html.client table.pg > tbody, html.client table.pg > tbody > tr, html.client table.pg > tbody > tr > td.pgbody { display: block; width: auto; padding: 0; border: 0; }
 html.client table.pg > thead, html.client table.pg > tfoot, html.client img.cohead, html.client img.cofoot { display: none; }
 </style>
