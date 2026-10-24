@@ -137,7 +137,7 @@ describe('printed quotation: company header and footer images', () => {
     const without = await svc.renderHtml(quotation(), { lang: 'en', includeCost: false });
     expect(without).toContain('<div class="head">');
     expect(without).toContain('Damascus');
-    expect(without).toContain('data-top="12" data-bottom="14"');
+    expect(without).toContain('data-top="9" data-bottom="10"');
     expect(tag(without, 'cohead')).toBeUndefined();
     expect(tag(without, 'cofoot')).toBeUndefined();
   });
@@ -317,6 +317,16 @@ describe('printed quotation: company header and footer images', () => {
       expect(rule).toContain('background: #e9eef5');
       expect(rule).not.toContain('background: #1f3a5f');
       expect(rule).not.toMatch(/color:\s*#fff/);
+    });
+
+    it('fits every item-table column to the printable width and uses compact spacing', async () => {
+      const html = await svc.renderHtml(quotation({}, [item(null)]), { lang: 'ar', includeCost: false });
+
+      expect(html).toContain('table.items { table-layout: fixed; }');
+      expect(html).toMatch(/<table class="items">\s*<colgroup>/);
+      expect(html).toContain('line-height: 1.4;');
+      expect(html).toContain('padding: 3px 2px;');
+      expect(html).toContain('letter-spacing: normal;');
     });
 
     it('prints the material link under the description (no separate, cramped column)', async () => {

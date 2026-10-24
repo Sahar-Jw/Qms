@@ -88,6 +88,7 @@ const ar: Shape<typeof en> = {
     stock: 'المخزون', unitPrice: 'كلفة السعر', unit: 'الوحدة', currency: 'العملة', origin: 'بلد المنشأ', catalogue: 'الكتالوج', model: 'رقم الموديل',
     image: 'صورة المنتج', uploadImage: 'اختيار صورة', changeImage: 'تغيير الصورة', removeImage: 'حذف الصورة', imageHint: 'PNG أو JPG أو WEBP حتى 8 ميغابايت. تُخفَّف الملفات الكبيرة دون تغيير أبعادها.', noImage: 'لا توجد صورة',
     details: 'تفاصيل المادة', savingDetails: 'جارٍ حفظ البيانات…', uploadingImage: 'جارٍ رفع الملفات…', optimizing: 'جارٍ تجهيز الصورة…', clickToZoom: 'اضغط على الصورة لتكبيرها',
+    createOutcomeUnknown: 'تعذّر التأكد من حفظ المادة. تحقّق من قائمة المواد قبل المحاولة مجدداً.',
     catalogFiles: 'ملفات الكتالوج', catalogHint: 'PNG أو JPG أو WEBP أو PDF أو DOCX؛ بحد أقصى 10 ملفات و{size} ميغابايت للملف.', catalogTooBig: '«{name}» أكبر من {size} ميغابايت المسموحة لملف الكتالوج.', addCatalogFiles: 'إضافة ملفات',
     removeCatalogFile: 'حذف ملف الكتالوج', catalogLimit: 'يمكن إضافة 10 ملفات كحد أقصى للمادة الواحدة.', uploadingCatalog: 'جارٍ رفع ملفات الكتالوج…',
     link: 'رابط المنتج', sellingPrice: 'سعر البيع', sellingCurrency: 'عملة البيع', linkHint: 'أي رابط ويب أو Google Drive؛ يُضاف https:// إن لم يوجد. قابل للنقر في عرض السعر.', currencyHint: 'رمز أو علامة، مثل USD أو $',

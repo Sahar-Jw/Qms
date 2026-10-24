@@ -9,7 +9,7 @@ import { useConfirm } from '@/components/confirm';
 import { MaterialThumb } from '@/components/MaterialThumb';
 import { ProgressBar } from '@/components/ProgressBar';
 import { ActiveBadge, Button, Card, Empty, Field, Input, Loading, Modal, PageHeader, Pagination, Select, td, th, tr } from '@/components/ui';
-import { api } from '@/lib/api';
+import { ApiError, api, NetworkError } from '@/lib/api';
 import { useCatalogSettings, useMe } from '@/lib/auth';
 import { toastError } from '@/lib/errors';
 import { fmtSize, optimizeImage } from '@/lib/image';
@@ -47,6 +47,8 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
   const [preparing, setPreparing] = useState(false);
   const [pct, setPct] = useState(0);
   const [phase, setPhase] = useState<'saving' | 'uploadingImage' | 'uploadingCatalog'>('saving');
+  const [createOutcomeUnknown, setCreateOutcomeUnknown] = useState(false);
+  const submitLock = useRef(false);
   const current = editing && !removeImg ? material.img ?? null : null;
   useEffect(() => {
     if (!file) { setPreview(null); return; }
@@ -74,7 +76,15 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
       if (body.link) body.link = normalizeLink(String(body.link));
       if (!editing) for (const k of ['sellingPrice', 'sellingCurrency', 'link'] as const) if (body[k] === undefined) delete body[k];
       setPhase('saving'); setPct(4);
-      const saved = await (editing ? api.patch<Material>(`/materials/${material.id}`, body) : api.post<Material>('/materials', body));
+      let saved: Material;
+      try {
+        saved = await (editing ? api.patch<Material>(`/materials/${material.id}`, body) : api.post<Material>('/materials', body));
+      } catch (error) {
+        if (!editing && (error instanceof NetworkError || (error instanceof ApiError && (error.status === 408 || error.status >= 500)))) {
+          setCreateOutcomeUnknown(true);
+        }
+        throw error;
+      }
       setPct(10);
       let uploadFailed = false;
       if (file) {
@@ -113,7 +123,13 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
       if (!uploadFailed || created) onClose();
     },
     onError: (e) => toastError(e, t, has),
+    onSettled: () => { submitLock.current = false; },
   });
+  const submit = (values: Form) => {
+    if (save.isPending || submitLock.current || createOutcomeUnknown) return;
+    submitLock.current = true;
+    save.mutate(values);
+  };
   const req = { required: t('common.required'), validate: (v: string) => v.trim() !== '' || t('common.required') };
   const dec = { required: t('common.required'), validate: (v: string) => DEC.test(v.trim()) || t('common.invalid') };
   const pickCatalog = (files: File[]) => {
@@ -140,9 +156,10 @@ function MaterialModal({ material, onClose }: { material: Material | 'new'; onCl
       footer={<>
         {save.isPending && <div className="me-auto min-w-52 flex-1"><ProgressBar value={pct} label={t(phase === 'saving' ? 'materials.savingDetails' : phase === 'uploadingImage' ? 'materials.uploadingImage' : 'materials.uploadingCatalog')} /></div>}
         <Button variant="ghost" disabled={save.isPending} onClick={onClose}>{t('common.cancel')}</Button>
-        <Button loading={save.isPending} disabled={preparing} onClick={handleSubmit((v) => save.mutate(v))}>{t('common.save')}</Button>
+        <Button loading={save.isPending} disabled={preparing || createOutcomeUnknown} onClick={handleSubmit(submit)}>{t('common.save')}</Button>
       </>}>
-      <form className="grid gap-4 sm:grid-cols-2 md:grid-cols-3" onSubmit={handleSubmit((v) => save.mutate(v))}>
+      <form className="grid gap-4 sm:grid-cols-2 md:grid-cols-3" onSubmit={handleSubmit(submit)}>
+        {createOutcomeUnknown && <p role="alert" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900 sm:col-span-2 md:col-span-3">{t('materials.createOutcomeUnknown')}</p>}
         <div className="flex items-center gap-4 rounded-2xl bg-sand/50 p-3 sm:col-span-2 md:col-span-3">
           <MaterialThumb image={preview ? null : current} size="size-24" className={preview ? 'hidden' : ''} zoom />
           {preview && (
@@ -258,7 +275,7 @@ function MaterialDetails({ material: x, onClose, onEdit }: { material: Material;
 }
 
 export default function MaterialsPage() {
-  const { t, pick, has } = useI18n();
+  const { t, pick, has, dir } = useI18n();
   const me = useMe().data!;
   const qc = useQueryClient();
   const confirm = useConfirm();
@@ -301,7 +318,7 @@ export default function MaterialsPage() {
                     onClick={(e) => { if (!(e.target as HTMLElement).closest('a,button')) setView(m); }}
                     onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) setView(m); }}>
                     <td className={td}><MaterialThumb image={m.img} size="size-20" zoom /></td>
-                    <td className={`${td} font-bold`} dir="ltr">{m.materialCode}</td>
+                    <td className={`${td} font-bold`} dir={dir}>{m.materialCode}</td>
                     <td className={td}>{m.name ?? ''}</td>
                     <td className={`${td} whitespace-nowrap tabular-nums`} dir="ltr">{fmt(m.unitPrice)} <span className="text-xs text-cocoa">{m.currency}</span></td>
                     <td className={`${td} tabular-nums`} dir="ltr">{fmt(m.stockQuantity, 3)} <span className="text-xs text-cocoa">{m.unit}</span></td>

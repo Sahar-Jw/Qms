@@ -83,6 +83,7 @@ const en = {
     stock: 'Stock', unitPrice: 'Price cost', unit: 'Unit', currency: 'Currency', origin: 'Country of origin', catalogue: 'Catalogue', model: 'Model number',
     image: 'Product picture', uploadImage: 'Choose picture', changeImage: 'Change picture', removeImage: 'Remove picture', imageHint: 'PNG, JPG or WEBP up to 8 MB. Big files are made lighter without changing their size.', noImage: 'No picture',
     details: 'Material details', savingDetails: 'Saving details…', uploadingImage: 'Uploading files…', optimizing: 'Preparing picture…', clickToZoom: 'Click the picture to enlarge it',
+    createOutcomeUnknown: 'We could not confirm whether this material was saved. Check the material list before trying again.',
     catalogFiles: 'Catalog files', catalogHint: 'PNG, JPG, WEBP, PDF or DOCX; up to 10 files total and {size} MB per file.', catalogTooBig: '"{name}" is larger than the {size} MB allowed for a catalog file.', addCatalogFiles: 'Add files',
     removeCatalogFile: 'Remove catalog file', catalogLimit: 'A material can have at most 10 catalog files.', uploadingCatalog: 'Uploading catalog files…',
     link: 'Product link', sellingPrice: 'Selling price', sellingCurrency: 'Selling currency', linkHint: 'Any web or Google Drive link; https:// is added if missing. Clickable on the quotation.', currencyHint: 'Code or symbol, e.g. USD or $',

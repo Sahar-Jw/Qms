@@ -39,7 +39,7 @@ export const PAGE = {
   side: 10, // left / right margin
   headTop: 5, headMax: 13, headBand: 21, // header picture: 5 mm from the top edge, at most 13 mm tall, content starts 21 mm from the top
   footBottom: 7, footMax: 15, footBand: 24, // footer picture: 7 mm above the bottom edge, at most 15 mm tall (so it can use the full width like the header), content ends 24 mm from the bottom
-  plainTop: 12, plainBottom: 14, // margins when there is no header / footer picture
+  plainTop: 9, plainBottom: 10, // margins when there is no header / footer picture
   numberY: 3, // page number baseline, mm from the bottom edge (below the footer picture)
 } as const;
 
@@ -278,7 +278,7 @@ ${this.fontCss()}
 @page { size: A4; margin: 0; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: #fff; }
-body { direction: ${rtl ? 'rtl' : 'ltr'}; font-family: 'Cairo', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; line-height: 1.55; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { direction: ${rtl ? 'rtl' : 'ltr'}; font-family: 'Cairo', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; line-height: 1.4; font-kerning: normal; font-variant-ligatures: normal; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 /* page frame: free room at the top / bottom of every page + the company pictures pinned to the page edges */
 table.pg { width: 100%; border-collapse: collapse; }
 table.pg > thead > tr > td, table.pg > tfoot > tr > td { border: 0; padding: 0; }
@@ -300,30 +300,32 @@ html.stamp img.cohead, html.stamp img.cofoot { display: none; }
 .head .co { flex: 1; }
 .head .co .nm { font-size: 18px; font-weight: 700; color: #1f3a5f; }
 .head .co .sub { color: #444; font-size: 10px; }
-.title { text-align: center; font-size: 20px; font-weight: 700; color: #1f3a5f; margin: 2px 0 10px; letter-spacing: ${rtl ? 'normal' : '0.2px'}; }
-.meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-.box { border: 1px solid #c9d1dc; border-radius: 4px; padding: 6px 10px; flex: 1; }
+.title { text-align: center; font-size: 20px; font-weight: 700; color: #1f3a5f; margin: 2px 0 6px; letter-spacing: ${rtl ? 'normal' : '0.2px'}; }
+.meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
+.box { border: 1px solid #c9d1dc; border-radius: 4px; padding: 4px 8px; flex: 1; }
 .box .row { margin: 1px 0; }
 .k { color: #555; }
-.terms { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; border: 1px solid #c9d1dc; border-radius: 4px; padding: 6px 10px; margin-bottom: 10px; }
+.terms { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; border: 1px solid #c9d1dc; border-radius: 4px; padding: 4px 8px; margin-bottom: 6px; }
 table { width: 100%; border-collapse: collapse; }
-th { background: #e9eef5; color: #1f3a5f; font-weight: 700; padding: 5px 4px; border: 1px solid #c9d1dc; text-align: center; font-size: 10px; } /* light header: saves ink */
-td { border: 1px solid #c9d1dc; padding: 4px; vertical-align: top; }
+th { background: #e9eef5; color: #1f3a5f; font-weight: 700; padding: 3px 2px; border: 1px solid #c9d1dc; text-align: center; font-size: 9px; } /* light header: saves ink */
+td { border: 1px solid #c9d1dc; padding: 3px 2px; vertical-align: top; }
 table.items tbody tr:nth-child(even) td { background: #f6f8fb; }
 tr { page-break-inside: avoid; break-inside: avoid; }
 td.c { text-align: center; }
-td.n { text-align: end; white-space: nowrap; }
-table.items td { font-size: 10.5px; }
-table.items td.desc { width: 100%; min-width: 38mm; }
-table.items td.c, table.items td.code, table.items td.n { white-space: nowrap; }
-table.items td.n .m { white-space: nowrap; }
-.cat-line { margin-top: 2px; font-size: 9.5px; color: #1f3a5f; }
+td.n { text-align: end; }
+table.items { table-layout: fixed; }
+table.items td { font-size: 9.5px; }
+table.items td.desc { min-width: 0; overflow-wrap: break-word; }
+table.items td.c, table.items td.code { white-space: normal; }
+table.items td.code { overflow-wrap: anywhere; }
+table.items td.n .m { white-space: normal; overflow-wrap: anywhere; }
+.cat-line { margin-top: 1px; font-size: 8.5px; color: #1f3a5f; }
 .cat-line .k { color: #555; }
 .material-name { display: block; text-align: start; unicode-bidi: plaintext; }
 .b { font-weight: 700; }
 .lnk { display: block; margin-top: 2px; font-size: 9px; color: #1f3a5f; text-decoration: underline; overflow-wrap: anywhere; word-break: break-all; }
 .dim { color: #999; }
-h3 { margin: 14px 0 4px; font-size: 12px; color: #1f3a5f; }
+h3 { margin: 8px 0 3px; font-size: 11px; color: #1f3a5f; }
 .totals { width: 62%; margin-inline-start: auto; break-inside: avoid; }
 .totals td { background: #f6f8fb; }
 .bar { text-align: center; margin: 10px 0; }
@@ -443,6 +445,22 @@ ${o.script ?? ''}
     const showShipping = used('shipping');
     const showCustoms = used('customs');
 
+    const itemColumns = [
+      { label: t.no, width: 4 },
+      { label: t.code, width: 9 },
+      { label: t.desc, width: 24 },
+      { label: t.qty, width: 8 },
+      { label: t.unit, width: 6 },
+      { label: t.unitPrice, width: 11 },
+      { label: t.value, width: 11 },
+      ...(showShipping ? [{ label: t.shipping, width: 9 }] : []),
+      ...(showCustoms ? [{ label: t.customs, width: 9 }] : []),
+      { label: t.required, width: 11 },
+      ...(opts.includeCost ? [{ label: t.cost, width: 10 }] : []),
+    ];
+    const itemWidthTotal = itemColumns.reduce((total, column) => total + column.width, 0);
+    const itemColgroup = `<colgroup>${itemColumns.map((column) => `<col style="width:${(column.width / itemWidthTotal) * 100}%">`).join('')}</colgroup>`;
+
     const rows = q.items
       .map((i: ItemView, idx: number) => {
         const itemName = i.materialName?.trim();
@@ -511,6 +529,7 @@ ${o.script ?? ''}
 </div>
 ${termsHtml ? `<div class="terms">${termsHtml}</div>` : ''}
 <table class="items">
+  ${itemColgroup}
   <thead><tr>
     <th>${t.no}</th><th>${t.code}</th><th>${t.desc}</th><th>${t.qty}</th><th>${t.unit}</th><th>${t.unitPrice}</th>
     <th>${t.value}</th>${showShipping ? `<th>${t.shipping}</th>` : ''}${showCustoms ? `<th>${t.customs}</th>` : ''}<th>${t.required}</th>${opts.includeCost ? `<th>${t.cost}</th>` : ''}

@@ -44,7 +44,10 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
     const doc = iframe.contentDocument!;
     await Promise.all([
       doc.fonts.ready,
-      ...['400', '700'].flatMap((w) => ['a', 'ع'].map((c) => document.fonts.load(`${w} 12px Cairo`, c).catch(() => []))),
+      ...['400', '700'].flatMap((w) => ['a', 'ع'].map((c) => Promise.all([
+        doc.fonts.load(`${w} 12px Cairo`, c),
+        document.fonts.load(`${w} 12px Cairo`, c),
+      ]))),
     ]);
     await Promise.all([...doc.images].map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; }))));
 
