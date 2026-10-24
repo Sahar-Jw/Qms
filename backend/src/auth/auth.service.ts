@@ -60,7 +60,7 @@ export class AuthService {
     const now = new Date();
     if (user.lockedUntil && user.lockedUntil > now) {
       throw new HttpException(
-        { code: 'ACCOUNT_LOCKED', message: `Too many failed attempts. Try again after ${lockMinutes} minutes.`, lockedUntil: user.lockedUntil },
+        { code: 'ACCOUNT_LOCKED', message: `Too many failed attempts. Try again after ${lockMinutes} minutes.`, minutes: lockMinutes, lockedUntil: user.lockedUntil },
         423,
       );
     }

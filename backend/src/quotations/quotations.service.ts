@@ -85,7 +85,7 @@ export class QuotationsService {
 
   private assertPercent(v: string | null | undefined, field: string) {
     if (v !== undefined && v !== null && new Decimal(v).gt(100)) {
-      throw new BadRequestException({ code: 'INVALID_PERCENTAGE', message: `${field} must be between 0 and 100` });
+      throw new BadRequestException({ code: 'INVALID_PERCENTAGE', message: `${field} must be between 0 and 100`, field });
     }
   }
 
@@ -167,7 +167,7 @@ export class QuotationsService {
       if (!mat) throw new BadRequestException({ code: 'MATERIAL_NOT_FOUND', message: `Material ${inc.materialId} not found` });
       const materialChanged = !prev || prev.materialId !== mat.id;
       if (materialChanged && !mat.isActive) {
-        throw new BadRequestException({ code: 'MATERIAL_INACTIVE', message: `Material ${mat.materialCode} is inactive` });
+        throw new BadRequestException({ code: 'MATERIAL_INACTIVE', message: `Material ${mat.materialCode} is inactive`, materialCode: mat.materialCode });
       }
 
       const item = prev ?? m.create(QuotationItem, { quotationId });
@@ -187,7 +187,7 @@ export class QuotationsService {
       item.unitPrice = inc.unitPrice ?? (materialChanged ? mat.unitPrice : prev!.unitPrice);
       const priceCur = inc.priceCurrency ?? (materialChanged ? mat.currency : prev!.priceCurrency);
       if (!priceCur) {
-        throw new BadRequestException({ code: 'PRICE_CURRENCY_REQUIRED', message: `Price currency is required for material ${mat.materialCode}` });
+        throw new BadRequestException({ code: 'PRICE_CURRENCY_REQUIRED', message: `Price currency is required for material ${mat.materialCode}`, materialCode: mat.materialCode });
       }
       item.priceCurrency = priceCur;
 
@@ -210,7 +210,7 @@ export class QuotationsService {
       const taxEnabled = inc.taxEnabled ?? false;
       if (taxEnabled) {
         if (inc.taxPercentage === undefined || inc.taxPercentage === null || inc.taxPercentage === '') {
-          throw new BadRequestException({ code: 'INVALID_PERCENTAGE', message: `Tax percentage is required for material ${mat.materialCode} when tax is enabled` });
+          throw new BadRequestException({ code: 'INVALID_PERCENTAGE', message: `Tax percentage is required for material ${mat.materialCode} when tax is enabled`, field: 'taxPercentage', materialCode: mat.materialCode });
         }
         this.assertPercent(inc.taxPercentage, 'taxPercentage');
       }
@@ -265,12 +265,12 @@ export class QuotationsService {
         throw new ForbiddenException({ code: 'NOT_OWNER', message: 'You can only edit the quotations you created' });
       }
       if (!EDITABLE.has(q.status)) {
-        throw new ConflictException({ code: 'QUOTATION_READ_ONLY', message: `A ${q.status} quotation cannot be edited` });
+        throw new ConflictException({ code: 'QUOTATION_READ_ONLY', message: `A ${q.status} quotation cannot be edited`, status: q.status });
       }
 
       const { items, ...header } = dto;
       for (const key of ['customerId', 'quotationDate'] as const) {
-        if (header[key] === null) throw new BadRequestException({ code: 'FIELD_REQUIRED', message: `${key} cannot be cleared` });
+        if (header[key] === null) throw new BadRequestException({ code: 'FIELD_REQUIRED', message: `${key} cannot be cleared`, field: key });
       }
       this.assertValidityDate(
         header.quotationDate === undefined ? q.quotationDate : header.quotationDate,
@@ -293,6 +293,22 @@ export class QuotationsService {
       if (items) await this.syncItems(m, id, items, user);
     });
     return this.findOne(id, user);
+  }
+
+  async delete(id: number, user: AuthUser): Promise<{ id: number; quotationNumber: string }> {
+    if (!canSeeLocked(user.role)) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'You do not have permission to delete quotations' });
+    }
+
+    return this.dataSource.transaction(async (m) => {
+      const q = await m.findOne(Quotation, { where: { id }, lock: { mode: 'pessimistic_write' } });
+      if (!q) throw new NotFoundException({ code: 'QUOTATION_NOT_FOUND', message: 'Quotation not found' });
+      if (q.status !== QuotationStatus.LOCKED) {
+        throw new ConflictException({ code: 'QUOTATION_NOT_CANCELLED', message: 'Only cancelled quotations can be deleted' });
+      }
+      await m.remove(Quotation, q);
+      return { id: q.id, quotationNumber: q.quotationNumber };
+    });
   }
 
 
@@ -364,7 +380,7 @@ export class QuotationsService {
         throw new ForbiddenException({ code: 'FORBIDDEN', message: 'You can only change the status of quotations you created' });
       }
       if (!NEXT_STATUSES[q.status].includes(dto.status)) {
-        throw new ConflictException({ code: 'INVALID_STATUS_TRANSITION', message: `Cannot change status from ${q.status} to ${dto.status}` });
+        throw new ConflictException({ code: 'INVALID_STATUS_TRANSITION', message: `Cannot change status from ${q.status} to ${dto.status}`, from: q.status, to: dto.status });
       }
 
       const prevStatus = q.status;
@@ -384,6 +400,9 @@ export class QuotationsService {
             throw new ConflictException({
               code: 'INSUFFICIENT_STOCK',
               message: `Material ${material.materialCode} does not have enough stock to invoice this quotation`,
+              materialCode: material.materialCode,
+              available: stock.toFixed(3).replace(/\.?0+$/, ''),
+              required: quantity.toFixed(3).replace(/\.?0+$/, ''),
             });
           }
           material.stockQuantity = stock.minus(quantity).toFixed(3);

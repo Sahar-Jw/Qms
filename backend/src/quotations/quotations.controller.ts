@@ -1,11 +1,12 @@
-import { BadRequestException, Body, ConflictException, Controller, Get, Header, Param, ParseIntPipe, Patch, Post, Query, ServiceUnavailableException, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, Header, Logger, Param, ParseIntPipe, Patch, Post, Query, ServiceUnavailableException, StreamableFile, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthUser } from '../common/auth-user';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { MinRole } from '../common/decorators/min-role.decorator';
-import { MailService } from '../mail/mail.service';
+import { RoleCode } from '../common/enums';
+import { MailService, mailErrorCode } from '../mail/mail.service';
 import { PdfService } from '../pdf/pdf.service';
 import { ChangeStatusDto, CreateQuotationDto, DuplicateQuotationDto, ListQuotationsDto, PrintQueryDto, SendQuotationEmailDto, UpdateQuotationDto } from './dto/quotation.dto';
 import { QuotationsService } from './quotations.service';
@@ -13,6 +14,8 @@ import { QuotationsService } from './quotations.service';
 @ApiTags('quotations')
 @Controller('quotations')
 export class QuotationsController {
+  private readonly logger = new Logger(QuotationsController.name);
+
   constructor(
     private readonly quotations: QuotationsService,
     private readonly pdf: PdfService,
@@ -37,6 +40,12 @@ export class QuotationsController {
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateQuotationDto, @CurrentUser() me: AuthUser) {
     return this.quotations.update(id, dto, me);
+  }
+
+  @Delete(':id')
+  @MinRole(RoleCode.MANAGER)
+  delete(@Param('id', ParseIntPipe) id: number, @CurrentUser() me: AuthUser) {
+    return this.quotations.delete(id, me);
   }
 
   /** Full copy of an existing quotation as a new draft (editable with PATCH afterwards). */
@@ -73,7 +82,7 @@ export class QuotationsController {
    * The browser sends the PDF it already built in `file` (works on hosting without Chromium); without it the server builds one.
    */
   @Post(':id/email')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 25 * 1024 * 1024, files: 1 } }))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 18 * 1024 * 1024, files: 1 } }))
   async email(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: SendQuotationEmailDto,
@@ -105,7 +114,9 @@ export class QuotationsController {
     try {
       await this.mail.sendQuotation({ to: dto.to, subject, message, lang: dto.lang, filename: `${view.quotationNumber}-${dto.lang}.pdf`, pdf, replyTo: view.company.email ?? undefined });
     } catch (e) {
-      throw new ServiceUnavailableException({ code: 'MAIL_SEND_FAILED', message: `The e-mail could not be sent: ${(e as Error).message}` });
+      const code = mailErrorCode(e);
+      this.logger.error(`Quotation e-mail failed (${code}): ${(e as Error).message}`);
+      throw new ServiceUnavailableException({ code, message: `The e-mail could not be sent (${code})` });
     }
     return { sent: true, to: dto.to, quotationNumber: view.quotationNumber };
   }

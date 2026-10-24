@@ -3,6 +3,18 @@ import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 
+/** What went wrong while sending, as a stable code the screen can explain (wrong app password, no connection, bad address, too big...). */
+export function mailErrorCode(e: unknown): string {
+  const err = e as { code?: string; responseCode?: number; message?: string } | undefined;
+  const code = err?.code ?? '';
+  const text = `${err?.message ?? ''}`.toLowerCase();
+  if (code === 'EAUTH' || err?.responseCode === 535 || text.includes('invalid login') || text.includes('username and password not accepted')) return 'MAIL_AUTH_FAILED';
+  if (err?.responseCode === 552 || text.includes('message exceeds') || text.includes('too large')) return 'MAIL_TOO_LARGE';
+  if (code === 'EENVELOPE' || (err?.responseCode !== undefined && err.responseCode >= 550 && err.responseCode <= 554) || text.includes('no recipients')) return 'MAIL_RECIPIENT_REJECTED';
+  if (['ECONNECTION', 'ETIMEDOUT', 'ESOCKET', 'EDNS', 'ECONNREFUSED', 'ENOTFOUND', 'ECONNRESET'].includes(code) || text.includes('wrong version number')) return 'MAIL_CONNECTION_FAILED';
+  return 'MAIL_SEND_FAILED';
+}
+
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 @Injectable()

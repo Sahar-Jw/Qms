@@ -208,4 +208,49 @@ describe('audit interceptor: uploads and deletes keep what changed', () => {
     expect(entry.details.before).not.toHaveProperty('id');
     expect(entry.details.before).not.toHaveProperty('createdAt');
   });
+
+  it('cancelled quotation deletion logs the quotation number and its previous state', async () => {
+    const quotation = {
+      id: 1,
+      quotationNumber: 'Q-001',
+      status: 'locked',
+      items: [{ id: 2, materialCode: 'A-1', quantity: '3' }],
+    };
+    const query = {
+      where: jest.fn(),
+      leftJoinAndSelect: jest.fn(),
+      addOrderBy: jest.fn(),
+      getOne: jest.fn().mockResolvedValue(quotation),
+    };
+    query.where.mockReturnValue(query);
+    query.leftJoinAndSelect.mockReturnValue(query);
+    query.addOrderBy.mockReturnValue(query);
+    const quotationDataSource = {
+      entityMetadatas: [{
+        name: 'Quotation',
+        tableName: 'quotations',
+        primaryColumns: [{ propertyName: 'id' }],
+        relations: [{ propertyName: 'items' }],
+        target: 'Quotation',
+      }],
+      getRepository: () => ({ createQueryBuilder: () => query }),
+    };
+    const quotationRecord = jest.fn();
+    const quotationInterceptor = new AuditInterceptor(
+      { record: quotationRecord } as unknown as AuditService,
+      quotationDataSource as unknown as DataSource,
+    );
+    const req = { method: 'DELETE', path: '/api/quotations/1', body: {}, ip: '::1', user: { id: 7, fullName: 'Boss', role: 'manager' } };
+    const ctx = { getType: () => 'http', switchToHttp: () => ({ getRequest: () => req }) } as any;
+    await lastValueFrom(quotationInterceptor.intercept(ctx, { handle: () => of({ id: 1, quotationNumber: 'Q-001' }) }));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(quotationRecord).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'delete',
+      entity: 'quotations',
+      entityId: '1',
+      entityLabel: 'Q-001',
+      details: { before: expect.objectContaining({ quotationNumber: 'Q-001', status: 'locked', items: quotation.items }) },
+    }));
+  });
 });

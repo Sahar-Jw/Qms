@@ -1,7 +1,7 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { uploadUrl } from '@/lib/urls';
-import { Copy, Eye, FileDown, Lock, Mail, Pencil, Printer, Receipt } from 'lucide-react';
+import { Copy, Eye, FileDown, Lock, Mail, Pencil, Printer, Receipt, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useRef, useState, type ReactNode } from 'react';
@@ -10,7 +10,7 @@ import { useConfirm } from '@/components/confirm';
 import { MaterialThumb } from '@/components/MaterialThumb';
 import { Ledger } from '@/components/Totals';
 import { Button, Card, CardHeader, Empty, Field, Input, Loading, Modal, Select, StatusBadge, Textarea, td, th, tr } from '@/components/ui';
-import { api } from '@/lib/api';
+import { api, ApiError, fetchOrNetworkError, NetworkError, toApiError } from '@/lib/api';
 import { apiUrl, FETCH_CREDENTIALS, quotationEditHref, quotationHref } from '@/lib/urls';
 import { trackRequest } from '@/lib/activity';
 import { useMe } from '@/lib/auth';
@@ -18,7 +18,7 @@ import { daysUntil } from '@/lib/dates';
 import { toastError } from '@/lib/errors';
 import { useI18n } from '@/lib/i18n';
 import { fmt, isZero } from '@/lib/money';
-import { type Amounts, type QStatus, type QuotationView } from '@/lib/types';
+import { hasRole, type Amounts, type QStatus, type QuotationView } from '@/lib/types';
 
 function Money({ amounts, field }: { amounts: Amounts[]; field: 'value' | 'shipping' | 'customs' | 'required' | 'cost' }) {
   const rows = amounts.filter((a) => !isZero(a[field]));
@@ -74,6 +74,16 @@ function QuotationDetail() {
     onSuccess: (data) => { qc.invalidateQueries({ queryKey: ['quotations'] }); toast.success(t('quotations.duplicated', { number: data.quotationNumber })); router.push(quotationHref(data.id)); },
     onError: (e) => toastError(e, t, has),
   });
+  const deleteQuotation = useMutation({
+    mutationFn: () => api.delete<{ id: number; quotationNumber: string }>(`/quotations/${id}`),
+    onSuccess: (data) => {
+      qc.removeQueries({ queryKey: ['quotation', Number(id)] });
+      qc.invalidateQueries({ queryKey: ['quotations'] });
+      toast.success(t('quotations.deletedCancelled', { number: data.quotationNumber }));
+      router.replace('/quotations');
+    },
+    onError: (e) => toastError(e, t, has),
+  });
 
   if (query.isLoading) return <Loading />;
   if (!q) return <Card><Empty text={t('err.QUOTATION_NOT_FOUND')} /></Card>;
@@ -92,11 +102,8 @@ function QuotationDetail() {
   async function buildPdf(lang: 'ar' | 'en'): Promise<Blob> {
     try {
       if (serverPdfUnavailable) throw Object.assign(new Error('PDF engine unavailable'), { code: 'PDF_ENGINE_UNAVAILABLE' });
-      const res = await fetch(apiUrl(`/quotations/${q!.id}/pdf?lang=${lang}${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw Object.assign(new Error(d.message ?? res.statusText), { code: d.code });
-      }
+      const res = await fetchOrNetworkError(apiUrl(`/quotations/${q!.id}/pdf?lang=${lang}${cost ? '&includeCost=true' : ''}`));
+      if (!res.ok) throw toApiError(res.status, res.statusText, await res.json().catch(() => null));
       return await res.blob();
     } catch (e) {
       if ((e as { code?: string }).code !== 'PDF_ENGINE_UNAVAILABLE') throw e;
@@ -104,15 +111,18 @@ function QuotationDetail() {
       // No Chrome on the server (shared hosting): build the PDF in the browser from the print HTML.
       // inline=true: this builder reads the page as text, so the catalog pictures must be inside it (the print tab links them instead).
       try {
-        const r = await fetch(apiUrl(`/quotations/${q!.id}/print?lang=${lang}&inline=true${cost ? '&includeCost=true' : ''}`), { credentials: FETCH_CREDENTIALS });
-        if (!r.ok) throw new Error(r.statusText);
+        const r = await fetchOrNetworkError(apiUrl(`/quotations/${q!.id}/print?lang=${lang}&inline=true${cost ? '&includeCost=true' : ''}`));
+        if (!r.ok) throw toApiError(r.status, r.statusText, await r.json().catch(() => null));
         const { htmlToPdfBlob } = await import('@/lib/client-pdf');
         const catalogPdfs = q!.items.flatMap((item) => item.catalogFiles ?? [])
           .filter((file) => file.mimeType === 'application/pdf')
           .filter((file, index, files) => files.findIndex((other) => other.id === file.id) === index)
           .map((file) => uploadUrl(file.path));
         return await htmlToPdfBlob(await r.text(), catalogPdfs);
-      } catch {
+      } catch (inner) {
+        // a real answer from the server (not allowed, not found, offline) is shown as it is; only a failure of the browser's own PDF builder is "CLIENT_PDF_FAILED"
+        if (inner instanceof ApiError || inner instanceof NetworkError) throw inner;
+        console.error(inner);
         throw Object.assign(new Error('Browser PDF failed'), { code: 'CLIENT_PDF_FAILED' });
       }
     }
@@ -124,7 +134,7 @@ function QuotationDetail() {
       toast.info(t('quotations.pdfFallback'));
       return;
     }
-    toast.error(code && has(`err.${code}`) ? t(`err.${code}`) : (e as Error).message);
+    toastError(e, t, has);
   };
   async function downloadPdf(lang: 'ar' | 'en') {
     if (pdfLock.current) return;
@@ -194,8 +204,7 @@ function QuotationDetail() {
       setEmailSubject('');
       setEmailMessage('');
     } catch (e) {
-      if ((e as { code?: string }).code === 'CLIENT_PDF_FAILED') toast.error(t('quotations.pdfFallback'));
-      else toastError(e, t, has);
+      toastError(e, t, has);
     } finally {
       done();
       pdfLock.current = false;
@@ -237,6 +246,13 @@ function QuotationDetail() {
             )}
             {q.editable && <Link href={quotationEditHref(q.id)}><Button variant="soft"><Pencil className="size-4" />{t('common.edit')}</Button></Link>}
             <Button variant="dark" loading={duplicate.isPending} onClick={async () => { if (await confirm({ message: t('quotations.duplicateConfirm') })) duplicate.mutate(); }}><Copy className="size-4" />{t('common.duplicate')}</Button>
+            {q.status === 'locked' && hasRole(me.role, 'manager') && (
+              <Button variant="danger" loading={deleteQuotation.isPending} onClick={async () => {
+                if (await confirm({ message: t('quotations.deleteCancelledConfirm', { number: q.quotationNumber }), confirmText: t('quotations.deleteCancelled'), danger: true })) deleteQuotation.mutate();
+              }}>
+                <Trash2 className="size-4" />{t('quotations.deleteCancelled')}
+              </Button>
+            )}
           </div>
         </div>
 

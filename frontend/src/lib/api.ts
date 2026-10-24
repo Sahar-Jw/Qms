@@ -11,6 +11,29 @@ export class NetworkError extends Error {
   constructor(public cause?: unknown) { super('Network error'); }
 }
 
+const STATUS_CODE: Record<number, string> = {
+  400: 'BAD_REQUEST', 401: 'UNAUTHORIZED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 408: 'REQUEST_TIMEOUT', 409: 'CONFLICT', 413: 'PAYLOAD_TOO_LARGE',
+  422: 'UNPROCESSABLE_ENTITY', 429: 'TOO_MANY_REQUESTS', 500: 'INTERNAL_SERVER_ERROR', 502: 'BAD_GATEWAY', 503: 'SERVICE_UNAVAILABLE', 504: 'GATEWAY_TIMEOUT',
+};
+
+/**
+ * An ApiError from an error response. When the body is not our JSON (an HTML page from the host / proxy / Passenger when the app is down or
+ * a request is too big), the code comes from the HTTP status so the user still gets a real, translated message instead of an empty one.
+ */
+export function toApiError(status: number, statusText: string, data: any): ApiError {
+  const { statusCode, code, message, details, ...extra } = data && typeof data === 'object' ? data : ({} as Record<string, unknown>);
+  return new ApiError(status, (code as string) ?? STATUS_CODE[status] ?? `HTTP_${status}`, (message as string) ?? statusText ?? '', details as string[] | undefined, extra);
+}
+
+/** fetch for the API (cookies included) where a failure to connect is a NetworkError like everywhere else. */
+export async function fetchOrNetworkError(url: string): Promise<Response> {
+  try {
+    return await fetch(url, { credentials: FETCH_CREDENTIALS });
+  } catch (e) {
+    throw new NetworkError(e);
+  }
+}
+
 type Params = Record<string, string | number | boolean | undefined | null>;
 
 export function qs(params?: Params): string {
@@ -38,8 +61,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   let data: any = null;
   try { data = text ? JSON.parse(text) : null; } catch { /* non-JSON */ }
   if (!res.ok) {
-    const { statusCode, code, message, details, ...extra } = data ?? {};
-    throw new ApiError(res.status, code ?? `HTTP_${res.status}`, message ?? res.statusText, details, extra);
+    throw toApiError(res.status, res.statusText, data);
   }
   return data as T;
 }
@@ -57,8 +79,7 @@ function uploadWithProgress<T>(url: string, form: FormData, onProgress: (fractio
       let data: any = null;
       try { data = xhr.responseText ? JSON.parse(xhr.responseText) : null; } catch { /* non-JSON */ }
       if (xhr.status >= 200 && xhr.status < 300) { onProgress(1); resolve(data as T); return; }
-      const { statusCode, code, message, details, ...extra } = data ?? {};
-      reject(new ApiError(xhr.status, code ?? `HTTP_${xhr.status}`, message ?? xhr.statusText, details, extra));
+      reject(toApiError(xhr.status, xhr.statusText, data));
     };
     xhr.send(form);
   });
@@ -74,8 +95,7 @@ async function download(url: string, params?: Params): Promise<Blob> {
   }
   if (!res.ok) {
     const data: any = await res.json().catch(() => null);
-    const { statusCode, code, message, details, ...extra } = data ?? {};
-    throw new ApiError(res.status, code ?? `HTTP_${res.status}`, message ?? res.statusText, details, extra);
+    throw toApiError(res.status, res.statusText, data);
   }
   return res.blob();
 }

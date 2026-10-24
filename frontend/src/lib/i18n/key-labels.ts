@@ -162,6 +162,7 @@ export const PART_LABELS: Record<string, Pair> = {
   INVALID_CREDENTIALS: ['بريد أو كلمة مرور خاطئة', 'Wrong email or password'], ACCOUNT_LOCKED: ['الحساب مقفل مؤقتاً', 'Account temporarily locked'], ACCOUNT_NOT_ACTIVATED: ['الحساب غير مفعّل', 'Account not activated'],
   INVALID_RESET_TOKEN: ['رابط إعادة التعيين غير صالح', 'Invalid reset link'], EMAIL_TAKEN: ['البريد مستخدم مسبقاً', 'Email already registered'], VALIDATION_FAILED: ['فشل التحقق من الحقول', 'Fields failed validation'],
   FORBIDDEN: ['ممنوع: لا صلاحية', 'Forbidden: no permission'], UNAUTHORIZED: ['غير مصرّح: سجّل الدخول', 'Unauthorized: sign in again'], QUOTATION_READ_ONLY: ['العرض للقراءة فقط', 'Quotation is read-only'],
+  QUOTATION_NOT_CANCELLED: ['لا يمكن حذف إلا العروض الملغاة', 'Only cancelled quotations can be deleted'],
   NOT_OWNER: ['ليس صاحب العرض', 'Not the quotation owner'], PROTECTED_ACCOUNT: ['حساب محمي', 'Protected account'], INVALID_STATUS_TRANSITION: ['تغيير حالة غير مسموح', 'Status change not allowed'],
   ISSUING_COMPANY_NOT_SET: ['لم تُختر الشركة المُصدِرة', 'Issuing company not set'], ISSUING_COMPANY_INACTIVE: ['الشركة المُصدِرة معطّلة', 'Issuing company inactive'], CUSTOMER_INACTIVE: ['العميل معطّل', 'Customer inactive'],
   MATERIAL_INACTIVE: ['المادة معطّلة', 'Material inactive'], DUPLICATE_ENTRY: ['سجل مكرر', 'Duplicate record'], CUSTOMER_NAME_REQUIRED: ['اسم العميل مطلوب', 'Customer name required'],

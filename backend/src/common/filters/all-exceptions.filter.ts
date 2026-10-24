@@ -50,10 +50,32 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else if (exception instanceof QueryFailedError) {
       const err = exception as any;
       const mysqlCode = err.code ?? err.driverError?.code;
+      const sqlMessage = String(err.sqlMessage ?? err.driverError?.sqlMessage ?? err.message ?? '');
+      const camel = (c: string) => c.replace(/_([a-z])/g, (_m, ch: string) => ch.toUpperCase());
       if (mysqlCode === 'ER_DUP_ENTRY') {
         status = HttpStatus.CONFLICT;
         code = 'DUPLICATE_ENTRY';
         message = 'A record with the same unique value already exists';
+        extra = { value: /Duplicate entry '(.*)' for key/.exec(sqlMessage)?.[1] ?? '' };
+      } else if (mysqlCode === 'ER_DATA_TOO_LONG') {
+        status = HttpStatus.BAD_REQUEST;
+        code = 'VALUE_TOO_LONG';
+        message = 'A value is too long';
+        extra = { field: camel(/column '(\w+)'/.exec(sqlMessage)?.[1] ?? '') };
+      } else if (mysqlCode === 'ER_WARN_DATA_OUT_OF_RANGE' || mysqlCode === 'ER_DATA_OUT_OF_RANGE' || mysqlCode === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD' || mysqlCode === 'ER_TRUNCATED_WRONG_VALUE') {
+        status = HttpStatus.BAD_REQUEST;
+        code = 'NUMBER_OUT_OF_RANGE';
+        message = 'A number or value is outside the allowed range';
+        extra = { field: camel(/column '(\w+)'/.exec(sqlMessage)?.[1] ?? '') };
+      } else if (mysqlCode === 'ER_BAD_NULL_ERROR') {
+        status = HttpStatus.BAD_REQUEST;
+        code = 'REQUIRED_VALUE_MISSING';
+        message = 'A required value is missing';
+        extra = { field: camel(/Column '(\w+)'/.exec(sqlMessage)?.[1] ?? '') };
+      } else if (mysqlCode === 'ER_LOCK_DEADLOCK' || mysqlCode === 'ER_LOCK_WAIT_TIMEOUT') {
+        status = HttpStatus.CONFLICT;
+        code = 'TRY_AGAIN';
+        message = 'The record is busy, try again';
       } else if (mysqlCode === 'ER_ROW_IS_REFERENCED_2' || mysqlCode === 'ER_NO_REFERENCED_ROW_2') {
         status = HttpStatus.CONFLICT;
         code = 'REFERENCE_CONFLICT';
@@ -62,6 +84,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         this.logger.error(err.message, err.stack);
       }
     } else {
+      const sysCode = (exception as { code?: string })?.code;
+      if (sysCode && ['ECONNREFUSED', 'PROTOCOL_CONNECTION_LOST', 'ETIMEDOUT', 'ER_CON_COUNT_ERROR', 'ENOTFOUND'].includes(sysCode)) {
+        status = HttpStatus.SERVICE_UNAVAILABLE;
+        code = 'DATABASE_UNAVAILABLE';
+        message = 'The database is not reachable right now';
+      }
       this.logger.error((exception as Error)?.message, (exception as Error)?.stack);
     }
 
