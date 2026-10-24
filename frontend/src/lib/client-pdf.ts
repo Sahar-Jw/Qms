@@ -135,7 +135,8 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
 
     // 2) rasterise a few pages at a time at a FIXED scale. The whole quotation used to be drawn on ONE canvas whose scale was
     // reduced (down to well below 1x) to stay under the browser's canvas size limit - on a long quotation with several catalog
-    // files that made the text blurry and mangled the joined Arabic letters and the spaces between words.
+    // files that made the text blurry and mangled the joined Arabic letters and the spaces between words. Foreign-object
+    // rendering also lets the browser's text engine handle Arabic shaping and bidirectional text instead of drawing word by word.
     const SCALE = 2;
     const CHUNK_PX = 6000; // css px per canvas (x SCALE stays far below the ~16000px canvas limit)
     for (let first = 0; first < pageRanges.length; ) {
@@ -145,6 +146,7 @@ export async function htmlToPdfBlob(html: string, catalogPdfUrls: string[] = [])
       const chunk = await html2canvas(doc.body, {
         scale: SCALE, x: 0, y: chunkTop, width: contentW, height: pageRanges[last].end - chunkTop,
         windowWidth: contentW, windowHeight: total, scrollX: 0, scrollY: 0, backgroundColor: '#ffffff', useCORS: true,
+        foreignObjectRendering: true,
       });
       for (let k = first; k <= last; k++) {
         const { start, end } = pageRanges[k];
