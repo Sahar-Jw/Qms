@@ -8,7 +8,7 @@ export interface MaterialCatalogFile {
   mimeType: string;
 }
 
-@Index('UQ_materials_material_code_name', ['materialCode', 'name'], { unique: true })
+@Index('UQ_materials_material_code_name_source', ['materialCode', 'name', 'source'], { unique: true })
 @Entity('materials')
 export class Material extends AuditBase {
   @PrimaryGeneratedColumn()
