@@ -6,7 +6,7 @@ import { ImagePlus, Image as ImageIcon, Save, Sparkles, Trash2 } from 'lucide-re
 import type { ChangeEvent } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Button, Card, CardHeader, Field, Input, Loading } from '@/components/ui';
+import { Button, Card, CardHeader, Field, Input, BlockSkeleton } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useBrandSettings } from '@/lib/auth';
 import { cn } from '@/lib/cn';
@@ -78,7 +78,7 @@ export function BrandTab() {
     event.target.value = '';
   };
 
-  if (brand.isLoading) return <Card><Loading /></Card>;
+  if (brand.isLoading) return <Card><BlockSkeleton lines={5} /></Card>;
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-12">

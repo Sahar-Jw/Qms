@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { QuotationTable } from '@/components/QuotationTable';
-import { Button, Card, Input, Loading, PageHeader, Pagination, STATUS_STYLE } from '@/components/ui';
+import { Button, Card, Input, PageHeader, PageLoading, TableSkeleton, Pagination, STATUS_STYLE } from '@/components/ui';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n';
@@ -69,7 +69,7 @@ function List() {
       </Card>
 
       <Card>
-        {list.isLoading ? <Loading /> : <div className={cn('transition-opacity', list.isFetching && 'opacity-50')}><QuotationTable rows={list.data?.data ?? []} /></div>}
+        {list.isLoading ? <TableSkeleton rows={8} cols={6} /> : <div className={cn('transition-opacity', list.isFetching && 'opacity-50')}><QuotationTable rows={list.data?.data ?? []} /></div>}
         {list.data && <Pagination page={list.data.page} limit={list.data.limit} total={list.data.total} onPage={setPage} />}
       </Card>
     </>
@@ -77,5 +77,5 @@ function List() {
 }
 
 export default function QuotationsPage() {
-  return <Suspense fallback={<Loading />}><List /></Suspense>;
+  return <Suspense fallback={<PageLoading />}><List /></Suspense>;
 }

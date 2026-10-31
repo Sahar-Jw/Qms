@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Info, Save } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Button, Card, CardHeader, Field, Input, Loading } from '@/components/ui';
+import { Button, Card, CardHeader, Field, Input, BlockSkeleton } from '@/components/ui';
 import { api } from '@/lib/api';
 import { CATALOG_SETTINGS_KEY, useCatalogSettings } from '@/lib/auth';
 import { toastError } from '@/lib/errors';
@@ -39,7 +39,7 @@ export function FilesTab() {
     onError: (e) => toastError(e, t, has),
   });
 
-  if (saved.isLoading) return <Card><Loading /></Card>;
+  if (saved.isLoading) return <Card><BlockSkeleton lines={5} /></Card>;
   if (current === undefined) return <Card><p className="p-5 text-sm text-red-700">{t('err.NETWORK')}</p></Card>;
 
   return (

@@ -1,9 +1,8 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Download, Eye, Image as ImageIcon, Search, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Download, Eye, Image as ImageIcon, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { Button, Card, CardHeader, Empty, Input, Loading, Modal, Pagination, Select, td, th, tr } from '@/components/ui';
+import { Button, Card, CardHeader, Empty, Input, Modal, Pagination, Select, TableSkeleton, td, th, tr } from '@/components/ui';
 import { useMe } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { toastError } from '@/lib/errors';
@@ -16,7 +15,28 @@ const ACTIONS = ['create', 'update', 'delete', 'activate', 'deactivate', 'status
 const ENTITIES = ['quotations', 'customers', 'materials', 'companies', 'users', 'settings', 'theme', 'translations', 'auth', 'audit'];
 const LIMIT = 20;
 
-const when = (d: string, lang: string) => new Date(d).toLocaleString(lang === 'ar' ? 'ar-SY-u-nu-latn' : 'en-GB', { dateStyle: 'medium', timeStyle: 'medium' });
+/**
+ * Fixed numeric format (2026-10-31 · 09:12:00, 24 hour, Latin digits) in the viewer's time zone.
+ * Locale text such as Arabic month names and ص/م mixes right-to-left and left-to-right runs, which scrambled the column.
+ */
+const stamp = (d: string) => {
+  const date = new Date(d);
+  if (Number.isNaN(date.getTime())) return { day: '—', time: '' };
+  const p = (n: number) => String(n).padStart(2, '0');
+  return {
+    day: `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`,
+    time: `${p(date.getHours())}:${p(date.getMinutes())}:${p(date.getSeconds())}`,
+  };
+};
+function When({ value }: { value: string }) {
+  const { day, time } = stamp(value);
+  return (
+    <span dir="ltr" className="inline-block text-start tabular-nums">
+      <span className="block font-semibold">{day}</span>
+      {time && <span className="block text-xs text-cocoa">{time}</span>}
+    </span>
+  );
+}
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 /** Technical names (quantityInStock, price_currency) become words; anything else (already readable) is left alone. */
@@ -61,8 +81,8 @@ function actionStyle(a: string) {
 export function AuditTab() {
   const { t, has, lang } = useI18n();
   const me = useMe();
-  const canExport = hasRole(me.data?.role, 'general_manager'); // the export and the integrity check are general manager and above
-  const [busy, setBusy] = useState<'' | 'export' | 'verify'>('');
+  const canExport = hasRole(me.data?.role, 'general_manager'); // the export is general manager and above
+  const [busy, setBusy] = useState<'' | 'export'>('');
   const [userId, setUserId] = useState('');
   const [q, setQ] = useState('');
   const [action, setAction] = useState('');
@@ -144,21 +164,6 @@ export function AuditTab() {
     }
   }
 
-  /** Asks the server to check every row against its signature (rows edited directly in the database fail). */
-  async function verify() {
-    setBusy('verify');
-    try {
-      const r = await api.get<{ configured: boolean; total: number; valid: number; unsigned: number; invalid: number; invalidIds: number[] }>('/audit-log/verify');
-      if (!r.configured) toast.info(t('audit.verifyOff'));
-      else if (r.invalid > 0) toast.error(t('audit.verifyBad', { n: r.invalid, ids: r.invalidIds.map((id) => `#${id}`).join(', ') }), { duration: 15000 });
-      else toast.success(`${t('audit.verifyOk', { n: r.valid })}${r.unsigned ? ` ${t('audit.verifyUnsigned', { n: r.unsigned })}` : ''}`, { duration: 8000 });
-    } catch (e) {
-      toastError(e, t, has);
-    } finally {
-      setBusy('');
-    }
-  }
-
   return (
     <>
       <Card>
@@ -194,13 +199,12 @@ export function AuditTab() {
             {canExport && (
               <div className="ms-auto flex flex-wrap gap-2">
                 <Button variant="soft" size="sm" onClick={exportCsv} disabled={busy !== ''}><Download className="size-4" />{t('audit.exportCsv')}</Button>
-                <Button variant="soft" size="sm" onClick={verify} disabled={busy !== ''}><ShieldCheck className="size-4" />{t('audit.verify')}</Button>
               </div>
             )}
           </div>
         </div>
 
-        {list.isLoading ? <Loading /> : !list.data?.data.length ? <Empty text={t('audit.none')} /> : (
+        {list.isLoading ? <TableSkeleton rows={8} cols={5} /> : !list.data?.data.length ? <Empty text={t('audit.none')} /> : (
           <div className={cn('overflow-x-auto transition-opacity', list.isFetching && 'opacity-60')}>
             <table className="w-full min-w-[820px]">
               <thead>
@@ -209,7 +213,7 @@ export function AuditTab() {
               <tbody>
                 {list.data.data.map((r) => (
                   <tr key={r.id} className={tr}>
-                    <td className={cn(td, 'whitespace-nowrap tabular-nums')} dir="ltr">{when(r.createdAt, lang)}</td>
+                    <td className={cn(td, 'whitespace-nowrap')}><When value={r.createdAt} /></td>
                     <td className={td}>
                       {r.userName
                         ? <><div className="truncate font-bold"><bdi>{r.userName}</bdi></div>{r.userRole && <div className="text-xs text-cocoa">{t(`roles.${r.userRole}`)}</div>}</>
@@ -241,7 +245,7 @@ export function AuditTab() {
         {open && (
           <div className="space-y-4 text-sm">
             <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2">
-              <dt className="font-semibold text-cocoa">{t('audit.when')}</dt><dd dir="ltr" className="text-start tabular-nums">{when(open.createdAt, lang)}</dd>
+              <dt className="font-semibold text-cocoa">{t('audit.when')}</dt><dd><When value={open.createdAt} /></dd>
               <dt className="font-semibold text-cocoa">{t('audit.user')}</dt><dd><bdi>{open.userName ?? t('audit.unknownUser')}</bdi>{open.userRole ? ` · ${t(`roles.${open.userRole}`)}` : ''}</dd>
               <dt className="font-semibold text-cocoa">{t('audit.record')}</dt>
               <dd>{open.entityLabel ? <bdi>{open.entityLabel}</bdi> : '—'}</dd>

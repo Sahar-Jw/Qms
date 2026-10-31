@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { QuotationTable } from '@/components/QuotationTable';
-import { ActiveBadge, Card, CardHeader, Empty, Loading, PageHeader } from '@/components/ui';
+import { ActiveBadge, Card, CardHeader, Empty, PageHeader, PageLoading, TableSkeleton } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmt } from '@/lib/money';
@@ -18,7 +18,7 @@ function Results() {
   const res = useQuery({ queryKey: ['search', q], enabled: !!q, queryFn: () => api.get<Result>('/search', { q, limit: 10 }) });
 
   if (!q) return <Card><Empty text={t('search.empty')} /></Card>;
-  if (res.isLoading || !res.data) return <Loading />;
+  if (res.isLoading || !res.data) return <Card><TableSkeleton rows={4} cols={3} /></Card>;
   const { quotations, customers, materials } = res.data;
   const count = (p: Paginated<unknown>) => <span className="rounded-full bg-sand px-2.5 py-0.5 text-xs font-bold text-cocoa">{p.total}</span>;
 
@@ -64,7 +64,7 @@ export default function SearchPage() {
   return (
     <>
       <PageHeader title={q ? t('search.title', { q }) : t('nav.search')} />
-      <Suspense fallback={<Loading />}><Results /></Suspense>
+      <Suspense fallback={<PageLoading />}><Results /></Suspense>
     </>
   );
 }

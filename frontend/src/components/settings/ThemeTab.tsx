@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Receipt } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Button, Card, CardHeader, Input, Loading, STATUS_STYLE } from '@/components/ui';
+import { Button, Card, CardHeader, BlockSkeleton, Input, STATUS_STYLE } from '@/components/ui';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { toastError } from '@/lib/errors';
@@ -37,7 +37,7 @@ export function ThemeTab() {
     onSuccess: onDone(t('theme.saved')),
     onError: (e) => toastError(e, t, has),
   });
-  if (saved.isLoading) return <Card><Loading /></Card>;
+  if (saved.isLoading) return <Card><BlockSkeleton lines={5} /></Card>;
   if (!base || !form) return <Card><p className="p-5 text-sm text-red-700">{t('err.NETWORK')}</p></Card>;
 
   const invalid = THEME_KEYS.some((k) => !isHex(form[k]));

@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { useConfirm } from '@/components/confirm';
 import { MaterialThumb } from '@/components/MaterialThumb';
 import { Ledger } from '@/components/Totals';
-import { Button, Card, CardHeader, Empty, Field, Input, Loading, Modal, Select, StatusBadge, Textarea, td, th, tr } from '@/components/ui';
+import { Button, Card, CardHeader, BlockSkeleton, Empty, Field, Input, Modal, PageLoading, Select, StatusBadge, Textarea, td, th, tr } from '@/components/ui';
 import { api, ApiError, fetchOrNetworkError, NetworkError, toApiError } from '@/lib/api';
 import { apiUrl, FETCH_CREDENTIALS, quotationEditHref, quotationHref } from '@/lib/urls';
 import { trackRequest } from '@/lib/activity';
@@ -40,7 +40,7 @@ function Info({ label, value }: { label: string; value?: ReactNode }) {
 let serverPdfUnavailable = false;
 
 export default function QuotationDetailPage() {
-  return <Suspense fallback={<Loading />}><QuotationDetail /></Suspense>;
+  return <Suspense fallback={<PageLoading />}><QuotationDetail /></Suspense>;
 }
 
 function QuotationDetail() {
@@ -85,7 +85,7 @@ function QuotationDetail() {
     onError: (e) => toastError(e, t, has),
   });
 
-  if (query.isLoading) return <Loading />;
+  if (query.isLoading) return <Card><BlockSkeleton lines={6} /></Card>;
   if (!q) return <Card><Empty text={t('err.QUOTATION_NOT_FOUND')} /></Card>;
 
   const remainingDays = daysUntil(q.validity);

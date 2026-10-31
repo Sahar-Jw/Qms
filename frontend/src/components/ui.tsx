@@ -158,13 +158,54 @@ export function Spinner({ className }: { className?: string }) {
   return <Loader2 className={cn('size-5 animate-spin text-cocoa', className)} />;
 }
 
-export function Loading() {
+/* ------------------------------------------------------------------ skeletons */
+/** One grey placeholder block; give it a size (and shape) with className. */
+export function Skeleton({ className }: { className?: string }) {
+  return <div aria-hidden="true" className={cn('animate-pulse rounded-lg bg-stone/30', className)} />;
+}
+
+/** Widths are fixed (not random) so server and browser render the same markup. */
+const SKELETON_WIDTHS = ['w-4/5', 'w-3/5', 'w-2/3', 'w-1/2', 'w-3/4'];
+
+/** Placeholder for a table while its rows load: a header strip and `rows` lines of `cols` cells. */
+export function TableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols?: number }) {
   const { t } = useI18n();
   return (
-    <div className="flex items-center justify-center gap-2 py-10 text-sm text-cocoa">
-      <Spinner /> {t('common.loading')}
+    <div role="status" aria-busy="true" className="overflow-hidden">
+      <span className="sr-only">{t('common.loading')}</span>
+      <div className="flex gap-4 bg-sand/70 px-4 py-3">
+        {Array.from({ length: cols }, (_, c) => <Skeleton key={c} className="h-3 flex-1" />)}
+      </div>
+      {Array.from({ length: rows }, (_, r) => (
+        <div key={r} className="flex items-center gap-4 border-t border-stone/40 px-4 py-3.5">
+          {Array.from({ length: cols }, (_, c) => (
+            <Skeleton key={c} className={cn('h-4 flex-1', c === 0 ? 'max-w-40' : SKELETON_WIDTHS[(r + c) % SKELETON_WIDTHS.length])} />
+          ))}
+        </div>
+      ))}
     </div>
   );
+}
+
+/** Placeholder for a block of fields or text (a form, a details card). */
+export function BlockSkeleton({ lines = 4 }: { lines?: number }) {
+  const { t } = useI18n();
+  return (
+    <div role="status" aria-busy="true" className="space-y-3 p-5">
+      <span className="sr-only">{t('common.loading')}</span>
+      {Array.from({ length: lines }, (_, i) => (
+        <div key={i} className="space-y-2">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className={cn('h-10 w-full', i % 2 ? 'sm:w-2/3' : '')} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Used inside a card (a list, a table) while its data loads. */
+export function Loading() {
+  return <TableSkeleton />;
 }
 
 function useDelayed(on: boolean, ms: number) {
@@ -222,10 +263,27 @@ export function GlobalLoader() {
   );
 }
 
+/** Shown between pages (the loading.tsx files): the outline of a typical page instead of a spinner. */
 export function PageLoading() {
+  const { t } = useI18n();
   return (
-    <div className="grid min-h-[50vh] place-items-center" role="status">
-      <Spinner className="size-9" />
+    <div role="status" aria-busy="true" className="space-y-4">
+      <span className="sr-only">{t('common.loading')}</span>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-4 w-72 max-w-full" />
+        </div>
+        <Skeleton className="h-10 w-32 rounded-full" />
+      </div>
+      <div className="flex flex-wrap gap-3 rounded-2xl border border-stone/60 bg-white/90 p-4 shadow-lift">
+        <Skeleton className="h-10 min-w-56 flex-1" />
+        <Skeleton className="h-10 w-32 rounded-full" />
+        <Skeleton className="h-10 w-32 rounded-full" />
+      </div>
+      <div className="overflow-hidden rounded-2xl border border-stone/60 bg-white/90 shadow-lift">
+        <TableSkeleton />
+      </div>
     </div>
   );
 }

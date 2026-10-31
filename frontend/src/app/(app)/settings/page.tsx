@@ -9,7 +9,7 @@ import { BrandTab } from '@/components/settings/BrandTab';
 import { FilesTab } from '@/components/settings/FilesTab';
 import { TextsTab } from '@/components/settings/TextsTab';
 import { ThemeTab } from '@/components/settings/ThemeTab';
-import { Card, CardHeader, Loading, PageHeader } from '@/components/ui';
+import { BlockSkeleton, Card, CardHeader, PageHeader } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe, useSettings } from '@/lib/auth';
 import { cn } from '@/lib/cn';
@@ -82,7 +82,7 @@ function CompanyTab() {
         <CardHeader title={t('settings.company')} />
         <div className="p-5">
           <p className="mb-4 text-sm text-cocoa">{t('settings.companySub')}</p>
-          {companies.isLoading || settings.isLoading ? <Loading /> : (
+          {companies.isLoading || settings.isLoading ? <BlockSkeleton lines={5} /> : (
             <div className="grid gap-3 sm:grid-cols-2">
               {companies.data?.map((c) => {
                 const on = c.id === selected;
