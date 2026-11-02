@@ -1,9 +1,10 @@
 import Decimal from 'decimal.js';
 import type { Amounts } from './types';
 
-/** Same rules as the backend (per currency, never mixed): value = qty x price, required = value + customs + shipping, cost apart. */
+/** Same rules as the backend (per currency, never mixed): value = qty x price - discount, required = value + customs + shipping, cost apart. */
 export interface ItemInput {
   quantity: string; unitPrice: string; priceCurrency: string;
+  discount?: string; // taken off qty x price, same currency
   unitCost?: string; costCurrency?: string;
   shippingCost?: string; shippingCurrency?: string;
   customsCost?: string; customsCurrency?: string;
@@ -24,7 +25,7 @@ export function calcItem(i: ItemInput): Amounts[] {
   const slot = (c: string) => { let s = slots.get(c); if (!s) { s = blank(); slots.set(c, s); } return s; };
   const qty = new Decimal(i.quantity);
   const pc = cur(i.priceCurrency) || 'USD';
-  slot(pc).value = qty.times(has(i.unitPrice) ? i.unitPrice : '0');
+  slot(pc).value = qty.times(has(i.unitPrice) ? i.unitPrice : '0').minus(has(i.discount) ? i.discount! : '0');
   if (has(i.unitCost)) slot(cur(i.costCurrency) || pc).cost = qty.times(i.unitCost!);
   if (has(i.shippingCost)) { const s = slot(cur(i.shippingCurrency) || pc); s.shipping = s.shipping.plus(i.shippingCost!); }
   if (has(i.customsCost)) { const s = slot(cur(i.customsCurrency) || pc); s.customs = s.customs.plus(i.customsCost!); }

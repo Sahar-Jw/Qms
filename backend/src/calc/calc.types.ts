@@ -2,6 +2,8 @@ export interface ItemCalcInput {
   quantity: string;
   unitPrice: string;
   priceCurrency: string;
+  /** Amount subtracted from quantity x unitPrice (same currency as the price). */
+  discount?: string | null;
   unitCost?: string | null;
   costCurrency?: string | null;
   shippingCost?: string | null;

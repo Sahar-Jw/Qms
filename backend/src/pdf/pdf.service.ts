@@ -52,7 +52,7 @@ const T = {
     title: 'عرض سعر', number: 'رقم العرض', date: 'التاريخ', to: 'السادة', attn: 'عناية', phone: 'هاتف', email: 'البريد',
     validity: 'مدة صلاحية العرض', deliveryTime: 'مدة التسليم', oneDayRemaining: 'متبقي يوم واحد', daysRemaining: 'متبقي {days} يوم', expired: 'منتهي الصلاحية', paymentMethod: 'طريقة الدفع', paymentLocation: 'مكان الدفع',
     deliveryMethod: 'طريقة التسليم', bank: 'المصرف', customerPayment: 'نظام الدفع', responsible: 'المسؤول',
-    no: '#', code: 'الرمز', desc: 'البيان', qty: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة', value: 'القيمة',
+    no: '#', code: 'الرمز', desc: 'البيان', qty: 'الكمية', unit: 'الوحدة', unitPrice: 'سعر الوحدة', discount: 'الحسم', value: 'القيمة',
     shipping: 'الشحن', customs: 'التخليص الجمركي', required: 'المطلوب', cost: 'التكلفة', totals: 'الإجماليات حسب العملة',
     currency: 'العملة', link: 'الرابط', print: 'طباعة', page: 'صفحة', item: 'البند', catalog: 'الكتالوج',
     catalogTitle: 'الكتالوجات المرفقة', catalogEyebrow: 'ملف الكتالوج', catalogMaterial: 'المادة', catalogFile: 'الملف', catalogType: 'النوع',
@@ -63,7 +63,7 @@ const T = {
     title: 'Quotation', number: 'Quotation No.', date: 'Date', to: 'To', attn: 'Attn', phone: 'Phone', email: 'Email',
     validity: 'Validity', deliveryTime: 'Delivery time', oneDayRemaining: '1 day remaining', daysRemaining: '{days} days remaining', expired: 'Expired', paymentMethod: 'Payment method', paymentLocation: 'Payment location',
     deliveryMethod: 'Delivery method', bank: 'Bank', customerPayment: 'Payment terms', responsible: 'Prepared by',
-    no: '#', code: 'Code', desc: 'Description', qty: 'Qty', unit: 'Unit', unitPrice: 'Unit price', value: 'Value',
+    no: '#', code: 'Code', desc: 'Description', qty: 'Qty', unit: 'Unit', unitPrice: 'Unit price', discount: 'Discount', value: 'Value',
     shipping: 'Shipping', customs: 'Customs', required: 'Required', cost: 'Cost', totals: 'Totals by currency',
     currency: 'Currency', link: 'Link', print: 'Print', page: 'Page', item: 'Item', catalog: 'Catalog',
     catalogTitle: 'Attached catalogs', catalogEyebrow: 'Material catalog', catalogMaterial: 'Material', catalogFile: 'File', catalogType: 'Type',
@@ -452,6 +452,9 @@ ${o.script ?? ''}
     const showShipping = used('shipping');
     const showCustoms = used('customs');
 
+    // Same rule as shipping / customs: the discount column only appears when at least one line has a discount.
+    const showDiscount = q.items.some((i) => Number(i.discount) > 0);
+
     const itemColumns = [
       { label: t.no, width: 4 },
       { label: t.code, width: 9 },
@@ -459,6 +462,7 @@ ${o.script ?? ''}
       { label: t.qty, width: 8 },
       { label: t.unit, width: 6 },
       { label: t.unitPrice, width: 11 },
+      ...(showDiscount ? [{ label: t.discount, width: 9 }] : []),
       { label: t.value, width: 11 },
       ...(showShipping ? [{ label: t.shipping, width: 9 }] : []),
       ...(showCustoms ? [{ label: t.customs, width: 9 }] : []),
@@ -480,6 +484,7 @@ ${o.script ?? ''}
           <td class="n" dir="ltr">${nf(i.quantity)}</td>
           <td class="c">${this.esc(i.unit ?? '')}</td>
           <td class="n" dir="ltr">${money(i.sellingPrice ?? i.unitPrice, i.sellingCurrency ?? i.priceCurrency)}</td>
+          ${showDiscount ? `<td class="n" dir="ltr">${Number(i.discount) > 0 ? money(i.discount, i.sellingCurrency ?? i.priceCurrency) : '—'}</td>` : ''}
           <td class="n">${lines(pick(i.amounts, 'value', i.sellingCurrency ?? i.priceCurrency))}</td>
           ${showShipping ? `<td class="n">${lines(pick(i.amounts, 'shipping'))}</td>` : ''}
           ${showCustoms ? `<td class="n">${lines(pick(i.amounts, 'customs'))}</td>` : ''}
@@ -539,7 +544,7 @@ ${termsHtml ? `<div class="terms">${termsHtml}</div>` : ''}
   ${itemColgroup}
   <thead><tr>
     <th>${t.no}</th><th>${t.code}</th><th>${t.desc}</th><th>${t.qty}</th><th>${t.unit}</th><th>${t.unitPrice}</th>
-    <th>${t.value}</th>${showShipping ? `<th>${t.shipping}</th>` : ''}${showCustoms ? `<th>${t.customs}</th>` : ''}<th>${t.required}</th>${opts.includeCost ? `<th>${t.cost}</th>` : ''}
+    ${showDiscount ? `<th>${t.discount}</th>` : ''}<th>${t.value}</th>${showShipping ? `<th>${t.shipping}</th>` : ''}${showCustoms ? `<th>${t.customs}</th>` : ''}<th>${t.required}</th>${opts.includeCost ? `<th>${t.cost}</th>` : ''}
   </tr></thead>
   <tbody>${rows}</tbody>
 </table>

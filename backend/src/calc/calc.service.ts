@@ -4,7 +4,7 @@ import { CurrencyAmounts, ItemCalcInput, ItemCalcResult } from './calc.types';
 
 /**
  * The ONLY place money math happens :
- *   value    = quantity x unit price                (in the price currency)
+ *   value    = quantity x unit price - discount     (in the price currency)
  *   cost     = quantity x unit cost                 (kept apart from "required")
  *   required = value + customs + shipping           (per currency)
  * Currencies are never added together or converted.
@@ -26,7 +26,8 @@ export class CalcService {
     };
 
     const qty = new Decimal(input.quantity);
-    slot(input.priceCurrency).value = qty.times(input.unitPrice);
+    const discount = this.has(input.discount) ? new Decimal(input.discount as string) : new Decimal(0);
+    slot(input.priceCurrency).value = qty.times(input.unitPrice).minus(discount);
 
     if (this.has(input.unitCost)) {
       slot(this.need(input.costCurrency, 'costCurrency')).cost = qty.times(input.unitCost as string);

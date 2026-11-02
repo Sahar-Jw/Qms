@@ -220,6 +220,7 @@ function QuotationDetail() {
   const statusLabel = (to: QStatus) => t(`statusAction.${to}`);
   const co = q.company;
   const hasTax = q.items.some((i) => i.taxEnabled);
+  const hasDiscount = q.items.some((i) => Number(i.discount) > 0);
 
   return (
     <div className="space-y-4">
@@ -287,7 +288,7 @@ function QuotationDetail() {
               <table className="w-full min-w-[1000px]">
                 <thead className="sticky top-0 z-10"><tr>
                   <th className={th}>{t('materials.image')}</th><th className={th}>{t('common.code')}</th><th className={th}>{t('quotations.material')}</th><th className={th}>{t('materials.link')}</th><th className={th}>{t('quotations.quantity')}</th>
-                  <th className={th}>{t('quotations.unitPrice')}</th><th className={th}>{t('quotations.value')}</th><th className={th}>{t('quotations.shipping')}</th>
+                  <th className={th}>{t('quotations.unitPrice')}</th>{hasDiscount && <th className={th}>{t('quotations.discount')}</th>}<th className={th}>{t('quotations.value')}</th><th className={th}>{t('quotations.shipping')}</th>
                   <th className={th}>{t('quotations.customs')}</th>{hasTax && <th className={th}>{t('quotations.tax')}</th>}<th className={th}>{t('quotations.required')}</th>{canCost && <th className={th}>{t('quotations.totalCost')}</th>}
                 </tr></thead>
                 <tbody>
@@ -302,6 +303,7 @@ function QuotationDetail() {
                         : '—'}</td>
                       <td className={`${td} whitespace-nowrap tabular-nums`}><bdi dir="ltr">{fmt(i.quantity)}</bdi> <span className="text-xs text-cocoa">{i.unit}</span></td>
                       <td className={`${td} whitespace-nowrap tabular-nums`}><bdi dir="ltr">{fmt(i.sellingPrice ?? i.unitPrice)} <span className="text-xs text-cocoa">{i.sellingCurrency ?? i.priceCurrency}</span></bdi></td>
+                      {hasDiscount && <td className={`${td} whitespace-nowrap tabular-nums`}><bdi dir="ltr">{Number(i.discount) > 0 ? <>{fmt(i.discount)} <span className="text-xs text-cocoa">{i.sellingCurrency ?? i.priceCurrency}</span></> : '—'}</bdi></td>}
                       <td className={td}><Money amounts={i.amounts} field="value" /></td>
                       <td className={td}><Money amounts={i.amounts} field="shipping" /></td>
                       <td className={td}><Money amounts={i.amounts} field="customs" /></td>

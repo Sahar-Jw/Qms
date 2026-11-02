@@ -49,6 +49,10 @@ export class QuotationItem {
   @Column({ type: 'varchar', length: 3, nullable: true })
   sellingCurrency: string | null;
 
+  /** "الحسم": amount taken off this line's value (quantity x selling price), in the selling currency. 0 = no discount. */
+  @Column({ type: 'decimal', precision: 18, scale: 4, default: 0 })
+  discount: string;
+
   /** "الكلفة": per-unit cost typed on the line; the form shows quantity x itemCost as "تكلفة الوحدة". Never printed. */
   @Column({ type: 'decimal', precision: 18, scale: 4, nullable: true })
   itemCost: string | null;

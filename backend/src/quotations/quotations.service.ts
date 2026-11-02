@@ -183,6 +183,11 @@ export class QuotationsService {
 
       item.sellingPrice = inc.sellingPrice;
       item.sellingCurrency = inc.sellingCurrency;
+      const discount = new Decimal(inc.discount || '0');
+      if (discount.gt(new Decimal(inc.quantity).times(inc.sellingPrice))) {
+        throw new BadRequestException({ code: 'DISCOUNT_TOO_LARGE', message: `Discount exceeds the line value for material ${mat.materialCode}`, field: 'discount', materialCode: mat.materialCode });
+      }
+      item.discount = discount.toFixed(4);
       item.itemCost = inc.itemCost || null;
       item.unitPrice = inc.unitPrice ?? (materialChanged ? mat.unitPrice : prev!.unitPrice);
       const priceCur = inc.priceCurrency ?? (materialChanged ? mat.currency : prev!.priceCurrency);
@@ -448,6 +453,7 @@ export class QuotationsService {
         priceCurrency: i.priceCurrency,
         sellingPrice: i.sellingPrice,
         sellingCurrency: i.sellingCurrency,
+        discount: i.discount ?? '0.0000',
         itemCost: i.itemCost,
         unitCost: i.unitCost,
         costCurrency: i.costCurrency,

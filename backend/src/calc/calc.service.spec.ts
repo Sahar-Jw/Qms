@@ -10,6 +10,20 @@ describe('CalcService (SRS section 13 examples)', () => {
     expect(byCur(r, 'USD').required).toBe('500.0000');
   });
 
+  it('discount is taken off the line value (qty x price - discount) and flows into required', () => {
+    const r = calc.calcItem({
+      quantity: '5', unitPrice: '100', priceCurrency: 'USD', discount: '50',
+      shippingCost: '20', shippingCurrency: 'USD',
+    });
+    expect(byCur(r, 'USD').value).toBe('450.0000');
+    expect(byCur(r, 'USD').required).toBe('470.0000');
+  });
+
+  it('empty / zero discount changes nothing', () => {
+    expect(byCur(calc.calcItem({ quantity: '2', unitPrice: '10', priceCurrency: 'USD', discount: '' }), 'USD').value).toBe('20.0000');
+    expect(byCur(calc.calcItem({ quantity: '2', unitPrice: '10', priceCurrency: 'USD', discount: '0' }), 'USD').value).toBe('20.0000');
+  });
+
   it('required = value + customs + shipping, cost kept apart', () => {
     const r = calc.calcItem({
       quantity: '2', unitPrice: '100', priceCurrency: 'USD',

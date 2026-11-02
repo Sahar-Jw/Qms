@@ -37,6 +37,10 @@ export class QuotationItemDto {
   @IsNotEmpty() @CurrencyCode()
   sellingCurrency: string;
 
+  /** "الحسم": amount deducted from the line value (quantity x sellingPrice), in the selling currency. Omitted = 0. Must not exceed the line value. */
+  @IsOptional() @DecimalString()
+  discount?: string;
+
   /** "الكلفة" typed on the line (optional, never printed). */
   @IsOptional() @DecimalString()
   itemCost?: string | null;
