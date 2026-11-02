@@ -14,8 +14,8 @@ class GlobalSearchDto {
   q: string;
 
   /** Max rows per type. */
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(50)
-  limit: number = 10;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(500)
+  limit: number = 50;
 }
 
 /** One box that searches quotations, customers and materials together (SRS: full search). */
